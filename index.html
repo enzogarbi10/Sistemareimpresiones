@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlexoERP - Gestión de Etiquetas de Vino</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <nav class="sidebar">
+            <div class="logo">
+                <i class="fa-solid fa-wine-bottle"></i>
+                <span>FlexoERP</span>
+            </div>
+            <ul class="nav-links">
+                <li data-target="dashboard" class="nav-item">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    <span>Financiero</span>
+                </li>
+                <li data-target="clientes" class="nav-item">
+                    <i class="fa-solid fa-users"></i>
+                    <span>Bodegas & Clientes</span>
+                </li>
+                <li data-target="ots" class="nav-item">
+                    <i class="fa-solid fa-file-invoice"></i>
+                    <span>Órdenes (OT)</span>
+                </li>
+                <li data-target="taller" class="nav-item active">
+                    <i class="fa-solid fa-industry"></i>
+                    <span>Taller / Producción</span>
+                </li>
+                <li data-target="logistica" class="nav-item">
+                    <i class="fa-solid fa-truck-fast"></i>
+                    <span>Logística</span>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="top-bar">
+                <div class="search-bar">
+                    <i class="fa-solid fa-search"></i>
+                    <input type="text" placeholder="Buscar OT, Cliente o Remito...">
+                </div>
+                <div class="user-profile">
+                    <div class="avatar">OM</div>
+                    <span>Operador Máquina</span>
+                </div>
+            </header>
+
+            <div class="content-area">
+                
+                <!-- MODULE: TALLER / PRODUCCION (Default & Prioritized) -->
+                <section id="taller" class="module active">
+                    <div class="module-header">
+                        <h2>Panel de Taller - Carga de Producción</h2>
+                        <p>Interfaz simplificada para carga rápida a pie de máquina.</p>
+                    </div>
+
+                    <div class="taller-grid">
+                        <!-- Active OT Selector -->
+                        <div class="card glass">
+                            <h3><i class="fa-solid fa-play"></i> OT en Curso</h3>
+                            <div class="form-group">
+                                <label>Seleccionar OT Activa</label>
+                                <select class="large-input" id="ot-selector">
+                                    <option value="">Seleccione una OT...</option>
+                                    <option value="1042">OT-1042 | Bodega Norton - Malbec Reserva</option>
+                                    <option value="1043">OT-1043 | Catena Zapata - Chardonnay</option>
+                                </select>
+                            </div>
+                            <div class="ot-details-snippet" id="ot-snippet" style="display: none;">
+                                <div class="detail-badge">Sustrato: <span>Papel Autoadhesivo</span></div>
+                                <div class="detail-badge">Colores: <span>4 (CMYK) + Pantone Oro</span></div>
+                                <div class="detail-badge">Acabado: <span>Hot Stamping / Relieve</span></div>
+                            </div>
+                            <div class="action-buttons">
+                                <button class="btn btn-success large-btn"><i class="fa-solid fa-clock"></i> Iniciar Tirada</button>
+                                <button class="btn btn-danger large-btn"><i class="fa-solid fa-stopwatch"></i> Finalizar</button>
+                            </div>
+                        </div>
+
+                        <!-- Consumption & Waste -->
+                        <div class="card glass">
+                            <h3><i class="fa-solid fa-fill-drip"></i> Consumos y Mermas</h3>
+                            <div class="form-row">
+                                <div class="form-group half">
+                                    <label>Metros Impresos (ml)</label>
+                                    <input type="number" class="large-input" placeholder="0">
+                                </div>
+                                <div class="form-group half">
+                                    <label>Desperdicio (Kg)</label>
+                                    <input type="number" class="large-input" placeholder="0.0">
+                                </div>
+                            </div>
+                            
+                            <h4>Insumos Adicionales (Tintas/Solventes)</h4>
+                            <div class="insumos-list">
+                                <div class="insumo-item">
+                                    <select class="medium-input">
+                                        <option>Pantone 871 C (Oro)</option>
+                                        <option>Barniz UV</option>
+                                        <option>Solvente Retardador</option>
+                                    </select>
+                                    <input type="number" class="medium-input" placeholder="Kg / Lts">
+                                    <button class="btn btn-icon"><i class="fa-solid fa-plus"></i></button>
+                                </div>
+                            </div>
+                            <button class="btn btn-primary full-width mt-1"><i class="fa-solid fa-save"></i> Guardar Registros</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- MODULE: DASHBOARD FINANCIERO -->
+                <section id="dashboard" class="module">
+                    <div class="module-header">
+                        <h2>Dashboard Financiero</h2>
+                        <p>Resumen de rentabilidad y costos.</p>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-card glass">
+                            <div class="stat-icon"><i class="fa-solid fa-sack-dollar"></i></div>
+                            <div class="stat-data">
+                                <h3>Ingresos (Mes)</h3>
+                                <h2>$ 14,500,000</h2>
+                            </div>
+                        </div>
+                        <div class="stat-card glass">
+                            <div class="stat-icon warning"><i class="fa-solid fa-arrow-trend-down"></i></div>
+                            <div class="stat-data">
+                                <h3>Costos Producción</h3>
+                                <h2>$ 8,200,000</h2>
+                            </div>
+                        </div>
+                        <div class="stat-card glass">
+                            <div class="stat-icon success"><i class="fa-solid fa-arrow-trend-up"></i></div>
+                            <div class="stat-data">
+                                <h3>Rentabilidad Neta</h3>
+                                <h2>43.4%</h2>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card glass mt-2">
+                        <h3>Rentabilidad por Bodega (Top 5)</h3>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Bodega</th>
+                                    <th>OTs Completadas</th>
+                                    <th>Ingresos</th>
+                                    <th>Costos</th>
+                                    <th>Margen</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Bodega Norton</td>
+                                    <td>12</td>
+                                    <td>$4,200,000</td>
+                                    <td>$2,100,000</td>
+                                    <td><span class="badge success">50%</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Catena Zapata</td>
+                                    <td>8</td>
+                                    <td>$3,800,000</td>
+                                    <td>$2,200,000</td>
+                                    <td><span class="badge warning">42%</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- MODULE: OTs -->
+                <section id="ots" class="module">
+                    <div class="module-header">
+                        <h2>Órdenes de Trabajo</h2>
+                        <button class="btn btn-primary" id="btn-nueva-ot"><i class="fa-solid fa-plus"></i> Nueva OT</button>
+                    </div>
+
+                    <!-- Nueva OT Form (Hidden by default) -->
+                    <div class="card glass mt-2" id="form-nueva-ot" style="display: none; border: 2px solid var(--primary);">
+                        <h3>Crear Nueva Orden de Trabajo</h3>
+                        <div class="form-row">
+                            <div class="form-group half">
+                                <label>Cliente (Bodega)</label>
+                                <select class="large-input" id="new-ot-cliente">
+                                    <option value="">Seleccione un cliente...</option>
+                                    <option value="Bodega Norton">Bodega Norton</option>
+                                    <option value="Catena Zapata">Catena Zapata</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 1.5rem; padding: 1.5rem; background: rgba(0,0,0,0.2); border-radius: 8px;">
+                            <h4 style="margin-bottom: 1rem; color: var(--secondary);">Agregar Ítem a la OT</h4>
+                            <div class="form-row">
+                                <div class="form-group half">
+                                    <label>Varietal / Descripción</label>
+                                    <input type="text" class="large-input" id="new-item-varietal" placeholder="Ej. Malbec Reserva">
+                                </div>
+                                <div class="form-group half">
+                                    <label>Cantidad (Etiquetas)</label>
+                                    <input type="number" class="large-input" id="new-item-cantidad" placeholder="10000">
+                                </div>
+                            </div>
+                            <div class="form-row mt-1">
+                                <div class="form-group half">
+                                    <label>Cant. Colores a imprimir</label>
+                                    <input type="number" class="large-input" id="new-item-colores" placeholder="4">
+                                </div>
+                                <div class="form-group half">
+                                    <label>¿Lleva Barnizado?</label>
+                                    <select class="large-input" id="new-item-barniz">
+                                        <option value="SI">Sí, lleva barniz</option>
+                                        <option value="NO">No</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row mt-1">
+                                <div class="form-group half">
+                                    <label>Fecha de Entrega Requerida</label>
+                                    <input type="date" class="large-input" id="new-item-fecha">
+                                </div>
+                                <div class="form-group half">
+                                    <label>Precio x Millar</label>
+                                    <input type="number" class="large-input" id="new-item-precio" placeholder="Ej. 15.50">
+                                </div>
+                            </div>
+                            <div class="form-row mt-1">
+                                <div class="form-group half">
+                                    <label>Adjuntar Arte/Imagen (Opcional)</label>
+                                    <input type="file" class="large-input" style="padding: 0.7rem;" id="new-item-img" accept="image/*">
+                                </div>
+                            </div>
+                            <button class="btn btn-primary mt-1" id="btn-agregar-item" style="width: auto;"><i class="fa-solid fa-plus"></i> Añadir Ítem a la Lista</button>
+                        </div>
+
+                        <!-- Lista de Ítems Agregados -->
+                        <div class="mt-2" id="lista-items-container" style="display: none;">
+                            <h4 style="color: var(--success);">Ítems en esta Orden:</h4>
+                            <table class="data-table mt-1" id="tabla-items-ot">
+                                <thead>
+                                    <tr>
+                                        <th>Varietal</th>
+                                        <th>Cantidad</th>
+                                        <th>Precio</th>
+                                        <th>Colores</th>
+                                        <th>Barniz</th>
+                                        <th>Entrega</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="action-buttons mt-2">
+                            <button class="btn btn-success" id="btn-guardar-ot"><i class="fa-solid fa-save"></i> Generar OT Definitiva</button>
+                            <button class="btn btn-danger" id="btn-cancelar-ot">Cancelar</button>
+                        </div>
+                    </div>
+
+                    <div class="card glass mt-2">
+                        <table class="data-table" id="tabla-ots">
+                            <thead>
+                                <tr>
+                                    <th>OT #</th>
+                                    <th>Fecha Alta</th>
+                                    <th>Cliente</th>
+                                    <th>Detalles (Varietales)</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>1042</td>
+                                    <td>05/05/2026</td>
+                                    <td>Bodega Norton</td>
+                                    <td>Malbec Reserva, Cabernet</td>
+                                    <td><span class="badge warning">En Producción</span></td>
+                                    <td><button class="btn btn-icon"><i class="fa-solid fa-eye"></i></button></td>
+                                </tr>
+                                <tr>
+                                    <td>1044</td>
+                                    <td>08/05/2026</td>
+                                    <td>Salentein</td>
+                                    <td>Chardonnay (10k)</td>
+                                    <td><span class="badge neutral">Pendiente</span></td>
+                                    <td><button class="btn btn-icon"><i class="fa-solid fa-eye"></i></button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+                
+                <!-- MODULE: CLIENTES -->
+                <section id="clientes" class="module">
+                    <div class="module-header">
+                        <h2>Gestión de Bodegas</h2>
+                        <button class="btn btn-primary" id="btn-nuevo-cliente"><i class="fa-solid fa-plus"></i> Nueva Bodega</button>
+                    </div>
+
+                    <!-- Nuevo Cliente Form -->
+                    <div class="card glass mt-2" id="form-nuevo-cliente" style="display: none;">
+                        <h3>Registrar Nueva Bodega</h3>
+                        <div class="form-row">
+                            <div class="form-group half">
+                                <label>Razón Social</label>
+                                <input type="text" class="large-input" id="new-cli-nombre" placeholder="Ej. Bodega Chandon">
+                            </div>
+                            <div class="form-group half">
+                                <label>CUIT</label>
+                                <input type="text" class="large-input" id="new-cli-cuit" placeholder="30-XXXXXXXX-X">
+                            </div>
+                        </div>
+                        <div class="form-row mt-1">
+                            <div class="form-group half">
+                                <label>Domicilio de Entrega</label>
+                                <input type="text" class="large-input" id="new-cli-domicilio" placeholder="Ej. Ruta 82 Km 25, Luján de Cuyo">
+                            </div>
+                            <div class="form-group half">
+                                <label>¿Lleva Factura?</label>
+                                <select class="large-input" id="new-cli-factura">
+                                    <option value="SI">Sí, emite factura</option>
+                                    <option value="NO">No</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row mt-1">
+                            <div class="form-group half">
+                                <label>Email de Contacto</label>
+                                <input type="email" class="large-input" id="new-cli-email" placeholder="compras@bodega.com">
+                            </div>
+                            <div class="form-group half">
+                                <label>Teléfono</label>
+                                <input type="text" class="large-input" id="new-cli-telefono" placeholder="Ej. +54 9 261 555-5555">
+                            </div>
+                        </div>
+                        <div class="form-row mt-1">
+                            <div class="form-group half">
+                                <label>Moneda Operativa</label>
+                                <select class="large-input" id="new-cli-moneda">
+                                    <option value="Pesos">Pesos (ARS)</option>
+                                    <option value="Dólar Divisa">Dólar Divisa</option>
+                                    <option value="Dólar Billete">Dólar Billete</option>
+                                </select>
+                            </div>
+                            <div class="form-group half">
+                            </div>
+                        </div>
+                        <div class="action-buttons mt-2">
+                            <button class="btn btn-success" id="btn-guardar-cliente"><i class="fa-solid fa-save"></i> Guardar Cliente</button>
+                            <button class="btn btn-danger" id="btn-cancelar-cliente">Cancelar</button>
+                        </div>
+                    </div>
+
+                    <div class="card glass mt-2">
+                        <table class="data-table" id="tabla-clientes">
+                            <thead>
+                                <tr>
+                                    <th>Bodega</th>
+                                    <th>CUIT</th>
+                                    <th>Condición Pago</th>
+                                    <th>Saldo Pendiente</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Bodega Norton</td>
+                                    <td>30-12345678-9</td>
+                                    <td>A 30 días</td>
+                                    <td>$ 1,200,000</td>
+                                </tr>
+                                <tr>
+                                    <td>Catena Zapata</td>
+                                    <td>30-98765432-1</td>
+                                    <td>Contado</td>
+                                    <td>$ 0</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- MODULE: LOGISTICA (Placeholder) -->
+                <section id="logistica" class="module">
+                    <div class="module-header">
+                        <h2>Logística y Remitos</h2>
+                    </div>
+                    <div class="card glass mt-2">
+                        <p>Generación de remitos y control de entregas parciales para las OTs finalizadas.</p>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
