@@ -63,13 +63,16 @@ body {
 .logo {
     display: flex;
     align-items: center;
-    gap: 12px;
+    justify-content: center;
     padding: 0 2rem;
     margin-bottom: 3rem;
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--primary-hover);
-    text-shadow: 0 0 10px rgba(157, 78, 221, 0.5);
+}
+
+.logo img {
+    max-width: 100%;
+    height: auto;
+    max-height: 120px;
+    filter: drop-shadow(0 0 10px rgba(255, 158, 0, 0.3));
 }
 
 .nav-links {
