@@ -1,4 +1,47 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // --- AUTHENTICATION & RBAC STATE ---
+    const USERS = [
+        { username: 'superadmin', password: 'superadmin123', name: 'Super Admin', role: 'superadmin', allowedModules: ['dashboard', 'clientes', 'ots', 'taller', 'logistica'] },
+        { username: 'admin', password: '123', name: 'Administrador', role: 'admin', allowedModules: ['dashboard', 'clientes', 'ots', 'taller', 'logistica'] },
+        { username: 'operador', password: '123', name: 'Juan Perez', role: 'operador', allowedModules: ['taller'] }
+    ];
+
+    const loginScreen = document.getElementById('login-screen');
+    const appContainer = document.getElementById('app-container');
+    const loginForm = document.getElementById('login-form');
+    const loginError = document.getElementById('login-error');
+    const btnLogout = document.getElementById('btn-logout');
+
+    let currentUser = JSON.parse(localStorage.getItem('flexoERP_user'));
+
+    if (loginForm) {
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const u = document.getElementById('login-user').value;
+            const p = document.getElementById('login-pass').value;
+            const user = USERS.find(user => user.username === u && user.password === p);
+            
+            if (user) {
+                localStorage.setItem('flexoERP_user', JSON.stringify(user));
+                currentUser = user;
+                loginScreen.style.display = 'none';
+                appContainer.style.display = 'flex';
+                applyRBAC(currentUser);
+                loginError.style.display = 'none';
+            } else {
+                loginError.style.display = 'block';
+            }
+        });
+    }
+
+    if (btnLogout) {
+        btnLogout.addEventListener('click', () => {
+            localStorage.removeItem('flexoERP_user');
+            currentUser = null;
+            window.location.reload();
+        });
+    }
+
     // Navigation Logic
     const navItems = document.querySelectorAll('.nav-item');
     const modules = document.querySelectorAll('.module');
@@ -284,5 +327,56 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('new-cli-email').value = '';
             document.getElementById('new-cli-telefono').value = '';
         });
+    }
+
+    // --- APPLY RBAC ON LOAD ---
+    function applyRBAC(user) {
+        // Update UI
+        const roleNameEl = document.getElementById('user-role-name');
+        const avatarEl = document.getElementById('user-avatar');
+        if (roleNameEl) roleNameEl.innerText = user.name;
+        if (avatarEl) avatarEl.innerText = user.name.substring(0, 2).toUpperCase();
+        
+        const maquinistaEl = document.getElementById('maquinista-name');
+        if (maquinistaEl) {
+            maquinistaEl.innerText = user.name.toUpperCase();
+        }
+
+        // Hide/Show Navigation Items
+        const allNavItems = document.querySelectorAll('.nav-item');
+        let firstAllowedModule = null;
+
+        allNavItems.forEach(item => {
+            const targetId = item.getAttribute('data-target');
+            if (user.allowedModules.includes(targetId)) {
+                item.style.display = 'flex';
+                if (!firstAllowedModule) firstAllowedModule = item;
+            } else {
+                item.style.display = 'none';
+            }
+        });
+
+        // Hide Admin buttons for non-admins
+        const isPrivileged = user.role === 'admin' || user.role === 'superadmin';
+        if (!isPrivileged) {
+            const adminButtons = [document.getElementById('btn-nueva-ot'), document.getElementById('btn-nuevo-cliente')];
+            adminButtons.forEach(btn => {
+                if (btn) btn.classList.add('hidden-by-role');
+            });
+        }
+
+        // Click first allowed module
+        if (firstAllowedModule) {
+            firstAllowedModule.click();
+        }
+    }
+
+    if (currentUser) {
+        loginScreen.style.display = 'none';
+        appContainer.style.display = 'flex';
+        applyRBAC(currentUser);
+    } else {
+        loginScreen.style.display = 'flex';
+        appContainer.style.display = 'none';
     }
 });
