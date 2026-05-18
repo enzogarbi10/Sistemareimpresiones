@@ -544,8 +544,38 @@ label {
 .dot.red { background: var(--danger); box-shadow: 0 0 5px var(--danger); }
 .dot.green { background: #00f5d4; box-shadow: 0 0 5px #00f5d4; }
 .time-sub { display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; }
-.time-values { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; margin-top: 6px; }
-.val-box { background: rgba(0,0,0,0.3); text-align: center; padding: 4px 0; font-size: 0.9rem; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05); }
+.time-values { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-top: 6px; }
+.val-box { background: rgba(0,0,0,0.3); text-align: center; padding: 6px 4px; font-size: 0.85rem; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05); font-family: monospace; font-weight: 600; color: #00f5d4; }
+
+/* Semáforo */
+.impresion-controls { display: flex; align-items: center; gap: 1.2rem; justify-content: center; }
+.semaforo { display: flex; flex-direction: column; gap: 6px; background: rgba(0,0,0,0.5); padding: 8px; border-radius: 8px; border: 2px solid rgba(255,255,255,0.1); }
+.luz { width: 22px; height: 22px; border-radius: 50%; opacity: 0.15; transition: all 0.4s ease; }
+.luz.activa { opacity: 1; }
+.luz-roja   { background: #ff4d6d; }
+.luz-roja.activa   { box-shadow: 0 0 12px 4px #ff4d6d; }
+.luz-amarilla { background: #f4a261; }
+.luz-amarilla.activa { box-shadow: 0 0 12px 4px #f4a261; }
+.luz-verde  { background: #00f5d4; }
+.luz-verde.activa  { box-shadow: 0 0 12px 4px #00f5d4; }
+.impresion-btns { display: flex; flex-direction: column; gap: 6px; }
+
+/* btn-warning */
+.btn-warning { background: linear-gradient(135deg, #f4a261, #e76f51); color: white; }
+
+/* Modal overlay */
+.modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(0,0,0,0.75); backdrop-filter: blur(4px);
+    display: flex; justify-content: center; align-items: center; z-index: 9998;
+}
+.modal-box {
+    width: 480px; max-width: 95vw; padding: 2.5rem; border-radius: 16px;
+    border: 1px solid rgba(157,78,221,0.4); background: rgba(20,15,45,0.97);
+    animation: fadeIn 0.25s ease;
+}
+.modal-box h3 { font-size: 1.4rem; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 10px; }
+.action-buttons { display: flex; gap: 0.8rem; flex-wrap: wrap; margin-top: 0; }
 
 /* Tables Container */
 .terminal-table-container { display: flex; flex-direction: column; overflow: hidden; min-height: 200px;}
@@ -651,4 +681,68 @@ label {
 
 .hidden-by-role {
     display: none !important;
+}
+
+/* Custom terminal row & status indicators */
+.clickable-row {
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+.clickable-row:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+.active-row-item {
+    background: linear-gradient(90deg, rgba(157, 78, 221, 0.25) 0%, rgba(0, 180, 216, 0.08) 100%) !important;
+    border-left: 4px solid var(--primary) !important;
+}
+.status-badge-dot {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+    font-size: 0.75rem;
+    padding: 3px 8px;
+    border-radius: 12px;
+    text-transform: uppercase;
+}
+.indicator-pendiente {
+    background: rgba(255, 255, 255, 0.08);
+    color: #ced4da;
+}
+.indicator-pendiente::before {
+    content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #ced4da;
+}
+.indicator-parcial {
+    background: rgba(244, 162, 97, 0.15);
+    color: #f4a261;
+}
+.indicator-parcial::before {
+    content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #f4a261; box-shadow: 0 0 6px #f4a261;
+}
+.indicator-finalizado {
+    background: rgba(0, 245, 212, 0.15);
+    color: #00f5d4;
+}
+.indicator-finalizado::before {
+    content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #00f5d4; box-shadow: 0 0 6px #00f5d4;
+}
+.arte-preview-img {
+    max-width: 100%;
+    max-height: 140px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+    transition: transform 0.3s ease;
+}
+.arte-preview-img:hover {
+    transform: scale(1.05);
+}
+
+#btn-top-usuarios:hover {
+    transform: scale(1.15) rotate(45deg);
+    color: #00f5d4 !important;
+}
+
+#btn-top-usuarios:active {
+    transform: scale(0.95);
 }

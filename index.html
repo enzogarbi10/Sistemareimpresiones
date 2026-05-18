@@ -14,9 +14,9 @@
     <div id="login-screen" class="login-overlay">
         <div class="login-box glass">
             <div class="logo text-center">
-                <img src="logo.jpg" alt="MLF Soluciones Gráficas" style="max-width: 150px; border-radius: 8px; margin-bottom: 20px;">
-                <h2 style="color: var(--primary);">FlexoERP</h2>
-                <p style="color: #adb5bd; margin-bottom: 15px;">Ingreso al Sistema</p>
+                <img src="logo.jpg" alt="MLF Soluciones Gráficas" style="max-width:150px;border-radius:8px;margin-bottom:20px;">
+                <h2 style="color:var(--primary);">FlexoERP</h2>
+                <p style="color:#adb5bd;margin-bottom:15px;">Ingreso al Sistema</p>
             </div>
             <form id="login-form">
                 <div class="form-group">
@@ -27,39 +27,24 @@
                     <label>Contraseña</label>
                     <input type="password" id="login-pass" class="large-input" required>
                 </div>
-                <div id="login-error" class="text-danger mt-1" style="display:none; text-align: center; font-size: 14px; color: var(--danger);">Credenciales incorrectas</div>
-                <button type="submit" class="btn btn-primary mt-2" style="width: 100%;"><i class="fa-solid fa-right-to-bracket"></i> Ingresar</button>
+                <div id="login-error" class="text-danger mt-1" style="display:none;text-align:center;font-size:14px;color:var(--danger);">Credenciales incorrectas</div>
+                <button type="submit" class="btn btn-primary mt-2" style="width:100%;"><i class="fa-solid fa-right-to-bracket"></i> Ingresar</button>
             </form>
         </div>
     </div>
 
-    <div class="app-container" id="app-container" style="display: none;">
+    <div class="app-container" id="app-container" style="display:none;">
         <!-- Sidebar -->
         <nav class="sidebar">
             <div class="logo">
                 <img src="logo.jpg" alt="MLF Soluciones Gráficas">
             </div>
             <ul class="nav-links">
-                <li data-target="dashboard" class="nav-item">
-                    <i class="fa-solid fa-chart-pie"></i>
-                    <span>Financiero</span>
-                </li>
-                <li data-target="clientes" class="nav-item">
-                    <i class="fa-solid fa-users"></i>
-                    <span>Bodegas & Clientes</span>
-                </li>
-                <li data-target="ots" class="nav-item">
-                    <i class="fa-solid fa-file-invoice"></i>
-                    <span>Órdenes (OT)</span>
-                </li>
-                <li data-target="taller" class="nav-item active">
-                    <i class="fa-solid fa-industry"></i>
-                    <span>Taller / Producción</span>
-                </li>
-                <li data-target="logistica" class="nav-item">
-                    <i class="fa-solid fa-truck-fast"></i>
-                    <span>Logística</span>
-                </li>
+                <li data-target="dashboard" class="nav-item"><i class="fa-solid fa-chart-pie"></i><span>Financiero</span></li>
+                <li data-target="clientes" class="nav-item"><i class="fa-solid fa-users"></i><span>Bodegas &amp; Clientes</span></li>
+                <li data-target="ots" class="nav-item"><i class="fa-solid fa-file-invoice"></i><span>Órdenes (OT)</span></li>
+                <li data-target="taller" class="nav-item active"><i class="fa-solid fa-industry"></i><span>Taller / Producción</span></li>
+                <li data-target="logistica" class="nav-item"><i class="fa-solid fa-truck-fast"></i><span>Logística</span></li>
             </ul>
         </nav>
 
@@ -71,183 +56,107 @@
                     <input type="text" placeholder="Buscar OT, Cliente o Remito...">
                 </div>
                 <div class="user-profile">
+                    <button class="btn-icon-small" id="btn-top-usuarios" style="display:none;margin-right:15px;color:var(--secondary);background:transparent;border:none;font-size:1.15rem;cursor:pointer;transition:transform 0.2s ease;" title="Gestión de Usuarios"><i class="fa-solid fa-users-gear"></i></button>
                     <div class="avatar" id="user-avatar">OM</div>
                     <span id="user-role-name">Operador Máquina</span>
-                    <button class="btn-icon-small" id="btn-logout" title="Cerrar Sesión" style="margin-left: 10px; color: var(--danger);"><i class="fa-solid fa-power-off"></i></button>
+                    <button class="btn-icon-small" id="btn-logout" title="Cerrar Sesión" style="margin-left:10px;color:var(--danger);"><i class="fa-solid fa-power-off"></i></button>
                 </div>
             </header>
 
             <div class="content-area">
-                
-                <!-- MODULE: TALLER / PRODUCCION (Default & Prioritized) -->
+
+                <!-- ====== MODULE: TALLER ====== -->
                 <section id="taller" class="module active">
-                    <!-- Top Info Bar of the Terminal -->
                     <div class="taller-top-info glass">
                         <div class="info-group">
                             <span class="label">Máquina:</span>
-                            <span class="value">SERIGRAFICA 2UV</span>
+                            <span class="value">SERIGRÁFICA 2UV</span>
                         </div>
                         <div class="info-group">
                             <span class="label">Maquinista:</span>
                             <span class="value" id="maquinista-name">VEGA</span>
                         </div>
                         <div class="info-group">
-                            <span class="value date-time">15/05/2026 18:46:11</span>
-                            <span class="label">N° ODT:</span>
-                            <input type="text" class="small-input" placeholder="0">
-                            <button class="btn btn-primary small-btn">Buscar</button>
+                            <span class="value date-time" id="reloj-terminal">--/--/---- --:--:--</span>
                         </div>
                     </div>
 
                     <div class="taller-terminal-grid">
-                        <!-- Left Column: Controls & Data -->
+                        <!-- Left Column -->
                         <div class="terminal-left-col">
-                            
-                            <!-- Top Status Row -->
                             <div class="status-row">
+                                <!-- OT Selector -->
                                 <div class="status-panel glass yellow-accent">
                                     <h3>ORDEN TRABAJO <span class="key-hint">F5</span></h3>
                                     <div class="panel-content text-center">
-                                        <select class="terminal-select">
-                                            <option>38795 - DOMAINE BOUSQUET</option>
+                                        <select class="terminal-select" id="ot-selector-taller">
+                                            <option value="">-- Sin OT seleccionada --</option>
                                         </select>
                                     </div>
                                 </div>
-                                
+
+                                <!-- Semáforo + Controles -->
                                 <div class="status-panel glass blue-accent">
-                                    <h3><i class="fa-solid fa-rotate-left"></i> IMPRESIÓN <span class="key-hint">F8</span></h3>
-                                    <div class="panel-content text-center">
-                                        <button class="btn btn-light large-terminal-btn">Finalizar</button>
+                                    <h3><i class="fa-solid fa-circle-dot"></i> IMPRESIÓN <span class="key-hint">F8</span></h3>
+                                    <div class="panel-content impresion-controls">
+                                        <div class="semaforo" id="semaforo">
+                                            <div class="luz luz-roja activa" id="luz-roja"></div>
+                                            <div class="luz luz-amarilla" id="luz-amarilla"></div>
+                                            <div class="luz luz-verde" id="luz-verde"></div>
+                                        </div>
+                                        <div class="impresion-btns">
+                                            <button class="btn btn-success small-btn" id="btn-iniciar-impresion" disabled><i class="fa-solid fa-play"></i> Iniciar</button>
+                                            <button class="btn btn-danger small-btn" id="btn-finalizar-impresion" disabled><i class="fa-solid fa-flag-checkered"></i> Finalizar</button>
+                                        </div>
                                     </div>
                                 </div>
 
+                                <!-- Contadores de Tiempo -->
                                 <div class="status-panel glass times-panel">
                                     <div class="time-header">
                                         <div class="th-item"><span class="dot red"></span> PREPARACIÓN</div>
                                         <div class="th-item"><span class="dot green"></span> PRODUCCIÓN</div>
-                                        <div class="th-item"><span class="dot green"></span> IMPRODUCTIVAS</div>
-                                    </div>
-                                    <div class="time-sub">
-                                        <div>Planificadas &nbsp; Reales</div>
-                                        <div>Planificadas &nbsp; Reales</div>
-                                        <div>Planificadas &nbsp; Reales</div>
+                                        <div class="th-item"><span class="dot" style="background:#f4a261;box-shadow:0 0 6px #f4a261;"></span> IMPRODUCTIVAS</div>
                                     </div>
                                     <div class="time-values">
-                                        <div class="val-box">1.00</div><div class="val-box">8.00</div>
-                                        <div class="val-box">63.16</div><div class="val-box">61.77</div>
-                                        <div class="val-box"></div><div class="val-box">0.07</div>
+                                        <div class="val-box" id="contador-prep">00:00:00</div>
+                                        <div class="val-box" id="contador-prod">00:00:00</div>
+                                        <div class="val-box" id="contador-improd">00:00:00</div>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Detail Table -->
+                            <!-- Detalle OT -->
                             <div class="terminal-table-container glass mt-1">
                                 <div class="table-header-blue">DETALLE DE LA ORDEN DE TRABAJO</div>
-                                <div class="table-scroll">
-                                    <table class="terminal-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Cantidad</th>
-                                                <th>Elemento</th>
-                                                <th>Variedad</th>
-                                                <th>Importador</th>
-                                                <th>Año</th>
-                                                <th>Grado</th>
-                                                <th>Lote</th>
-                                                <th>Mt.Lin</th>
-                                                <th><i class="fa-solid fa-check"></i></th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr>
-                                                <td class="num-col">204,000</td>
-                                                <td>ETIQUETA</td>
-                                                <td>BASE CON IG...</td>
-                                                <td></td>
-                                                <td>-</td>
-                                                <td>-</td>
-                                                <td></td>
-                                                <td class="num-col">14,008</td>
-                                                <td><i class="fa-solid fa-check text-success"></i></td>
-                                            </tr>
-                                            <tr class="active-row">
-                                                <td class="num-col">117,000</td>
-                                                <td>ETIQUETA</td>
-                                                <td>CABER SAUV...</td>
-                                                <td></td>
-                                                <td>2025</td>
-                                                <td>-</td>
-                                                <td></td>
-                                                <td class="num-col">8,048</td>
-                                                <td><i class="fa-solid fa-check text-success"></i></td>
-                                            </tr>
-                                            <tr>
-                                                <td class="num-col">187,000</td>
-                                                <td>ETIQUETA</td>
-                                                <td>MALBEC...</td>
-                                                <td></td>
-                                                <td>2025</td>
-                                                <td>-</td>
-                                                <td></td>
-                                                <td class="num-col">12,841</td>
-                                                <td><i class="fa-solid fa-check text-success"></i></td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
+                                <div class="table-scroll" id="detalle-ot-container">
+                                    <p style="color:#adb5bd;padding:1.5rem;text-align:center;font-size:13px;">Seleccione una OT del selector para ver el detalle</p>
                                 </div>
                                 <div class="table-footer">
-                                    <div class="lote-input">Lote: <input type="text" class="small-input"></div>
-                                    <div class="time-elapsed">Tiempo Transcurrido <span class="time-badge">06:39:14</span></div>
+                                    <div class="lote-input">Lote: <input type="text" class="small-input" id="input-lote-taller"></div>
+                                    <div class="time-elapsed">Tiempo Total <span class="time-badge" id="tiempo-total-badge">00:00:00</span></div>
                                 </div>
                             </div>
 
-                            <!-- Bottom Actions Row Removed as requested -->
-
-                            <!-- Events Table -->
+                            <!-- Eventos -->
                             <div class="terminal-table-container glass mt-1">
-                                <div class="table-header-blue">EVENTOS</div>
-                                <div class="table-scroll" style="max-height: 120px;">
+                                <div class="table-header-blue" style="display:flex;justify-content:space-between;align-items:center;">
+                                    EVENTOS
+                                    <button class="btn btn-warning small-btn" id="btn-improductiva" disabled style="font-size:11px;padding:4px 12px;">
+                                        <i class="fa-solid fa-triangle-exclamation"></i> Registrar Improductiva
+                                    </button>
+                                </div>
+                                <div class="table-scroll" style="max-height:130px;">
                                     <table class="terminal-table events-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Fecha</th>
-                                                <th>Hora</th>
-                                                <th>Estado</th>
-                                                <th>Motivo</th>
-                                                <th>Maquinista</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr>
-                                                <td>15/05/26</td>
-                                                <td>18:07</td>
-                                                <td>INICIO IMPRESION</td>
-                                                <td></td>
-                                                <td>VEGA</td>
-                                            </tr>
-                                            <tr class="active-row">
-                                                <td>15/05/26</td>
-                                                <td>18:07</td>
-                                                <td>INICIO OT</td>
-                                                <td></td>
-                                                <td>VEGA</td>
-                                            </tr>
-                                            <tr>
-                                                <td>15/05/26</td>
-                                                <td>18:00</td>
-                                                <td>FINAL OT</td>
-                                                <td></td>
-                                                <td>AUTOMATICO</td>
-                                            </tr>
-                                        </tbody>
+                                        <thead><tr><th>Fecha</th><th>Hora</th><th>Estado</th><th>Motivo</th><th>Maquinista</th></tr></thead>
+                                        <tbody id="tbody-eventos"></tbody>
                                     </table>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Right Column: Image and Specs -->
+                        <!-- Right Column -->
                         <div class="terminal-right-col">
-                            <!-- Gauge and Top Icons -->
                             <div class="right-top-panel glass">
                                 <div class="icons-grid">
                                     <div class="icon-item">
@@ -267,57 +176,38 @@
                                         <span>Observaciones</span>
                                     </div>
                                 </div>
-                                <div class="gauge-container">
-                                    <div class="circular-gauge">
-                                        <span class="gauge-value">1100</span>
-                                    </div>
+                                <div id="ot-resumen-terminal" style="padding:1rem;border-top:1px solid rgba(255,255,255,0.08);margin-top:0.5rem;">
+                                    <p style="color:#adb5bd;text-align:center;font-size:12px;margin:0;">Sin OT activa</p>
                                 </div>
                             </div>
 
-                            <!-- Ficha Técnica -->
-                            <div class="ficha-tecnica glass mt-1">
-                                <div class="ficha-title-bar">DOMAINE BOUSQUET S.A.</div>
-                                <div class="ficha-content">
-                                    <div class="ficha-meta">
-                                        <img src="logo.jpg" alt="Melfa" class="ficha-logo">
-                                        <div class="ficha-info">
-                                            <h4>FICHA TECNICA <span class="fw-normal float-right">Cliente: Jean Bousquet</span></h4>
-                                            <div class="ficha-subtitle">OT 38795 <span class="fw-normal">ETIQ BOUSQUET ORGANIC CAB</span></div>
-                                        </div>
-                                    </div>
-                                    <div class="ficha-visual mt-1">
-                                        <div class="label-mockup">
-                                            <div class="mockup-logo">BOUSQUET</div>
-                                            <div class="mockup-text">CABERNET SAUVIGNON 2025</div>
-                                            <div class="mockup-text small">MADE WITH ORGANIC GRAPES</div>
-                                        </div>
-                                    </div>
-                                    <div class="ficha-footer mt-1">
-                                        <div class="footer-row">
-                                            <span>Papel: CUVEE / CUVEE</span>
-                                            <span>Medidas: 110 x 115mm</span>
-                                            <span>Barniz: MATE</span>
-                                        </div>
-                                        <div class="colors-row mt-1">
-                                            <div class="color-item"><span class="color-swatch bg-black"></span> PANT BLACK</div>
-                                            <div class="color-item"><span class="color-swatch bg-cyan"></span> CYAN</div>
-                                            <div class="color-item"><span class="color-swatch bg-magenta"></span> MAGENTA</div>
-                                            <div class="color-item"><span class="color-swatch bg-yellow"></span> YELLOW</div>
-                                            <div class="color-item"><span class="color-swatch bg-gold"></span> 871 C</div>
-                                        </div>
-                                    </div>
+                            <!-- Log Improductivas -->
+                            <div class="ficha-tecnica glass mt-1" style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+                                <div class="ficha-title-bar"><i class="fa-solid fa-clock-rotate-left"></i> REGISTRO IMPRODUCTIVAS</div>
+                                <div class="table-scroll" style="max-height: 120px;">
+                                    <table class="terminal-table">
+                                        <thead><tr><th>Hora</th><th>Motivo</th><th>Duración</th></tr></thead>
+                                        <tbody id="tbody-improd"></tbody>
+                                    </table>
                                 </div>
-                                <div class="ficha-actions">
-                                    <button class="btn btn-outline-light btn-sm">Ampliar Imagen</button>
-                                    <button class="btn btn-outline-light btn-sm">FT General</button>
-                                    <button class="btn btn-outline-light btn-sm">FT Stamping/Relieve</button>
+                                <div style="padding:0.4rem 0.8rem;text-align:right;font-size:12px;color:#adb5bd;border-top:1px solid rgba(255,255,255,0.08);">
+                                    Total: <span id="total-improd-display" style="color:#f4a261;font-weight:700;">00:00:00</span>
+                                </div>
+                            </div>
+
+                            <!-- Arte y Detalles del Ítem Activo -->
+                            <div class="ficha-tecnica glass mt-1" style="flex: 1.3; display: flex; flex-direction: column; overflow: hidden;" id="panel-arte-item">
+                                <div class="ficha-title-bar" style="color: var(--secondary);"><i class="fa-solid fa-file-image"></i> ARTE &amp; DETALLES DEL ÍTEM</div>
+                                <div class="table-scroll" id="arte-item-container" style="padding: 1rem; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 0.8rem;">
+                                    <i class="fa-solid fa-box-open" style="font-size: 2.5rem; color: rgba(255,255,255,0.15); margin-bottom: 0.5rem;"></i>
+                                    <p style="color:#adb5bd;font-size:13px;margin:0;max-width:280px;">Seleccione un ítem del detalle de la OT a la izquierda para cargar el arte e iniciar la impresión</p>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </section>
 
-                <!-- MODULE: DASHBOARD FINANCIERO -->
+                <!-- ====== MODULE: DASHBOARD ====== -->
                 <section id="dashboard" class="module">
                     <div class="module-header">
                         <h2>Dashboard Financiero</h2>
@@ -326,68 +216,37 @@
                     <div class="stats-grid">
                         <div class="stat-card glass">
                             <div class="stat-icon"><i class="fa-solid fa-sack-dollar"></i></div>
-                            <div class="stat-data">
-                                <h3>Ingresos (Mes)</h3>
-                                <h2>$ 14,500,000</h2>
-                            </div>
+                            <div class="stat-data"><h3>Ingresos (Mes)</h3><h2>$ 14,500,000</h2></div>
                         </div>
                         <div class="stat-card glass">
                             <div class="stat-icon warning"><i class="fa-solid fa-arrow-trend-down"></i></div>
-                            <div class="stat-data">
-                                <h3>Costos Producción</h3>
-                                <h2>$ 8,200,000</h2>
-                            </div>
+                            <div class="stat-data"><h3>Costos Producción</h3><h2>$ 8,200,000</h2></div>
                         </div>
                         <div class="stat-card glass">
                             <div class="stat-icon success"><i class="fa-solid fa-arrow-trend-up"></i></div>
-                            <div class="stat-data">
-                                <h3>Rentabilidad Neta</h3>
-                                <h2>43.4%</h2>
-                            </div>
+                            <div class="stat-data"><h3>Rentabilidad Neta</h3><h2>43.4%</h2></div>
                         </div>
                     </div>
-                    
                     <div class="card glass mt-2">
                         <h3>Rentabilidad por Bodega (Top 5)</h3>
                         <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>Bodega</th>
-                                    <th>OTs Completadas</th>
-                                    <th>Ingresos</th>
-                                    <th>Costos</th>
-                                    <th>Margen</th>
-                                </tr>
-                            </thead>
+                            <thead><tr><th>Bodega</th><th>OTs Completadas</th><th>Ingresos</th><th>Costos</th><th>Margen</th></tr></thead>
                             <tbody>
-                                <tr>
-                                    <td>Bodega Norton</td>
-                                    <td>12</td>
-                                    <td>$4,200,000</td>
-                                    <td>$2,100,000</td>
-                                    <td><span class="badge success">50%</span></td>
-                                </tr>
-                                <tr>
-                                    <td>Catena Zapata</td>
-                                    <td>8</td>
-                                    <td>$3,800,000</td>
-                                    <td>$2,200,000</td>
-                                    <td><span class="badge warning">42%</span></td>
-                                </tr>
+                                <tr><td>Bodega Norton</td><td>12</td><td>$4,200,000</td><td>$2,100,000</td><td><span class="badge success">50%</span></td></tr>
+                                <tr><td>Catena Zapata</td><td>8</td><td>$3,800,000</td><td>$2,200,000</td><td><span class="badge warning">42%</span></td></tr>
                             </tbody>
                         </table>
                     </div>
                 </section>
 
-                <!-- MODULE: OTs -->
+                <!-- ====== MODULE: OTs ====== -->
                 <section id="ots" class="module">
                     <div class="module-header">
                         <h2>Órdenes de Trabajo</h2>
                         <button class="btn btn-primary" id="btn-nueva-ot"><i class="fa-solid fa-plus"></i> Nueva OT</button>
                     </div>
 
-                    <!-- Nueva OT Form (Hidden by default) -->
-                    <div class="card glass mt-2" id="form-nueva-ot" style="display: none; border: 2px solid var(--primary);">
+                    <div class="card glass mt-2" id="form-nueva-ot" style="display:none;border:2px solid var(--primary);">
                         <h3>Crear Nueva Orden de Trabajo</h3>
                         <div class="form-row">
                             <div class="form-group half">
@@ -399,9 +258,9 @@
                                 </select>
                             </div>
                         </div>
-                        
-                        <div style="margin-top: 1.5rem; padding: 1.5rem; background: rgba(0,0,0,0.2); border-radius: 8px;">
-                            <h4 style="margin-bottom: 1rem; color: var(--secondary);">Agregar Ítem a la OT</h4>
+
+                        <div style="margin-top:1.5rem;padding:1.5rem;background:rgba(0,0,0,0.2);border-radius:8px;">
+                            <h4 style="margin-bottom:1rem;color:var(--secondary);">Agregar Ítem a la OT</h4>
                             <div class="form-row">
                                 <div class="form-group half">
                                     <label>Varietal / Descripción</label>
@@ -438,28 +297,17 @@
                             <div class="form-row mt-1">
                                 <div class="form-group half">
                                     <label>Adjuntar Arte/Imagen (Opcional)</label>
-                                    <input type="file" class="large-input" style="padding: 0.7rem;" id="new-item-img" accept="image/*">
+                                    <input type="file" class="large-input" style="padding:0.7rem;" id="new-item-img" accept="image/*">
                                 </div>
                             </div>
-                            <button class="btn btn-primary mt-1" id="btn-agregar-item" style="width: auto;"><i class="fa-solid fa-plus"></i> Añadir Ítem a la Lista</button>
+                            <button class="btn btn-primary mt-1" id="btn-agregar-item" style="width:auto;"><i class="fa-solid fa-plus"></i> Añadir Ítem</button>
                         </div>
 
-                        <!-- Lista de Ítems Agregados -->
-                        <div class="mt-2" id="lista-items-container" style="display: none;">
-                            <h4 style="color: var(--success);">Ítems en esta Orden:</h4>
+                        <div class="mt-2" id="lista-items-container" style="display:none;">
+                            <h4 style="color:var(--success);">Ítems en esta Orden:</h4>
                             <table class="data-table mt-1" id="tabla-items-ot">
-                                <thead>
-                                    <tr>
-                                        <th>Varietal</th>
-                                        <th>Cantidad</th>
-                                        <th>Precio</th>
-                                        <th>Colores</th>
-                                        <th>Barniz</th>
-                                        <th>Entrega</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                </tbody>
+                                <thead><tr><th>Varietal</th><th>Cantidad</th><th>Precio</th><th>Colores</th><th>Barniz</th><th>Entrega</th><th>Acciones</th></tr></thead>
+                                <tbody></tbody>
                             </table>
                         </div>
 
@@ -471,30 +319,15 @@
 
                     <div class="card glass mt-2">
                         <table class="data-table" id="tabla-ots">
-                            <thead>
-                                <tr>
-                                    <th>OT #</th>
-                                    <th>Fecha Alta</th>
-                                    <th>Cliente</th>
-                                    <th>Detalles (Varietales)</th>
-                                    <th>Estado</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
+                            <thead><tr><th>OT #</th><th>Fecha Alta</th><th>Cliente</th><th>Detalles</th><th>Estado</th><th>Acciones</th></tr></thead>
                             <tbody>
                                 <tr>
-                                    <td>1042</td>
-                                    <td>05/05/2026</td>
-                                    <td>Bodega Norton</td>
-                                    <td>Malbec Reserva, Cabernet</td>
+                                    <td>1042</td><td>05/05/2026</td><td>Bodega Norton</td><td>Malbec Reserva, Cabernet</td>
                                     <td><span class="badge warning">En Producción</span></td>
                                     <td><button class="btn btn-icon"><i class="fa-solid fa-eye"></i></button></td>
                                 </tr>
                                 <tr>
-                                    <td>1044</td>
-                                    <td>08/05/2026</td>
-                                    <td>Salentein</td>
-                                    <td>Chardonnay (10k)</td>
+                                    <td>1044</td><td>08/05/2026</td><td>Salentein</td><td>Chardonnay (10k)</td>
                                     <td><span class="badge neutral">Pendiente</span></td>
                                     <td><button class="btn btn-icon"><i class="fa-solid fa-eye"></i></button></td>
                                 </tr>
@@ -502,61 +335,30 @@
                         </table>
                     </div>
                 </section>
-                
-                <!-- MODULE: CLIENTES -->
+
+                <!-- ====== MODULE: CLIENTES ====== -->
                 <section id="clientes" class="module">
                     <div class="module-header">
                         <h2>Gestión de Bodegas</h2>
                         <button class="btn btn-primary" id="btn-nuevo-cliente"><i class="fa-solid fa-plus"></i> Nueva Bodega</button>
                     </div>
 
-                    <!-- Nuevo Cliente Form -->
-                    <div class="card glass mt-2" id="form-nuevo-cliente" style="display: none;">
+                    <div class="card glass mt-2" id="form-nuevo-cliente" style="display:none;">
                         <h3>Registrar Nueva Bodega</h3>
                         <div class="form-row">
-                            <div class="form-group half">
-                                <label>Razón Social</label>
-                                <input type="text" class="large-input" id="new-cli-nombre" placeholder="Ej. Bodega Chandon">
-                            </div>
-                            <div class="form-group half">
-                                <label>CUIT</label>
-                                <input type="text" class="large-input" id="new-cli-cuit" placeholder="30-XXXXXXXX-X">
-                            </div>
+                            <div class="form-group half"><label>Razón Social</label><input type="text" class="large-input" id="new-cli-nombre" placeholder="Ej. Bodega Chandon"></div>
+                            <div class="form-group half"><label>CUIT</label><input type="text" class="large-input" id="new-cli-cuit" placeholder="30-XXXXXXXX-X"></div>
                         </div>
                         <div class="form-row mt-1">
-                            <div class="form-group half">
-                                <label>Domicilio de Entrega</label>
-                                <input type="text" class="large-input" id="new-cli-domicilio" placeholder="Ej. Ruta 82 Km 25, Luján de Cuyo">
-                            </div>
-                            <div class="form-group half">
-                                <label>¿Lleva Factura?</label>
-                                <select class="large-input" id="new-cli-factura">
-                                    <option value="SI">Sí, emite factura</option>
-                                    <option value="NO">No</option>
-                                </select>
-                            </div>
+                            <div class="form-group half"><label>Domicilio de Entrega</label><input type="text" class="large-input" id="new-cli-domicilio" placeholder="Ej. Ruta 82 Km 25"></div>
+                            <div class="form-group half"><label>¿Lleva Factura?</label><select class="large-input" id="new-cli-factura"><option value="SI">Sí, emite factura</option><option value="NO">No</option></select></div>
                         </div>
                         <div class="form-row mt-1">
-                            <div class="form-group half">
-                                <label>Email de Contacto</label>
-                                <input type="email" class="large-input" id="new-cli-email" placeholder="compras@bodega.com">
-                            </div>
-                            <div class="form-group half">
-                                <label>Teléfono</label>
-                                <input type="text" class="large-input" id="new-cli-telefono" placeholder="Ej. +54 9 261 555-5555">
-                            </div>
+                            <div class="form-group half"><label>Email de Contacto</label><input type="email" class="large-input" id="new-cli-email" placeholder="compras@bodega.com"></div>
+                            <div class="form-group half"><label>Teléfono</label><input type="text" class="large-input" id="new-cli-telefono" placeholder="+54 9 261 555-5555"></div>
                         </div>
                         <div class="form-row mt-1">
-                            <div class="form-group half">
-                                <label>Moneda Operativa</label>
-                                <select class="large-input" id="new-cli-moneda">
-                                    <option value="Pesos">Pesos (ARS)</option>
-                                    <option value="Dólar Divisa">Dólar Divisa</option>
-                                    <option value="Dólar Billete">Dólar Billete</option>
-                                </select>
-                            </div>
-                            <div class="form-group half">
-                            </div>
+                            <div class="form-group half"><label>Moneda Operativa</label><select class="large-input" id="new-cli-moneda"><option value="Pesos">Pesos (ARS)</option><option value="Dólar Divisa">Dólar Divisa</option><option value="Dólar Billete">Dólar Billete</option></select></div>
                         </div>
                         <div class="action-buttons mt-2">
                             <button class="btn btn-success" id="btn-guardar-cliente"><i class="fa-solid fa-save"></i> Guardar Cliente</button>
@@ -566,45 +368,157 @@
 
                     <div class="card glass mt-2">
                         <table class="data-table" id="tabla-clientes">
-                            <thead>
-                                <tr>
-                                    <th>Bodega</th>
-                                    <th>CUIT</th>
-                                    <th>Condición Pago</th>
-                                    <th>Saldo Pendiente</th>
-                                </tr>
-                            </thead>
+                            <thead><tr><th>Bodega</th><th>CUIT</th><th>Condición Pago</th><th>Saldo Pendiente</th></tr></thead>
                             <tbody>
-                                <tr>
-                                    <td>Bodega Norton</td>
-                                    <td>30-12345678-9</td>
-                                    <td>A 30 días</td>
-                                    <td>$ 1,200,000</td>
-                                </tr>
-                                <tr>
-                                    <td>Catena Zapata</td>
-                                    <td>30-98765432-1</td>
-                                    <td>Contado</td>
-                                    <td>$ 0</td>
-                                </tr>
+                                <tr><td>Bodega Norton</td><td>30-12345678-9</td><td>A 30 días</td><td>$ 1,200,000</td></tr>
+                                <tr><td>Catena Zapata</td><td>30-98765432-1</td><td>Contado</td><td>$ 0</td></tr>
                             </tbody>
                         </table>
                     </div>
                 </section>
 
-                <!-- MODULE: LOGISTICA (Placeholder) -->
+                <!-- ====== MODULE: LOGÍSTICA ====== -->
                 <section id="logistica" class="module">
                     <div class="module-header">
                         <h2>Logística y Remitos</h2>
                     </div>
                     <div class="card glass mt-2">
-                        <p>Generación de remitos y control de entregas parciales para las OTs finalizadas.</p>
+                        <h3><i class="fa-solid fa-boxes-stacked" style="color:var(--primary);"></i> Órdenes Listas para Despacho</h3>
+                        <table class="data-table mt-1" id="tabla-logistica">
+                            <thead><tr><th>OT #</th><th>Cliente</th><th>Fecha Alta</th><th>Finalizada</th><th>Tipo</th><th>T. Producción</th><th>T. Improductivas</th><th>Acciones</th></tr></thead>
+                            <tbody id="tbody-logistica">
+                                <tr><td colspan="8" style="text-align:center;color:#adb5bd;padding:2rem;">No hay órdenes finalizadas aún.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- ====== MODULE: USUARIOS ====== -->
+                <section id="usuarios" class="module">
+                    <div class="module-header">
+                        <h2>Gestión de Usuarios</h2>
+                        <button class="btn btn-primary" id="btn-nuevo-usuario"><i class="fa-solid fa-user-plus"></i> Crear Nuevo Usuario</button>
+                    </div>
+
+                    <div class="card glass mt-2" id="form-nuevo-usuario" style="display:none;border:2px solid var(--secondary);">
+                        <h3 id="form-usuario-title">Registrar Nuevo Usuario</h3>
+                        <div class="form-row">
+                            <div class="form-group half">
+                                <label>Nombre Completo</label>
+                                <input type="text" class="large-input" id="new-usr-nombre" placeholder="Ej. Juan Pérez">
+                            </div>
+                            <div class="form-group half">
+                                <label>Nombre de Usuario (Login)</label>
+                                <input type="text" class="large-input" id="new-usr-username" placeholder="Ej. jperez">
+                            </div>
+                        </div>
+                        <div class="form-row mt-1">
+                            <div class="form-group half">
+                                <label>Contraseña</label>
+                                <input type="password" class="large-input" id="new-usr-password" placeholder="Min. 4 caracteres">
+                            </div>
+                            <div class="form-group half">
+                                <label>Rol de Usuario</label>
+                                <select class="large-input" id="new-usr-role">
+                                    <option value="operador">Operador (Solo Taller)</option>
+                                    <option value="admin">Administrador (Acceso General)</option>
+                                    <option value="superadmin">Super Administrador (Acceso Completo)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mt-2" style="background:rgba(0,0,0,0.25);padding:1.2rem;border-radius:8px;border:1px solid rgba(255,255,255,0.05);">
+                            <h4 style="color:var(--secondary);margin-bottom:0.8rem;"><i class="fa-solid fa-shield-halved"></i> Permisos de Módulos</h4>
+                            <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(200px, 1fr));gap:0.8rem;">
+                                <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;color:#fff;font-size:13px;">
+                                    <input type="checkbox" value="dashboard" class="permiso-checkbox" checked> Financiero (Dashboard)
+                                </label>
+                                <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;color:#fff;font-size:13px;">
+                                    <input type="checkbox" value="clientes" class="permiso-checkbox" checked> Bodegas & Clientes
+                                </label>
+                                <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;color:#fff;font-size:13px;">
+                                    <input type="checkbox" value="ots" class="permiso-checkbox" checked> Órdenes de Trabajo (OT)
+                                </label>
+                                <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;color:#fff;font-size:13px;">
+                                    <input type="checkbox" value="taller" class="permiso-checkbox" checked> Taller / Producción
+                                </label>
+                                <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;color:#fff;font-size:13px;">
+                                    <input type="checkbox" value="logistica" class="permiso-checkbox" checked> Logística
+                                </label>
+                                <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;color:#fff;font-size:13px;">
+                                    <input type="checkbox" value="usuarios" class="permiso-checkbox" id="permiso-checkbox-usuarios"> Gestión de Usuarios
+                                </label>
+                            </div>
+                        </div>
+                        <div class="action-buttons mt-2">
+                            <button class="btn btn-success" id="btn-guardar-usuario"><i class="fa-solid fa-save"></i> Guardar Usuario</button>
+                            <button class="btn btn-danger" id="btn-cancelar-usuario">Cancelar</button>
+                        </div>
+                    </div>
+
+                    <div class="card glass mt-2">
+                        <table class="data-table" id="tabla-usuarios">
+                            <thead>
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Usuario</th>
+                                    <th>Rol</th>
+                                    <th>Módulos Permitidos</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
                     </div>
                 </section>
 
             </div>
         </main>
     </div>
+
+    <!-- ====== MODAL: IMPRODUCTIVA ====== -->
+    <div id="modal-improductiva" class="modal-overlay" style="display:none;">
+        <div class="modal-box glass">
+            <h3><i class="fa-solid fa-triangle-exclamation" style="color:#f4a261;"></i> Registrar Improductiva</h3>
+            <p style="color:#adb5bd;font-size:13px;margin:0.5rem 0 1rem;">La producción se pausará mientras dure la improductiva.</p>
+            <div class="form-group">
+                <label>Motivo</label>
+                <select class="large-input" id="select-motivo-improd">
+                    <option value="Falla mecánica">Falla mecánica</option>
+                    <option value="Cambio de bobina">Cambio de bobina</option>
+                    <option value="Preparación de tinta">Preparación de tinta</option>
+                    <option value="Corte de energía">Corte de energía</option>
+                    <option value="Mantenimiento preventivo">Mantenimiento preventivo</option>
+                    <option value="Otro">Otro...</option>
+                </select>
+            </div>
+            <div class="form-group mt-1" id="motivo-otro-group" style="display:none;">
+                <label>Especifique el motivo</label>
+                <input type="text" class="large-input" id="input-motivo-otro" placeholder="Describa el problema...">
+            </div>
+            <div class="action-buttons mt-2">
+                <button class="btn btn-warning" id="btn-confirmar-improd"><i class="fa-solid fa-pause"></i> Registrar y Pausar</button>
+                <button class="btn btn-danger" id="btn-cancelar-improd">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== MODAL: FINALIZAR OT ====== -->
+    <div id="modal-finalizar" class="modal-overlay" style="display:none;">
+        <div class="modal-box glass">
+            <h3><i class="fa-solid fa-flag-checkered" style="color:var(--success);"></i> Finalizar Orden</h3>
+            <p style="margin:1rem 0;color:#adb5bd;">¿Desea finalizar el paquete completo de la OT activa?</p>
+            <div style="background:rgba(244,162,97,0.1);border:1px solid rgba(244,162,97,0.3);border-radius:8px;padding:1rem;margin-bottom:1rem;font-size:13px;color:#f4a261;">
+                <i class="fa-solid fa-circle-info"></i> Si selecciona <strong>No</strong>, la orden quedará en estado <strong>Parcial</strong> (semáforo amarillo) y podrá retomar la impresión más tarde.
+            </div>
+            <div class="action-buttons">
+                <button class="btn btn-success" id="btn-finalizar-completo"><i class="fa-solid fa-check-double"></i> Sí, paquete completo</button>
+                <button class="btn btn-warning" id="btn-finalizar-parcial"><i class="fa-solid fa-hourglass-half"></i> No, parcial</button>
+                <button class="btn btn-danger" id="btn-cancelar-finalizar">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
     <script src="app.js"></script>
 </body>
 </html>
