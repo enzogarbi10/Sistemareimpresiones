@@ -404,7 +404,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         otsPendientes.forEach(ot => {
-            const resumen = ot.items.map(i => `${i.tipo ? i.tipo + ' ' : ''}${i.varietal} (${Number(i.cantidad).toLocaleString()}u)`).join(', ');
+            const resumen = ot.items.map(i => `${i.tipo ? i.tipo + ' ' : ''}${i.marca ? i.marca + ' ' : ''}${i.varietal} (${Number(i.cantidad).toLocaleString()}u)`).join(', ');
             const algunProcesado = ot.items.some(i => i.status === 'finalizado' || i.status === 'parcial');
             const estadoBadge = algunProcesado 
                 ? '<span class="badge warning">En Producción</span>' 
@@ -477,7 +477,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div style="display:flex; justify-content:space-between; gap:20px;">
                             <!-- Left: item details -->
                             <div style="flex:1.2;">
-                                <h4 style="margin:0 0 12px; color:#9d4edd; font-size:16px; font-weight:700;">${index + 1}. ${i.tipo ? i.tipo + ' - ' : ''}${i.varietal}</h4>
+                                <h4 style="margin:0 0 12px; color:#9d4edd; font-size:16px; font-weight:700;">${index + 1}. ${i.tipo ? i.tipo + ' - ' : ''}${i.marca ? i.marca + ' ' : ''}${i.varietal}</h4>
                                 <table style="width:100%; border-collapse:collapse; font-size:13px;">
                                     <tr style="border-bottom:1px solid #f1f5f9;">
                                         <td style="padding:6px 0; color:#64748b; font-weight:500;">Cantidad:</td>
@@ -555,7 +555,7 @@ document.addEventListener('DOMContentLoaded', () => {
         itemsActuales.forEach((item, idx) => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td><strong>${item.tipo ? item.tipo + ' - ' : ''}${item.varietal}</strong></td>
+                <td><strong>${item.tipo ? item.tipo + ' - ' : ''}${item.marca ? item.marca + ' ' : ''}${item.varietal}</strong></td>
                 <td>${Number(item.cantidad).toLocaleString()} u</td>
                 <td>$${item.precio}</td>
                 <td>${item.colores} col</td>
@@ -655,6 +655,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         btnAgregarItem.addEventListener('click', async () => {
             const tipo      = document.getElementById('new-item-tipo') ? document.getElementById('new-item-tipo').value : '';
+            const marca     = document.getElementById('new-item-marca') ? document.getElementById('new-item-marca').value : '';
             const varietal  = document.getElementById('new-item-varietal').value;
             const cantidad  = document.getElementById('new-item-cantidad').value;
             const precio    = document.getElementById('new-item-precio').value || '0';
@@ -690,10 +691,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
             
-            itemsActuales.push({ tipo, varietal, cantidad, precio, colores, barniz, fecha, imagenB64, status: 'pendiente' });
+            itemsActuales.push({ tipo, marca, varietal, cantidad, precio, colores, barniz, fecha, imagenB64, status: 'pendiente' });
             renderItemsOtForm();
             if (document.getElementById('new-item-tipo')) document.getElementById('new-item-tipo').value = 'Etiqueta';
-            ['new-item-varietal','new-item-cantidad','new-item-precio','new-item-fecha'].forEach(id => document.getElementById(id).value = '');
+            ['new-item-marca','new-item-varietal','new-item-cantidad','new-item-precio','new-item-fecha'].forEach(id => document.getElementById(id).value = '');
             document.getElementById('new-item-img').value = '';
         });
 
@@ -909,7 +910,7 @@ document.addEventListener('DOMContentLoaded', () => {
             html += `<tr class="clickable-row ${isActive}" data-index="${idx}">
                 <td><span class="status-badge-dot ${statusClass}">${statusLabel}</span></td>
                 <td>${(item.tipo || 'ETIQUETA').toUpperCase()}</td>
-                <td><strong>${item.tipo ? item.tipo + ' - ' : ''}${item.varietal}</strong></td>
+                <td><strong>${item.tipo ? item.tipo + ' - ' : ''}${item.marca ? item.marca + ' ' : ''}${item.varietal}</strong></td>
                 <td class="num-col">${Number(item.cantidad).toLocaleString()}</td>
                 <td>${item.colores} col</td>
                 <td>${item.barniz==='SI'?'Sí':'No'}</td>
@@ -949,7 +950,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (artContainer) {
             let artHtml = `<div style="width:100%; display:flex; flex-direction:column; gap:0.6rem; align-items:center;">
                 <div style="font-size:12.5px; text-align:left; width:100%; background:rgba(0,0,0,0.3); padding:0.6rem; border-radius:6px; border:1px solid rgba(255,255,255,0.05);">
-                    <p style="margin:0 0 2px; color:var(--secondary); font-weight:700; font-size:13px;">${itemActivo.varietal.toUpperCase()}</p>
+                    <p style="margin:0 0 2px; color:var(--secondary); font-weight:700; font-size:13px;">${itemActivo.marca ? itemActivo.marca.toUpperCase() + ' ' : ''}${itemActivo.varietal.toUpperCase()}</p>
                     <p style="margin:2px 0; color:#fff;">Cant. Requerida: <strong style="color:#00f5d4;">${Number(itemActivo.cantidad).toLocaleString()} u.</strong></p>
                     <p style="margin:2px 0; color:#adb5bd; font-size:11px;">Detalle: ${itemActivo.colores} colores · ${itemActivo.barniz==='SI'?'Con Barniz':'Sin Barniz'}</p>
                 </div>`;
@@ -972,7 +973,7 @@ document.addEventListener('DOMContentLoaded', () => {
             btnImproductiva.disabled = true;
             btnIniciar.innerHTML = '<i class="fa-solid fa-check-double"></i> Finalizado';
             setSemaforo('yellow');
-            addEvento('ÍTEM FINALIZADO', `${itemActivo.varietal}`);
+            addEvento('ÍTEM FINALIZADO', `${itemActivo.marca ? itemActivo.marca + ' ' : ''}${itemActivo.varietal}`);
         } else {
             btnIniciar.disabled = false;
             btnFinalizar.disabled = true;
@@ -981,11 +982,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (itemActivo.status === 'parcial') {
                 btnIniciar.innerHTML = '<i class="fa-solid fa-play"></i> Retomar';
                 setSemaforo('yellow');
-                addEvento('RETOME PARCIAL', `${itemActivo.varietal}`);
+                addEvento('RETOME PARCIAL', `${itemActivo.marca ? itemActivo.marca + ' ' : ''}${itemActivo.varietal}`);
             } else {
                 btnIniciar.innerHTML = '<i class="fa-solid fa-play"></i> Iniciar';
                 setSemaforo('red');
-                addEvento('PREPARACIÓN', `${itemActivo.varietal}`);
+                addEvento('PREPARACIÓN', `${itemActivo.marca ? itemActivo.marca + ' ' : ''}${itemActivo.varietal}`);
             }
             timerPrep = setInterval(() => { segsPrep++; contPrep.textContent = fmt(segsPrep); updateTotalBadge(); }, 1000);
         }
@@ -1065,7 +1066,7 @@ document.addEventListener('DOMContentLoaded', () => {
             btnFinalizar.disabled = false;
             btnImproductiva.disabled = false;
             timerProd = setInterval(() => { segsProd++; contProd.textContent = fmt(segsProd); updateTotalBadge(); }, 1000);
-            addEvento('INICIO IMPRESIÓN', itemActivo.varietal);
+            addEvento('INICIO IMPRESIÓN', itemActivo.marca ? itemActivo.marca + ' ' + itemActivo.varietal : itemActivo.varietal);
         });
     }
 
@@ -1080,7 +1081,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-finalizar-completo').addEventListener('click', () => {
         document.getElementById('modal-finalizar').style.display = 'none';
         itemActivo.status = 'finalizado';
-        addEvento('FIN COMPLETO ÍTEM', `${itemActivo.varietal} (P:${fmt(segsProd)})`);
+        addEvento('FIN COMPLETO ÍTEM', `${itemActivo.marca ? itemActivo.marca + ' ' : ''}${itemActivo.varietal} (P:${fmt(segsProd)})`);
         addToLogistica(otActual, 'completo', fmt(segsProd), fmt(segsImprod));
 
         // Verificar si TODOS los items de la OT actual están finalizados
@@ -1124,7 +1125,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btnFinalizar.disabled = true;
         btnImproductiva.disabled = true;
         btnIniciar.innerHTML  = '<i class="fa-solid fa-play"></i> Retomar';
-        addEvento('PAUSA PARCIAL ÍTEM', `${itemActivo.varietal} (Acum:${fmt(segsProd)})`);
+        addEvento('PAUSA PARCIAL ÍTEM', `${itemActivo.marca ? itemActivo.marca + ' ' : ''}${itemActivo.varietal} (Acum:${fmt(segsProd)})`);
         addToLogistica(otActual, 'parcial', fmt(segsProd), fmt(segsImprod));
         renderDetalleOt();
         renderOts();
@@ -1194,7 +1195,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 btnImproductiva.disabled = false;
                 btnIniciar.innerHTML = '<i class="fa-solid fa-play"></i> Iniciar';
                 timerProd = setInterval(() => { segsProd++; contProd.textContent = fmt(segsProd); updateTotalBadge(); }, 1000);
-                addEvento('REANUDA IMPRESIÓN', itemActivo ? itemActivo.varietal : '');
+                addEvento('REANUDA IMPRESIÓN', itemActivo ? (itemActivo.marca ? itemActivo.marca + ' ' + itemActivo.varietal : itemActivo.varietal) : '');
             }
         });
     }
@@ -1262,7 +1263,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const num = parseInt(btnVer.getAttribute('data-numero'));
                 const ot = todasLasOts[num];
                 if (!ot) return;
-                const itemsStr = ot.items.map(i => `• ${i.varietal} (${Number(i.cantidad).toLocaleString()} u) - Estado: ${i.status.toUpperCase()}`).join('\n');
+                const itemsStr = ot.items.map(i => `  ${i.tipo ? i.tipo + ' - ' : ''}${i.marca ? i.marca + ' ' : ''}${i.varietal} (${Number(i.cantidad).toLocaleString()} u) - Estado: ${i.status.toUpperCase()}`).join('\n');
                 alert(`OT #${ot.numero}\nCliente: ${ot.cliente}\nFecha Alta: ${ot.fechaAlta}\n\nÍtems:\n${itemsStr}`);
                 return;
             }
@@ -1561,7 +1562,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
                         <td>${qty.toLocaleString('es-AR')} u</td>
-                        <td><strong>${item.tipo ? item.tipo + ' - ' : ''}${item.varietal}</strong></td>
+                        <td><strong>${item.tipo ? item.tipo + ' - ' : ''}${item.marca ? item.marca + ' ' : ''}${item.varietal}</strong></td>
                     `;
                     tbodyItems.appendChild(tr);
                 });
@@ -1617,7 +1618,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>${qty.toLocaleString('es-AR')} u</td>
-                    <td><strong>${item.tipo ? item.tipo + ' - ' : ''}${item.varietal}</strong></td>
+                    <td><strong>${item.tipo ? item.tipo + ' - ' : ''}${item.marca ? item.marca + ' ' : ''}${item.varietal}</strong></td>
                 `;
                 tbodyItems.appendChild(tr);
             });
@@ -1810,7 +1811,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             itemDiv.innerHTML = `
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.6rem;">
-                    <strong style="color:var(--secondary); font-size:14px;">${item.tipo ? item.tipo + ' - ' : ''}${item.varietal}</strong>
+                    <strong style="color:var(--secondary); font-size:14px;">${item.tipo ? item.tipo + ' - ' : ''}${item.marca ? item.marca + ' ' : ''}${item.varietal}</strong>
                     <span style="font-size:12px; color:#adb5bd;">Pedido: <strong>${Number(item.cantidad).toLocaleString('es-AR')} u.</strong></span>
                 </div>
                 <div class="form-group">
