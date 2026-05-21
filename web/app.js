@@ -578,6 +578,18 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    const selHerramentales = document.getElementById('new-ot-herramentales');
+    const groupHerrDetalles = document.getElementById('group-herr-detalles');
+    if (selHerramentales && groupHerrDetalles) {
+        selHerramentales.addEventListener('change', (e) => {
+            if (e.target.value === 'SI') {
+                groupHerrDetalles.style.display = 'flex';
+            } else {
+                groupHerrDetalles.style.display = 'none';
+            }
+        });
+    }
+
     if (btnNuevaOt) {
         btnNuevaOt.addEventListener('click', () => {
             formNuevaOt.style.display = 'block';
@@ -588,6 +600,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (tablaItemsOt) tablaItemsOt.innerHTML = '';
             if (listaItemsContainer) listaItemsContainer.style.display = 'none';
             document.getElementById('new-ot-cliente').value = '';
+            if (selHerramentales) selHerramentales.value = 'NO';
+            if (groupHerrDetalles) groupHerrDetalles.style.display = 'none';
+            if (document.getElementById('new-ot-herr-cantidad')) document.getElementById('new-ot-herr-cantidad').value = '';
+            if (document.getElementById('new-ot-herr-importe')) document.getElementById('new-ot-herr-importe').value = '';
         });
         btnCancelarOt.addEventListener('click', () => {
             formNuevaOt.style.display = 'none';
@@ -684,16 +700,27 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!cliente) { alert('Seleccione un cliente'); return; }
             if (!itemsActuales.length) { alert('Agregue al menos un ítem'); return; }
 
+            const herramentalesVal = document.getElementById('new-ot-herramentales').value;
+            let herramentales = null;
+            if (herramentalesVal === 'SI') {
+                herramentales = {
+                    cantidad: document.getElementById('new-ot-herr-cantidad').value || 1,
+                    importe: document.getElementById('new-ot-herr-importe').value || 0
+                };
+            }
+
             if (otEdicionNumero !== null) {
                 // Modo Edición
                 const num = otEdicionNumero;
                 const ot = otsPendientes.find(o => o.numero === num);
                 if (ot) {
                     ot.cliente = cliente;
+                    ot.herramentales = herramentales;
                     ot.items = [...itemsActuales];
                 }
                 if (todasLasOts[num]) {
                     todasLasOts[num].cliente = cliente;
+                    todasLasOts[num].herramentales = herramentales;
                     todasLasOts[num].items = [...itemsActuales];
                 }
                 otEdicionNumero = null;
@@ -702,8 +729,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 ultimoNumeroOt++;
                 const num       = ultimoNumeroOt;
                 const fechaAlta = new Date().toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'numeric' });
-                todasLasOts[num] = { numero: num, cliente, fechaAlta, items: [...itemsActuales] };
-                otsPendientes.push({ numero: num, cliente, fechaAlta, items: [...itemsActuales] });
+                todasLasOts[num] = { numero: num, cliente, fechaAlta, herramentales, items: [...itemsActuales] };
+                otsPendientes.push({ numero: num, cliente, fechaAlta, herramentales, items: [...itemsActuales] });
             }
 
             saveOts();
@@ -1203,6 +1230,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 formNuevaOt.querySelector('h3').innerHTML = `<i class="fa-solid fa-pen-to-square" style="color:var(--secondary);"></i> Editar Orden de Trabajo #${num}`;
                 document.getElementById('new-ot-cliente').value = ot.cliente;
                 
+                // Herramentales
+                if (ot.herramentales) {
+                    document.getElementById('new-ot-herramentales').value = 'SI';
+                    document.getElementById('group-herr-detalles').style.display = 'flex';
+                    document.getElementById('new-ot-herr-cantidad').value = ot.herramentales.cantidad;
+                    document.getElementById('new-ot-herr-importe').value = ot.herramentales.importe;
+                } else {
+                    document.getElementById('new-ot-herramentales').value = 'NO';
+                    document.getElementById('group-herr-detalles').style.display = 'none';
+                    document.getElementById('new-ot-herr-cantidad').value = '';
+                    document.getElementById('new-ot-herr-importe').value = '';
+                }
+                
                 // Cargar items actuales y renderizar
                 itemsActuales = ot.items.map(i => ({ ...i }));
                 renderItemsOtForm();
@@ -1523,6 +1563,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     `;
                     tbodyItems.appendChild(tr);
                 });
+                // Herramentales
+                if (ot.herramentales) {
+                    const hQty = parseInt(ot.herramentales.cantidad) || 1;
+                    const hImp = parseFloat(ot.herramentales.importe) || 0;
+                    totalAcumulado += hImp;
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${hQty.toLocaleString('es-AR')} u</td>
+                        <td><strong>Herramentales</strong></td>
+                    `;
+                    tbodyItems.appendChild(tr);
+                }
             } else {
                 // Fallback si la OT histórica ya no existe
                 totalAcumulado = rem.total;

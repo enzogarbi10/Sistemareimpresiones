@@ -262,6 +262,30 @@
                             </div>
                         </div>
 
+                        <!-- NEW: Herramentales section -->
+                        <div style="margin-top:1.5rem;padding:1.5rem;background:rgba(255,255,255,0.05);border-radius:8px;">
+                            <h4 style="margin-bottom:1rem;color:var(--warning);"><i class="fa-solid fa-toolbox"></i> Herramentales</h4>
+                            <div class="form-row">
+                                <div class="form-group half">
+                                    <label>¿Lleva Herramentales?</label>
+                                    <select class="large-input" id="new-ot-herramentales">
+                                        <option value="NO">No</option>
+                                        <option value="SI">Sí, lleva herramentales</option>
+                                    </select>
+                                </div>
+                                <div class="form-group half" id="group-herr-detalles" style="display:none; gap: 10px;">
+                                    <div style="flex:1;">
+                                        <label>Cantidad</label>
+                                        <input type="number" class="large-input" id="new-ot-herr-cantidad" placeholder="1" min="1">
+                                    </div>
+                                    <div style="flex:1;">
+                                        <label>Importe ($)</label>
+                                        <input type="number" class="large-input" id="new-ot-herr-importe" placeholder="15000" min="0">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div style="margin-top:1.5rem;padding:1.5rem;background:rgba(0,0,0,0.2);border-radius:8px;">
                             <h4 style="margin-bottom:1rem;color:var(--secondary);">Agregar Ítem a la OT</h4>
                             <div class="form-row">
