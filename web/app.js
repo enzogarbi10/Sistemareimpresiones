@@ -404,7 +404,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         otsPendientes.forEach(ot => {
-            const resumen = ot.items.map(i => `${i.varietal} (${Number(i.cantidad).toLocaleString()}u)`).join(', ');
+            const resumen = ot.items.map(i => `${i.tipo ? i.tipo + ' ' : ''}${i.varietal} (${Number(i.cantidad).toLocaleString()}u)`).join(', ');
             const algunProcesado = ot.items.some(i => i.status === 'finalizado' || i.status === 'parcial');
             const estadoBadge = algunProcesado 
                 ? '<span class="badge warning">En Producción</span>' 
@@ -477,7 +477,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div style="display:flex; justify-content:space-between; gap:20px;">
                             <!-- Left: item details -->
                             <div style="flex:1.2;">
-                                <h4 style="margin:0 0 12px; color:#9d4edd; font-size:16px; font-weight:700;">${index + 1}. ${i.varietal}</h4>
+                                <h4 style="margin:0 0 12px; color:#9d4edd; font-size:16px; font-weight:700;">${index + 1}. ${i.tipo ? i.tipo + ' - ' : ''}${i.varietal}</h4>
                                 <table style="width:100%; border-collapse:collapse; font-size:13px;">
                                     <tr style="border-bottom:1px solid #f1f5f9;">
                                         <td style="padding:6px 0; color:#64748b; font-weight:500;">Cantidad:</td>
@@ -555,7 +555,7 @@ document.addEventListener('DOMContentLoaded', () => {
         itemsActuales.forEach((item, idx) => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td><strong>${item.varietal}</strong></td>
+                <td><strong>${item.tipo ? item.tipo + ' - ' : ''}${item.varietal}</strong></td>
                 <td>${Number(item.cantidad).toLocaleString()} u</td>
                 <td>$${item.precio}</td>
                 <td>${item.colores} col</td>
@@ -654,6 +654,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         btnAgregarItem.addEventListener('click', async () => {
+            const tipo      = document.getElementById('new-item-tipo') ? document.getElementById('new-item-tipo').value : '';
             const varietal  = document.getElementById('new-item-varietal').value;
             const cantidad  = document.getElementById('new-item-cantidad').value;
             const precio    = document.getElementById('new-item-precio').value || '0';
@@ -689,8 +690,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
             
-            itemsActuales.push({ varietal, cantidad, precio, colores, barniz, fecha, imagenB64, status: 'pendiente' });
+            itemsActuales.push({ tipo, varietal, cantidad, precio, colores, barniz, fecha, imagenB64, status: 'pendiente' });
             renderItemsOtForm();
+            if (document.getElementById('new-item-tipo')) document.getElementById('new-item-tipo').value = 'Etiqueta';
             ['new-item-varietal','new-item-cantidad','new-item-precio','new-item-fecha'].forEach(id => document.getElementById(id).value = '');
             document.getElementById('new-item-img').value = '';
         });
@@ -906,8 +908,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const isActive = itemActivoIndex === idx ? 'active-row-item' : '';
             html += `<tr class="clickable-row ${isActive}" data-index="${idx}">
                 <td><span class="status-badge-dot ${statusClass}">${statusLabel}</span></td>
-                <td>ETIQUETA</td>
-                <td><strong>${item.varietal}</strong></td>
+                <td>${(item.tipo || 'ETIQUETA').toUpperCase()}</td>
+                <td><strong>${item.tipo ? item.tipo + ' - ' : ''}${item.varietal}</strong></td>
                 <td class="num-col">${Number(item.cantidad).toLocaleString()}</td>
                 <td>${item.colores} col</td>
                 <td>${item.barniz==='SI'?'Sí':'No'}</td>
@@ -1559,7 +1561,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
                         <td>${qty.toLocaleString('es-AR')} u</td>
-                        <td><strong>${item.varietal}</strong></td>
+                        <td><strong>${item.tipo ? item.tipo + ' - ' : ''}${item.varietal}</strong></td>
                     `;
                     tbodyItems.appendChild(tr);
                 });
@@ -1615,7 +1617,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>${qty.toLocaleString('es-AR')} u</td>
-                    <td><strong>${item.varietal}</strong></td>
+                    <td><strong>${item.tipo ? item.tipo + ' - ' : ''}${item.varietal}</strong></td>
                 `;
                 tbodyItems.appendChild(tr);
             });
@@ -1808,7 +1810,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             itemDiv.innerHTML = `
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.6rem;">
-                    <strong style="color:var(--secondary); font-size:14px;">${item.varietal}</strong>
+                    <strong style="color:var(--secondary); font-size:14px;">${item.tipo ? item.tipo + ' - ' : ''}${item.varietal}</strong>
                     <span style="font-size:12px; color:#adb5bd;">Pedido: <strong>${Number(item.cantidad).toLocaleString('es-AR')} u.</strong></span>
                 </div>
                 <div class="form-group">

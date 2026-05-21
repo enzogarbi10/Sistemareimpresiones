@@ -289,15 +289,26 @@
                         <div style="margin-top:1.5rem;padding:1.5rem;background:rgba(0,0,0,0.2);border-radius:8px;">
                             <h4 style="margin-bottom:1rem;color:var(--secondary);">Agregar Ítem a la OT</h4>
                             <div class="form-row">
-                                <div class="form-group half">
+                                <div class="form-group third" style="flex:1;">
+                                    <label>Tipo</label>
+                                    <select class="large-input" id="new-item-tipo">
+                                        <option value="Etiqueta">Etiqueta</option>
+                                        <option value="Contraetiqueta">Contraetiqueta</option>
+                                        <option value="Faja">Faja</option>
+                                        <option value="Collarín">Collarín</option>
+                                        <option value="Otro">Otro</option>
+                                    </select>
+                                </div>
+                                <div class="form-group third" style="flex:2; margin-left: 10px;">
                                     <label>Varietal / Descripción</label>
                                     <input type="text" class="large-input" id="new-item-varietal" placeholder="Ej. Malbec Reserva">
                                 </div>
+                            </div>
+                            <div class="form-row mt-1">
                                 <div class="form-group half">
-                                    <label>Cantidad (Etiquetas)</label>
+                                    <label>Cantidad (Unidades)</label>
                                     <input type="number" class="large-input" id="new-item-cantidad" placeholder="10000">
                                 </div>
-                            </div>
                             <div class="form-row mt-1">
                                 <div class="form-group half">
                                     <label>Cant. Colores a imprimir</label>
