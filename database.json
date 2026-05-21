@@ -1,0 +1,110 @@
+{
+    "users": [
+        {
+            "username": "superadmin",
+            "password": "superadmin123",
+            "name": "Super Admin",
+            "role": "superadmin",
+            "allowedModules": [
+                "dashboard",
+                "clientes",
+                "ots",
+                "taller",
+                "logistica",
+                "usuarios"
+            ]
+        },
+        {
+            "username": "admin",
+            "password": "123",
+            "name": "Administrador",
+            "role": "admin",
+            "allowedModules": [
+                "dashboard",
+                "clientes",
+                "ots",
+                "taller",
+                "logistica"
+            ]
+        },
+        {
+            "username": "operador",
+            "password": "123",
+            "name": "Juan Perez",
+            "role": "operador",
+            "allowedModules": [
+                "taller"
+            ]
+        }
+    ],
+    "clients": [],
+    "remitos": [
+        {
+            "numero": 8001,
+            "otNumero": 1042,
+            "cliente": "Bodega Norton",
+            "fecha": "21/5/2026",
+            "total": 960,
+            "emailEnviado": "compras@norton.com.ar"
+        },
+        {
+            "numero": 8002,
+            "otNumero": 1044,
+            "cliente": "Salentein",
+            "fecha": "21/5/2026",
+            "total": 150,
+            "observaciones": "",
+            "emailEnviado": "logistica@salentein.com"
+        }
+    ],
+    "ultimo_remito": 8002,
+    "ots_pendientes": [],
+    "ots_logistica": [],
+    "ultimo_numero_ot": 1044,
+    "todas_las_ots": {
+        "1042": {
+            "numero": 1042,
+            "cliente": "Bodega Norton",
+            "fechaAlta": "05/05/2026",
+            "items": [
+                {
+                    "varietal": "Malbec Reserva",
+                    "cantidad": 50000,
+                    "precio": "12",
+                    "colores": "4",
+                    "barniz": "SI",
+                    "fecha": "2026-06-01",
+                    "imagenB64": null,
+                    "status": "finalizado"
+                },
+                {
+                    "varietal": "Cabernet Sauvignon",
+                    "cantidad": 30000,
+                    "precio": "12",
+                    "colores": "4",
+                    "barniz": "NO",
+                    "fecha": "2026-06-01",
+                    "imagenB64": null,
+                    "status": "finalizado"
+                }
+            ]
+        },
+        "1044": {
+            "numero": 1044,
+            "cliente": "Salentein",
+            "fechaAlta": "08/05/2026",
+            "items": [
+                {
+                    "varietal": "Chardonnay",
+                    "cantidad": 10000,
+                    "precio": "15",
+                    "colores": "3",
+                    "barniz": "NO",
+                    "fecha": "2026-06-15",
+                    "imagenB64": null,
+                    "status": "finalizado"
+                }
+            ]
+        }
+    }
+}
