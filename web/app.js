@@ -689,16 +689,50 @@ document.addEventListener('DOMContentLoaded', () => {
         const tbody = document.querySelector('#tabla-ots tbody');
         if (!tbody) return;
         tbody.innerHTML = '';
-        if (!otsPendientes.length) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#adb5bd;padding:2rem;">No hay órdenes de trabajo activas.</td></tr>';
+
+        // 1. Obtener lista base según la pestaña activa
+        let listaOts = [];
+        if (otActiveTab === 'activas') {
+            listaOts = [...otsPendientes];
+        } else {
+            // Finalizadas: OTs en todasLasOts que no están en otsPendientes
+            listaOts = Object.values(todasLasOts).filter(ot => !otsPendientes.some(p => p.numero === ot.numero));
+        }
+
+        // 2. Aplicar filtro de búsqueda
+        if (otSearchQuery) {
+            listaOts = listaOts.filter(ot => {
+                const numStr = String(ot.numero);
+                const cli = (ot.cliente || '').toLowerCase();
+                const resumen = ot.items.map(i => `${i.tipo || ''} ${i.marca || ''} ${i.varietal || ''}`).join(' ').toLowerCase();
+                return numStr.includes(otSearchQuery) || cli.includes(otSearchQuery) || resumen.includes(otSearchQuery);
+            });
+        }
+
+        if (!listaOts.length) {
+            const msj = otSearchQuery 
+                ? 'No se encontraron órdenes de trabajo que coincidan con la búsqueda.' 
+                : (otActiveTab === 'activas' ? 'No hay órdenes de trabajo activas.' : 'No hay órdenes de trabajo finalizadas.');
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#adb5bd;padding:2rem;">${msj}</td></tr>`;
             return;
         }
-        otsPendientes.forEach(ot => {
+
+        // Ordenar por número descendente (más recientes primero)
+        listaOts.sort((a, b) => b.numero - a.numero);
+
+        listaOts.forEach(ot => {
             const resumen = ot.items.map(i => `${i.tipo ? i.tipo + ' ' : ''}${i.marca ? i.marca + ' ' : ''}${i.varietal} (${Number(i.cantidad).toLocaleString()}u)`).join(', ');
-            const algunProcesado = ot.items.some(i => i.status === 'finalizado' || i.status === 'parcial');
-            const estadoBadge = algunProcesado 
-                ? '<span class="badge warning">En Producción</span>' 
-                : '<span class="badge neutral">Pendiente</span>';
+            
+            let estadoBadge = '';
+            if (otActiveTab === 'activas') {
+                const algunProcesado = ot.items.some(i => i.status === 'finalizado' || i.status === 'parcial');
+                estadoBadge = algunProcesado 
+                    ? '<span class="badge warning">En Producción</span>' 
+                    : '<span class="badge neutral">Pendiente</span>';
+            } else {
+                estadoBadge = '<span class="badge success" style="background:var(--success); color:#1a1921; font-weight:bold;">Finalizada</span>';
+            }
+
             const tr = document.createElement('tr');
             const isPriv = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin');
             const actionsHtml = isPriv
@@ -832,6 +866,44 @@ document.addEventListener('DOMContentLoaded', () => {
     const listaItemsContainer   = document.getElementById('lista-items-container');
     let itemsActuales = [];
     let otEdicionNumero = null;
+    let otActiveTab = 'activas';
+    let otSearchQuery = '';
+
+    // OTs Tabs & Search Listeners
+    const tabOtActivas = document.getElementById('tab-ot-activas');
+    const tabOtFinalizadas = document.getElementById('tab-ot-finalizadas');
+    const inputBusquedaOts = document.getElementById('input-busqueda-ots');
+
+    if (tabOtActivas && tabOtFinalizadas) {
+        tabOtActivas.addEventListener('click', () => {
+            otActiveTab = 'activas';
+            tabOtActivas.classList.add('btn-primary');
+            tabOtActivas.style.background = '';
+            tabOtActivas.style.color = '#fff';
+            tabOtFinalizadas.classList.remove('btn-primary');
+            tabOtFinalizadas.style.background = 'transparent';
+            tabOtFinalizadas.style.color = '#adb5bd';
+            renderOts();
+        });
+
+        tabOtFinalizadas.addEventListener('click', () => {
+            otActiveTab = 'finalizadas';
+            tabOtFinalizadas.classList.add('btn-primary');
+            tabOtFinalizadas.style.background = '';
+            tabOtFinalizadas.style.color = '#fff';
+            tabOtActivas.classList.remove('btn-primary');
+            tabOtActivas.style.background = 'transparent';
+            tabOtActivas.style.color = '#adb5bd';
+            renderOts();
+        });
+    }
+
+    if (inputBusquedaOts) {
+        inputBusquedaOts.addEventListener('input', (e) => {
+            otSearchQuery = e.target.value.toLowerCase().trim();
+            renderOts();
+        });
+    }
 
     function renderItemsOtForm() {
         const tbody = document.querySelector('#tabla-items-ot tbody');
@@ -890,6 +962,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (tablaItemsOt) tablaItemsOt.innerHTML = '';
             if (listaItemsContainer) listaItemsContainer.style.display = 'none';
             document.getElementById('new-ot-cliente').value = '';
+            if (document.getElementById('new-ot-observaciones')) document.getElementById('new-ot-observaciones').value = '';
             if (selHerramentales) selHerramentales.value = 'NO';
             if (groupHerrDetalles) groupHerrDetalles.style.display = 'none';
             if (document.getElementById('new-ot-herr-cantidad')) document.getElementById('new-ot-herr-cantidad').value = '';
@@ -993,6 +1066,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!cliente) { alert('Seleccione un cliente'); return; }
             if (!itemsActuales.length) { alert('Agregue al menos un ítem'); return; }
 
+            const observaciones = document.getElementById('new-ot-observaciones') ? document.getElementById('new-ot-observaciones').value.trim() : '';
+
             const herramentalesVal = document.getElementById('new-ot-herramentales').value;
             let herramentales = null;
             if (herramentalesVal === 'SI') {
@@ -1009,11 +1084,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (ot) {
                     ot.cliente = cliente;
                     ot.herramentales = herramentales;
+                    ot.observaciones = observaciones;
                     ot.items = [...itemsActuales];
                 }
                 if (todasLasOts[num]) {
                     todasLasOts[num].cliente = cliente;
                     todasLasOts[num].herramentales = herramentales;
+                    todasLasOts[num].observaciones = observaciones;
                     todasLasOts[num].items = [...itemsActuales];
                 }
                 otEdicionNumero = null;
@@ -1022,9 +1099,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 ultimoNumeroOt++;
                 const num       = ultimoNumeroOt;
                 const fechaAlta = new Date().toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'numeric' });
-                todasLasOts[num] = { numero: num, cliente, fechaAlta, herramentales, items: [...itemsActuales] };
-                otsPendientes.push({ numero: num, cliente, fechaAlta, herramentales, items: [...itemsActuales] });
+                todasLasOts[num] = { numero: num, cliente, fechaAlta, herramentales, observaciones, items: [...itemsActuales] };
+                otsPendientes.push({ numero: num, cliente, fechaAlta, herramentales, observaciones, items: [...itemsActuales] });
             }
+
+            if (document.getElementById('new-ot-observaciones')) document.getElementById('new-ot-observaciones').value = '';
 
             saveOts();
             refreshTallerSelector();
@@ -1236,24 +1315,63 @@ document.addEventListener('DOMContentLoaded', () => {
         tiempoBadge.textContent = '00:00:00';
 
         // Renderizar Arte y Ficha
-        const artContainer = document.getElementById('arte-item-container');
         if (artContainer) {
-            let artHtml = `<div style="width:100%; display:flex; flex-direction:column; gap:0.6rem; align-items:center;">
+            let artHtml = `
+            <div class="taller-tabs" style="display: flex; gap: 4px; border-bottom: 1px solid rgba(255,255,255,0.08); width: 100%; margin-bottom: 0.8rem;">
+                <button class="taller-tab-btn active" id="tab-btn-arte" style="flex: 1; padding: 0.5rem; background: transparent; border: none; border-bottom: 2px solid var(--secondary); color: var(--secondary); font-weight: bold; cursor: pointer; outline: none; font-family: inherit;">Arte / Imagen</button>
+                <button class="taller-tab-btn" id="tab-btn-obs" style="flex: 1; padding: 0.5rem; background: transparent; border: none; border-bottom: 2px solid transparent; color: #adb5bd; font-weight: bold; cursor: pointer; outline: none; font-family: inherit;">Observaciones</button>
+            </div>
+            
+            <div id="taller-tab-content-arte" style="width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.6rem;">
                 <div style="font-size:12.5px; text-align:left; width:100%; background:rgba(0,0,0,0.3); padding:0.6rem; border-radius:6px; border:1px solid rgba(255,255,255,0.05);">
                     <p style="margin:0 0 2px; color:var(--secondary); font-weight:700; font-size:13px;">${itemActivo.marca ? itemActivo.marca.toUpperCase() + ' ' : ''}${itemActivo.varietal.toUpperCase()}</p>
                     <p style="margin:2px 0; color:#fff;">Cant. Requerida: <strong style="color:#00f5d4;">${Number(itemActivo.cantidad).toLocaleString()} u.</strong></p>
                     <p style="margin:2px 0; color:#adb5bd; font-size:11px;">Detalle: ${itemActivo.colores} colores · ${itemActivo.barniz==='SI'?'Con Barniz':'Sin Barniz'}</p>
                 </div>`;
             if (itemActivo.imagenB64) {
-                artHtml += `<div style="margin-top:0.3rem;"><img src="${itemActivo.imagenB64}" class="arte-preview-img" alt="Arte del varietal"></div>`;
+                artHtml += `<div style="margin-top:0.3rem; width:100%; display:flex; justify-content:center;"><img src="${itemActivo.imagenB64}" class="arte-preview-img" alt="Arte del varietal" style="max-height:280px; width:auto; border-radius:6px;"></div>`;
             } else {
                 artHtml += `<div style="border:1px dashed rgba(255,255,255,0.12); border-radius:8px; width:100%; padding:1.2rem; background:rgba(0,0,0,0.15); margin-top:0.3rem;">
                     <i class="fa-regular fa-image" style="font-size:1.8rem; color:#6c757d; margin-bottom:0.4rem;"></i>
                     <p style="color:#6c757d; font-size:11.5px; margin:0; font-style:italic;">No se adjuntó archivo de arte para este ítem</p>
                 </div>`;
             }
-            artHtml += `</div>`;
+            artHtml += `</div>
+            
+            <div id="taller-tab-content-obs" style="width: 100%; display: none; padding: 1rem; background: rgba(0,0,0,0.2); border-radius: 6px; border: 1px solid rgba(255,255,255,0.05); text-align: left; font-size: 13px; line-height: 1.4; color: #fff; max-height: 350px; overflow-y: auto;">
+                 <p style="margin:0 0 0.5rem; color:var(--warning); font-weight:bold; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Observaciones de la OT:</p>
+                 <div style="white-space: pre-wrap; font-family: inherit; font-size: 13px; color: #e9ecef; font-weight: normal;">${otActual.observaciones || 'Sin observaciones registradas en esta OT.'}</div>
+            </div>`;
+            
             artContainer.innerHTML = artHtml;
+
+            const tArte = document.getElementById('tab-btn-arte');
+            const tObs = document.getElementById('tab-btn-obs');
+            const cArte = document.getElementById('taller-tab-content-arte');
+            const cObs = document.getElementById('taller-tab-content-obs');
+
+            if (tArte && tObs && cArte && cObs) {
+                tArte.addEventListener('click', () => {
+                    tArte.classList.add('active');
+                    tArte.style.borderBottomColor = 'var(--secondary)';
+                    tArte.style.color = 'var(--secondary)';
+                    tObs.classList.remove('active');
+                    tObs.style.borderBottomColor = 'transparent';
+                    tObs.style.color = '#adb5bd';
+                    cArte.style.display = 'flex';
+                    cObs.style.display = 'none';
+                });
+                tObs.addEventListener('click', () => {
+                    tObs.classList.add('active');
+                    tObs.style.borderBottomColor = 'var(--secondary)';
+                    tObs.style.color = 'var(--secondary)';
+                    tArte.classList.remove('active');
+                    tArte.style.borderBottomColor = 'transparent';
+                    tArte.style.color = '#adb5bd';
+                    cArte.style.display = 'none';
+                    cObs.style.display = 'block';
+                });
+            }
         }
 
         // Configurar botones e iniciar Prep Timer
@@ -1522,6 +1640,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 formNuevaOt.style.display = 'block';
                 formNuevaOt.querySelector('h3').innerHTML = `<i class="fa-solid fa-pen-to-square" style="color:var(--secondary);"></i> Editar Orden de Trabajo #${num}`;
                 document.getElementById('new-ot-cliente').value = ot.cliente;
+                if (document.getElementById('new-ot-observaciones')) {
+                    document.getElementById('new-ot-observaciones').value = ot.observaciones || '';
+                }
                 
                 // Herramentales
                 if (ot.herramentales) {

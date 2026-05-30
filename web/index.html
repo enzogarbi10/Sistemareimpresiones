@@ -160,6 +160,20 @@
                                     </table>
                                 </div>
                             </div>
+
+                            <!-- Log Improductivas -->
+                            <div class="terminal-table-container glass mt-1">
+                                <div class="table-header-blue"><i class="fa-solid fa-clock-rotate-left"></i> REGISTRO IMPRODUCTIVAS</div>
+                                <div class="table-scroll" style="max-height: 120px;">
+                                    <table class="terminal-table">
+                                        <thead><tr><th>Hora</th><th>Motivo</th><th>Duración</th></tr></thead>
+                                        <tbody id="tbody-improd"></tbody>
+                                    </table>
+                                </div>
+                                <div style="padding:0.4rem 0.8rem;text-align:right;font-size:12px;color:#adb5bd;border-top:1px solid rgba(255,255,255,0.08);">
+                                    Total: <span id="total-improd-display" style="color:#f4a261;font-weight:700;">00:00:00</span>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Right Column -->
@@ -188,22 +202,8 @@
                                 </div>
                             </div>
 
-                            <!-- Log Improductivas -->
-                            <div class="ficha-tecnica glass mt-1" style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
-                                <div class="ficha-title-bar"><i class="fa-solid fa-clock-rotate-left"></i> REGISTRO IMPRODUCTIVAS</div>
-                                <div class="table-scroll" style="max-height: 120px;">
-                                    <table class="terminal-table">
-                                        <thead><tr><th>Hora</th><th>Motivo</th><th>Duración</th></tr></thead>
-                                        <tbody id="tbody-improd"></tbody>
-                                    </table>
-                                </div>
-                                <div style="padding:0.4rem 0.8rem;text-align:right;font-size:12px;color:#adb5bd;border-top:1px solid rgba(255,255,255,0.08);">
-                                    Total: <span id="total-improd-display" style="color:#f4a261;font-weight:700;">00:00:00</span>
-                                </div>
-                            </div>
-
                             <!-- Arte y Detalles del Ítem Activo -->
-                            <div class="ficha-tecnica glass mt-1" style="flex: 1.3; display: flex; flex-direction: column; overflow: hidden;" id="panel-arte-item">
+                            <div class="ficha-tecnica glass mt-1" style="flex: 1; display: flex; flex-direction: column; overflow: hidden;" id="panel-arte-item">
                                 <div class="ficha-title-bar" style="color: var(--secondary);"><i class="fa-solid fa-file-image"></i> ARTE &amp; DETALLES DEL ÍTEM</div>
                                 <div class="table-scroll" id="arte-item-container" style="padding: 1rem; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 0.8rem;">
                                     <i class="fa-solid fa-box-open" style="font-size: 2.5rem; color: rgba(255,255,255,0.15); margin-bottom: 0.5rem;"></i>
@@ -320,6 +320,10 @@
                                      <option value="">Cargando clientes...</option>
                                  </select>
                             </div>
+                            <div class="form-group half">
+                                <label>Observaciones de la OT</label>
+                                <input type="text" class="large-input" id="new-ot-observaciones" placeholder="Observaciones generales para producción o impresión...">
+                            </div>
                         </div>
 
                         <!-- NEW: Herramentales section -->
@@ -419,7 +423,18 @@
                         </div>
                     </div>
 
-                    <div class="card glass mt-2">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; flex-wrap: wrap; gap: 1rem; padding-bottom: 0.5rem;">
+                        <div class="ot-tabs" style="display: flex; gap: 6px;">
+                            <button class="btn btn-primary" id="tab-ot-activas" style="padding: 0.5rem 1.25rem; font-weight: bold; cursor: pointer;">Órdenes Activas</button>
+                            <button class="btn" id="tab-ot-finalizadas" style="background: transparent; border: 1px solid rgba(255,255,255,0.1); color: #adb5bd; padding: 0.5rem 1.25rem; font-weight: bold; cursor: pointer;">Órdenes Finalizadas</button>
+                        </div>
+                        <div class="search-box-ots" style="display: flex; align-items: center; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 0.4rem 0.8rem; min-width: 250px; height: 38px;">
+                            <i class="fa-solid fa-search" style="color: #adb5bd; margin-right: 0.5rem; font-size: 13px;"></i>
+                            <input type="text" id="input-busqueda-ots" placeholder="Buscar por número, cliente o varietal..." style="background: transparent; border: none; color: #fff; width: 100%; font-size: 13px; outline: none;">
+                        </div>
+                    </div>
+
+                    <div class="card glass mt-1">
                         <table class="data-table" id="tabla-ots">
                             <thead><tr><th>OT #</th><th>Fecha Alta</th><th>Cliente</th><th>Detalles</th><th>Estado</th><th>Acciones</th></tr></thead>
                             <tbody>
