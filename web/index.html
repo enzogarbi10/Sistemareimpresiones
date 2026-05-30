@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FlexoERP - Gestión de Etiquetas de Vino</title>
-    <link rel="stylesheet" href="styles.css?v=6">
+    <link rel="stylesheet" href="styles.css?v=7">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -178,27 +178,18 @@
 
                         <!-- Right Column -->
                         <div class="terminal-right-col">
-                            <div class="right-top-panel glass">
-                                <div class="icons-grid">
-                                    <div class="icon-item">
-                                        <button class="icon-btn"><i class="fa-solid fa-sliders"></i></button>
-                                        <span>Ajustes</span>
-                                    </div>
-                                    <div class="icon-item">
-                                        <button class="icon-btn"><i class="fa-solid fa-microchip"></i></button>
-                                        <span>BIOS</span>
-                                    </div>
-                                    <div class="icon-item">
-                                        <button class="icon-btn warning"><i class="fa-solid fa-comment-dots"></i></button>
-                                        <span>Aclaraciones</span>
-                                    </div>
-                                    <div class="icon-item">
-                                        <button class="icon-btn danger"><i class="fa-solid fa-triangle-exclamation"></i></button>
-                                        <span>Observaciones</span>
-                                    </div>
+                            <div class="right-top-panel glass" style="padding: 0;">
+                                <div class="ot-terminal-tabs" style="display:flex; border-bottom:1px solid rgba(255,255,255,0.08); background:rgba(0,0,0,0.15);">
+                                    <button class="btn" id="tab-terminal-obs" style="flex:1; padding:0.6rem; text-align:center; cursor:pointer; font-weight:bold; font-size:12.5px; color:var(--danger); background:transparent; border:none; display:flex; align-items:center; justify-content:center; gap:8px; border-radius:0;">
+                                        <i class="fa-solid fa-triangle-exclamation"></i> Observaciones
+                                    </button>
                                 </div>
-                                <div id="ot-resumen-terminal" style="padding:1rem;border-top:1px solid rgba(255,255,255,0.08);margin-top:0.5rem;">
+                                <div id="ot-resumen-terminal" style="padding:1rem;">
                                     <p style="color:#adb5bd;text-align:center;font-size:12px;margin:0;">Sin OT activa</p>
+                                </div>
+                                <div id="ot-observaciones-terminal" style="padding:0 1rem 1rem; display:none;">
+                                    <p style="color:var(--warning);font-weight:bold;font-size:11px;margin:0 0 4px;text-transform:uppercase;">Observaciones de la OT:</p>
+                                    <div id="ot-observaciones-terminal-text" style="color:#e9ecef;font-size:13px;white-space:pre-wrap;line-height:1.4;">Sin OT activa</div>
                                 </div>
                             </div>
 
@@ -813,6 +804,6 @@
         </div>
     </div>
 
-    <script src="app.js?v=6"></script>
+    <script src="app.js?v=7"></script>
 </body>
 </html>

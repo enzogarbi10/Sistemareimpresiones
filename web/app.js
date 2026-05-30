@@ -1222,6 +1222,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const detalleOtContainer  = document.getElementById('detalle-ot-container');
     const otResumenTerminal   = document.getElementById('ot-resumen-terminal');
 
+    const tabTerminalObs = document.getElementById('tab-terminal-obs');
+    if (tabTerminalObs) {
+        tabTerminalObs.addEventListener('click', () => {
+            const container = document.getElementById('ot-observaciones-terminal');
+            if (container) {
+                if (container.style.display === 'none') {
+                    container.style.display = 'block';
+                } else {
+                    container.style.display = 'none';
+                }
+            }
+        });
+    }
+
     // Timers (seconds)
     let segsPrep = 0, segsProd = 0, segsImprod = 0, segsImprodActual = 0;
     let timerPrep = null, timerProd = null, timerImprod = null;
@@ -1315,63 +1329,24 @@ document.addEventListener('DOMContentLoaded', () => {
         tiempoBadge.textContent = '00:00:00';
 
         // Renderizar Arte y Ficha
+        const artContainer = document.getElementById('arte-item-container');
         if (artContainer) {
-            let artHtml = `
-            <div class="taller-tabs" style="display: flex; gap: 4px; border-bottom: 1px solid rgba(255,255,255,0.08); width: 100%; margin-bottom: 0.8rem;">
-                <button class="taller-tab-btn active" id="tab-btn-arte" style="flex: 1; padding: 0.5rem; background: transparent; border: none; border-bottom: 2px solid var(--secondary); color: var(--secondary); font-weight: bold; cursor: pointer; outline: none; font-family: inherit;">Arte / Imagen</button>
-                <button class="taller-tab-btn" id="tab-btn-obs" style="flex: 1; padding: 0.5rem; background: transparent; border: none; border-bottom: 2px solid transparent; color: #adb5bd; font-weight: bold; cursor: pointer; outline: none; font-family: inherit;">Observaciones</button>
-            </div>
-            
-            <div id="taller-tab-content-arte" style="width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.6rem;">
+            let artHtml = `<div style="width:100%; display:flex; flex-direction:column; gap:0.6rem; align-items:center;">
                 <div style="font-size:12.5px; text-align:left; width:100%; background:rgba(0,0,0,0.3); padding:0.6rem; border-radius:6px; border:1px solid rgba(255,255,255,0.05);">
                     <p style="margin:0 0 2px; color:var(--secondary); font-weight:700; font-size:13px;">${itemActivo.marca ? itemActivo.marca.toUpperCase() + ' ' : ''}${itemActivo.varietal.toUpperCase()}</p>
                     <p style="margin:2px 0; color:#fff;">Cant. Requerida: <strong style="color:#00f5d4;">${Number(itemActivo.cantidad).toLocaleString()} u.</strong></p>
                     <p style="margin:2px 0; color:#adb5bd; font-size:11px;">Detalle: ${itemActivo.colores} colores · ${itemActivo.barniz==='SI'?'Con Barniz':'Sin Barniz'}</p>
                 </div>`;
             if (itemActivo.imagenB64) {
-                artHtml += `<div style="margin-top:0.3rem; width:100%; display:flex; justify-content:center;"><img src="${itemActivo.imagenB64}" class="arte-preview-img" alt="Arte del varietal" style="max-height:280px; width:auto; border-radius:6px;"></div>`;
+                artHtml += `<div style="margin-top:0.3rem;"><img src="${itemActivo.imagenB64}" class="arte-preview-img" alt="Arte del varietal"></div>`;
             } else {
                 artHtml += `<div style="border:1px dashed rgba(255,255,255,0.12); border-radius:8px; width:100%; padding:1.2rem; background:rgba(0,0,0,0.15); margin-top:0.3rem;">
                     <i class="fa-regular fa-image" style="font-size:1.8rem; color:#6c757d; margin-bottom:0.4rem;"></i>
                     <p style="color:#6c757d; font-size:11.5px; margin:0; font-style:italic;">No se adjuntó archivo de arte para este ítem</p>
                 </div>`;
             }
-            artHtml += `</div>
-            
-            <div id="taller-tab-content-obs" style="width: 100%; display: none; padding: 1rem; background: rgba(0,0,0,0.2); border-radius: 6px; border: 1px solid rgba(255,255,255,0.05); text-align: left; font-size: 13px; line-height: 1.4; color: #fff; max-height: 350px; overflow-y: auto;">
-                 <p style="margin:0 0 0.5rem; color:var(--warning); font-weight:bold; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Observaciones de la OT:</p>
-                 <div style="white-space: pre-wrap; font-family: inherit; font-size: 13px; color: #e9ecef; font-weight: normal;">${otActual.observaciones || 'Sin observaciones registradas en esta OT.'}</div>
-            </div>`;
-            
+            artHtml += `</div>`;
             artContainer.innerHTML = artHtml;
-
-            const tArte = document.getElementById('tab-btn-arte');
-            const tObs = document.getElementById('tab-btn-obs');
-            const cArte = document.getElementById('taller-tab-content-arte');
-            const cObs = document.getElementById('taller-tab-content-obs');
-
-            if (tArte && tObs && cArte && cObs) {
-                tArte.addEventListener('click', () => {
-                    tArte.classList.add('active');
-                    tArte.style.borderBottomColor = 'var(--secondary)';
-                    tArte.style.color = 'var(--secondary)';
-                    tObs.classList.remove('active');
-                    tObs.style.borderBottomColor = 'transparent';
-                    tObs.style.color = '#adb5bd';
-                    cArte.style.display = 'flex';
-                    cObs.style.display = 'none';
-                });
-                tObs.addEventListener('click', () => {
-                    tObs.classList.add('active');
-                    tObs.style.borderBottomColor = 'var(--secondary)';
-                    tObs.style.color = 'var(--secondary)';
-                    tArte.classList.remove('active');
-                    tArte.style.borderBottomColor = 'transparent';
-                    tArte.style.color = '#adb5bd';
-                    cArte.style.display = 'none';
-                    cObs.style.display = 'block';
-                });
-            }
         }
 
         // Configurar botones e iniciar Prep Timer
@@ -1419,6 +1394,12 @@ document.addEventListener('DOMContentLoaded', () => {
         btnIniciar.innerHTML  = '<i class="fa-solid fa-play"></i> Iniciar';
         detalleOtContainer.innerHTML = '<p style="color:#adb5bd;padding:1.5rem;text-align:center;font-size:13px;">Seleccione una OT del selector para ver el detalle</p>';
         otResumenTerminal.innerHTML  = '<p style="color:#adb5bd;text-align:center;font-size:12px;margin:0;">Sin OT activa</p>';
+        
+        const obsTextEl = document.getElementById('ot-observaciones-terminal-text');
+        if (obsTextEl) obsTextEl.innerText = 'Sin OT activa';
+        const obsCont = document.getElementById('ot-observaciones-terminal');
+        if (obsCont) obsCont.style.display = 'none';
+
         const artContainer = document.getElementById('arte-item-container');
         if (artContainer) {
             artContainer.innerHTML = `<i class="fa-solid fa-box-open" style="font-size: 2.5rem; color: rgba(255,255,255,0.15); margin-bottom: 0.5rem;"></i>
@@ -1453,6 +1434,12 @@ document.addEventListener('DOMContentLoaded', () => {
             btnImproductiva.disabled = true;
             btnIniciar.innerHTML  = '<i class="fa-solid fa-play"></i> Iniciar';
             otResumenTerminal.innerHTML = `<div style="font-size:12px;"><p style="color:var(--primary);font-weight:700;margin:0 0 4px;">OT #${otActual.numero}</p><p style="margin:2px 0;color:#e9ecef;">${otActual.cliente}</p><p style="margin:2px 0;color:#adb5bd;">Alta: ${otActual.fechaAlta} · ${otActual.items.length} ítem(s)</p></div>`;
+            
+            const obsTextEl = document.getElementById('ot-observaciones-terminal-text');
+            if (obsTextEl) obsTextEl.innerText = otActual.observaciones || 'Sin observaciones registradas en esta OT.';
+            const obsCont = document.getElementById('ot-observaciones-terminal');
+            if (obsCont) obsCont.style.display = 'none';
+
             renderDetalleOt();
             const artContainer = document.getElementById('arte-item-container');
             if (artContainer) {
