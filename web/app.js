@@ -124,6 +124,15 @@ document.addEventListener('DOMContentLoaded', () => {
         saveToServer();
     }
 
+    function recalcularSaldosClientes() {
+        CLIENTS.forEach(cli => {
+            const totalRemitos = REMITOS.filter(r => r.cliente === cli.nombre).reduce((acc, r) => acc + (parseFloat(r.total) || 0), 0);
+            const totalPagos = PAGOS.filter(p => p.cliente === cli.nombre).reduce((acc, p) => acc + (parseFloat(p.importe) || 0), 0);
+            cli.saldo = totalRemitos - totalPagos;
+        });
+        saveClients();
+    }
+
     function saveOts() {
         saveToServer();
     }
@@ -2051,11 +2060,23 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
+        const isPriv = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin');
+        
         // Reverse array to show latest first
         const remitosOrdenados = [...REMITOS].reverse();
         
         remitosOrdenados.forEach(rem => {
             const numStr = `R-0002-${String(rem.numero).padStart(8, '0')}`;
+            const actionsHtml = isPriv ? `
+                <button class="btn btn-icon btn-ver-remito-historial" data-numero="${rem.numero}" style="color:var(--primary);" title="Ver Remito"><i class="fa-solid fa-eye"></i></button>
+                <button class="btn btn-icon btn-descargar-pdf-historial" data-numero="${rem.numero}" style="color:#ff4d6d;" title="Descargar PDF"><i class="fa-solid fa-file-pdf"></i></button>
+                <button class="btn btn-icon btn-editar-remito-historial" data-numero="${rem.numero}" style="color:var(--warning);" title="Editar Remito"><i class="fa-solid fa-pen-to-square"></i></button>
+                <button class="btn btn-icon btn-eliminar-remito-historial" data-numero="${rem.numero}" style="color:var(--danger);" title="Eliminar Remito"><i class="fa-solid fa-trash-can"></i></button>
+            ` : `
+                <button class="btn btn-icon btn-ver-remito-historial" data-numero="${rem.numero}" style="color:var(--primary);" title="Ver Remito"><i class="fa-solid fa-eye"></i></button>
+                <button class="btn btn-icon btn-descargar-pdf-historial" data-numero="${rem.numero}" style="color:#ff4d6d;" title="Descargar PDF"><i class="fa-solid fa-file-pdf"></i></button>
+            `;
+
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td><strong>${numStr}</strong></td>
@@ -2066,8 +2087,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td><small style="color:#adb5bd;">${rem.emailEnviado || 'No registrado'}</small></td>
                 <td>
                     <div style="display:flex; gap:0.5rem;">
-                        <button class="btn btn-icon btn-ver-remito-historial" data-numero="${rem.numero}" style="color:var(--primary);" title="Ver Remito"><i class="fa-solid fa-eye"></i></button>
-                        <button class="btn btn-icon btn-descargar-pdf-historial" data-numero="${rem.numero}" style="color:#ff4d6d;" title="Descargar PDF"><i class="fa-solid fa-file-pdf"></i></button>
+                        ${actionsHtml}
                     </div>
                 </td>
             `;
@@ -2158,6 +2178,55 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Modal Editar Remito Event Listeners
+    const modalEditarRemito = document.getElementById('modal-editar-remito');
+    const btnGuardarEditarRemito = document.getElementById('btn-guardar-editar-remito');
+    const btnCancelarEditarRemito = document.getElementById('btn-cancelar-editar-remito');
+
+    if (btnCancelarEditarRemito) {
+        btnCancelarEditarRemito.addEventListener('click', () => {
+            modalEditarRemito.style.display = 'none';
+        });
+    }
+
+    if (btnGuardarEditarRemito) {
+        btnGuardarEditarRemito.addEventListener('click', () => {
+            const num = parseInt(document.getElementById('editar-remito-id').value);
+            const nuevaFecha = document.getElementById('editar-remito-fecha').value.trim();
+            const nuevoTotal = parseFloat(document.getElementById('editar-remito-total').value);
+            const nuevasObs = document.getElementById('editar-remito-observaciones').value.trim();
+
+            if (!nuevaFecha) {
+                alert('Debe ingresar una fecha.');
+                return;
+            }
+            if (isNaN(nuevoTotal) || nuevoTotal < 0) {
+                alert('Debe ingresar un importe válido mayor o igual a 0.');
+                return;
+            }
+
+            const rem = REMITOS.find(r => r.numero === num);
+            if (rem) {
+                rem.fecha = nuevaFecha;
+                rem.total = nuevoTotal;
+                rem.observaciones = nuevasObs;
+                
+                saveRemitos();
+                recalcularSaldosClientes();
+                
+                modalEditarRemito.style.display = 'none';
+                
+                renderHistorialRemitos();
+                renderDashboard();
+                renderClientes();
+                const selCuentaCliente = document.getElementById('sel-cuenta-cliente');
+                if (selCuentaCliente && selCuentaCliente.value) {
+                    renderCuentasCorrientes(selCuentaCliente.value);
+                }
+            }
+        });
+    }
+
     // Event delegation at document level for logistics table truck button & history buttons
     document.addEventListener('click', (e) => {
         // Pending dispatch
@@ -2186,6 +2255,59 @@ document.addEventListener('DOMContentLoaded', () => {
             if (btnPdf) btnPdf.click();
             document.getElementById('modal-remito').style.display = 'none';
             currentOtParaRemito = null;
+            return;
+        }
+
+        // History Edit Button
+        const btnEditarHistorial = e.target.closest('.btn-editar-remito-historial');
+        if (btnEditarHistorial) {
+            const num = parseInt(btnEditarHistorial.getAttribute('data-numero'));
+            const rem = REMITOS.find(r => r.numero === num);
+            if (rem) {
+                document.getElementById('editar-remito-id').value = rem.numero;
+                document.getElementById('label-editar-remito-nro').innerText = `Remito Nro: R-0002-${String(rem.numero).padStart(8, '0')}`;
+                document.getElementById('editar-remito-fecha').value = rem.fecha;
+                document.getElementById('editar-remito-total').value = rem.total;
+                document.getElementById('editar-remito-observaciones').value = rem.observaciones || '';
+                modalEditarRemito.style.display = 'flex';
+            }
+            return;
+        }
+
+        // History Delete
+        const btnEliminarHistorial = e.target.closest('.btn-eliminar-remito-historial');
+        if (btnEliminarHistorial) {
+            const num = parseInt(btnEliminarHistorial.getAttribute('data-numero'));
+            if (confirm(`¿Está seguro de que desea eliminar el Remito R-0002-${String(num).padStart(8, '0')}?\nEsto anulará el cargo del cliente y devolverá la Orden de Trabajo a Logística para ser re-despachada si es necesario.`)) {
+                const remIndex = REMITOS.findIndex(r => r.numero === num);
+                if (remIndex > -1) {
+                    const rem = REMITOS[remIndex];
+                    
+                    // Devolver OT a Logística
+                    const ot = todasLasOts[rem.otNumero];
+                    if (ot) {
+                        if (!otsLogistica.some(o => o.numero === ot.numero)) {
+                            otsLogistica.push({ ...ot });
+                            saveOts();
+                        }
+                    }
+                    
+                    // Remover de la lista de remitos
+                    REMITOS.splice(remIndex, 1);
+                    saveRemitos();
+                    
+                    // Recalcular saldos de clientes y re-renderizar todo
+                    recalcularSaldosClientes();
+                    renderHistorialRemitos();
+                    renderDashboard();
+                    renderLogistica();
+                    renderClientes();
+                    const selCuentaCliente = document.getElementById('sel-cuenta-cliente');
+                    if (selCuentaCliente && selCuentaCliente.value) {
+                        renderCuentasCorrientes(selCuentaCliente.value);
+                    }
+                }
+            }
             return;
         }
     });
