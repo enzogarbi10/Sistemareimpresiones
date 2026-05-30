@@ -14,13 +14,7 @@ if getattr(sys, 'frozen', False):
 else:
     exe_dir = os.path.dirname(os.path.abspath(__file__))
 
-# Prefer E:\FlexoERP, fallback to exe_dir
-base_dir = r"E:\FlexoERP"
-if not os.path.exists(base_dir):
-    try:
-        os.makedirs(base_dir, exist_ok=True)
-    except Exception:
-        base_dir = exe_dir
+base_dir = exe_dir
 
 db_path = os.path.join(base_dir, "database.json")
 web_dir = os.path.join(base_dir, "web")
@@ -58,7 +52,8 @@ DEFAULT_DATA = {
         "1044": { "numero": 1044, "cliente": "Salentein", "fechaAlta": "08/05/2026", "items": [
             { "varietal": "Chardonnay", "cantidad": "10000", "precio": "15", "colores": "3", "barniz": "NO", "fecha": "2026-06-15", "imagenB64": None, "status": "pendiente" }
         ]}
-    }
+    },
+    "pagos": []
 }
 
 def load_db():
@@ -149,7 +144,7 @@ def main():
     print(f"Web folder: {web_dir}")
     print(f"Database path: {db_path}")
     
-    threading.Timer(1.0, open_browser).start()
+    # threading.Timer(1.0, open_browser).start()
     
     try:
         httpd.serve_forever()

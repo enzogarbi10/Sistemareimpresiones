@@ -217,31 +217,91 @@
                 <!-- ====== MODULE: DASHBOARD ====== -->
                 <section id="dashboard" class="module">
                     <div class="module-header">
-                        <h2>Dashboard Financiero</h2>
-                        <p>Resumen de rentabilidad y costos.</p>
-                    </div>
-                    <div class="stats-grid">
-                        <div class="stat-card glass">
-                            <div class="stat-icon"><i class="fa-solid fa-sack-dollar"></i></div>
-                            <div class="stat-data"><h3>Ingresos (Mes)</h3><h2 id="dash-ingresos">$ 0</h2></div>
-                        </div>
-                        <div class="stat-card glass">
-                            <div class="stat-icon warning"><i class="fa-solid fa-arrow-trend-down"></i></div>
-                            <div class="stat-data"><h3>Costos Producción</h3><h2 id="dash-costos">$ 0</h2></div>
-                        </div>
-                        <div class="stat-card glass">
-                            <div class="stat-icon success"><i class="fa-solid fa-arrow-trend-up"></i></div>
-                            <div class="stat-data"><h3>Rentabilidad Neta</h3><h2 id="dash-rentabilidad">0.0%</h2></div>
+                        <h2>Finanzas y Cuentas</h2>
+                        <p>Resumen global, facturación mensual y cuentas corrientes.</p>
+                        <div class="tabs-container" style="margin-top:1rem; display:flex; gap:0.5rem;">
+                            <button class="btn btn-primary btn-tab-fin" data-target="fin-resumen" style="border-radius: 20px;">Resumen Global</button>
+                            <button class="btn btn-secondary btn-tab-fin" data-target="fin-cuentas" style="border-radius: 20px;">Cuentas Corrientes</button>
                         </div>
                     </div>
-                    <div class="card glass mt-2">
-                        <h3>Rentabilidad por Bodega</h3>
-                        <table class="data-table" id="tabla-rentabilidad">
-                            <thead><tr><th>Bodega</th><th>Remitos Emitidos</th><th>Ingresos</th><th>Costos</th><th>Margen</th></tr></thead>
-                            <tbody id="tbody-rentabilidad">
-                            </tbody>
-                        </table>
+
+                    <div id="fin-resumen" class="fin-tab-content" style="display:block;">
+                        <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
+                            <div class="stat-card glass">
+                                <div class="stat-icon"><i class="fa-solid fa-sack-dollar"></i></div>
+                                <div class="stat-data"><h3>Ingresos Totales</h3><h2 id="dash-ingresos">$ 0</h2></div>
+                            </div>
+                            <div class="stat-card glass">
+                                <div class="stat-icon success"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+                                <div class="stat-data"><h3>Remitos Emitidos</h3><h2 id="dash-remitos-count">0</h2></div>
+                            </div>
+                            <div class="stat-card glass">
+                                <div class="stat-icon warning"><i class="fa-solid fa-hand-holding-dollar"></i></div>
+                                <div class="stat-data"><h3>Saldo Deudor Total</h3><h2 id="dash-saldo-total">$ 0</h2></div>
+                            </div>
+                        </div>
+                        
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1.5rem;">
+                            <div class="card glass">
+                                <h3>Facturación Mes a Mes</h3>
+                                <table class="data-table" id="tabla-facturacion-mensual">
+                                    <thead><tr><th>Mes</th><th>Remitos</th><th>Total Facturado</th></tr></thead>
+                                    <tbody id="tbody-facturacion-mensual">
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="card glass">
+                                <h3>Facturación por Cliente</h3>
+                                <table class="data-table" id="tabla-rentabilidad">
+                                    <thead><tr><th>Cliente</th><th>Remitos</th><th>Total Facturado</th><th>Saldo</th></tr></thead>
+                                    <tbody id="tbody-rentabilidad">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
+
+                    <div id="fin-cuentas" class="fin-tab-content" style="display:none;">
+                        <div class="card glass" style="margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
+                            <div style="flex: 1; min-width: 250px;">
+                                <label style="display:block; margin-bottom: 0.5rem; font-weight:600; color:var(--primary);">Seleccionar Cliente</label>
+                                <select id="sel-cuenta-cliente" class="form-control">
+                                    <option value="">-- Seleccione --</option>
+                                </select>
+                            </div>
+                            <div style="display:flex; gap: 1rem; align-items: flex-end;">
+                                <button class="btn btn-primary" id="btn-registrar-pago" style="display:none;"><i class="fa-solid fa-hand-holding-dollar"></i> Registrar Pago</button>
+                                <button class="btn btn-secondary" id="btn-descargar-estado-cuenta" style="display:none;"><i class="fa-solid fa-file-pdf"></i> Estado de Cuenta PDF</button>
+                            </div>
+                        </div>
+
+                        <div id="cuenta-detalle-container" style="display:none;">
+                            <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 1rem;">
+                                <div class="stat-card glass" style="padding: 1rem;">
+                                    <h3 style="font-size: 12px; margin:0 0 5px; color:#adb5bd;">Total Facturado</h3>
+                                    <h2 id="cuenta-total-facturado" style="font-size: 20px; margin:0; color:var(--primary);">$ 0</h2>
+                                </div>
+                                <div class="stat-card glass" style="padding: 1rem;">
+                                    <h3 style="font-size: 12px; margin:0 0 5px; color:#adb5bd;">Total Pagado</h3>
+                                    <h2 id="cuenta-total-pagado" style="font-size: 20px; margin:0; color:var(--success);">$ 0</h2>
+                                </div>
+                                <div class="stat-card glass" style="padding: 1rem;">
+                                    <h3 style="font-size: 12px; margin:0 0 5px; color:#adb5bd;">Saldo Deudor</h3>
+                                    <h2 id="cuenta-saldo-actual" style="font-size: 24px; margin:0; color:var(--danger);">$ 0</h2>
+                                </div>
+                            </div>
+
+                            <div class="card glass">
+                                <h3>Historial de Movimientos</h3>
+                                <table class="data-table" id="tabla-movimientos-cuenta">
+                                    <thead><tr><th>Fecha</th><th>Tipo</th><th>Detalle</th><th>Cargo</th><th>Abono</th><th>Saldo</th><th>Acciones</th></tr></thead>
+                                    <tbody id="tbody-movimientos-cuenta">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
                 </section>
 
                 <!-- ====== MODULE: OTs ====== -->
@@ -574,6 +634,29 @@
                 <button class="btn btn-warning" id="btn-confirmar-improd"><i class="fa-solid fa-pause"></i> Registrar y Pausar</button>
                 <button class="btn btn-danger" id="btn-cancelar-improd">Cancelar</button>
             </div>
+        </div>
+    </div>
+    <!-- ====== MODAL: REGISTRAR PAGO ====== -->
+    <div id="modal-pago" class="modal-overlay" style="display:none;">
+        <div class="modal-box glass" style="max-width: 400px;">
+            <h3 id="modal-pago-title"><i class="fa-solid fa-hand-holding-dollar" style="color:var(--success);"></i> Registrar Pago</h3>
+            <div class="form-group" style="margin-top:1rem;">
+                <label>Fecha del Pago</label>
+                <input type="date" id="pago-fecha" class="form-control" style="width:100%;">
+            </div>
+            <div class="form-group" style="margin-top:1rem;">
+                <label>Importe Abonado ($)</label>
+                <input type="number" id="pago-importe" class="form-control" style="width:100%;" min="0" step="0.01">
+            </div>
+            <div class="form-group" style="margin-top:1rem;">
+                <label>Método / Notas (Opcional)</label>
+                <input type="text" id="pago-notas" class="form-control" style="width:100%;" placeholder="Ej: Transferencia, Efectivo...">
+            </div>
+            <div class="action-buttons mt-2" style="margin-top:1.5rem;">
+                <button class="btn btn-success" id="btn-guardar-pago"><i class="fa-solid fa-check"></i> Guardar Pago</button>
+                <button class="btn btn-danger" id="btn-cancelar-pago">Cancelar</button>
+            </div>
+            <input type="hidden" id="pago-id-editar" value="">
         </div>
     </div>
 

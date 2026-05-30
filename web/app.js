@@ -62,6 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     let REMITOS = JSON.parse(localStorage.getItem('flexoERP_remitos')) || [];
+    let PAGOS = JSON.parse(localStorage.getItem('flexoERP_pagos')) || [];
     let ultimoRemitoNumero = parseInt(localStorage.getItem('flexoERP_ultimo_remito')) || 8000;
 
     let otsPendientes  = JSON.parse(localStorage.getItem('flexoERP_ots_pendientes')) || [
@@ -85,6 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
             users: USERS,
             clients: CLIENTS,
             remitos: REMITOS,
+            pagos: PAGOS,
             ultimo_remito: ultimoRemitoNumero,
             ots_pendientes: otsPendientes,
             ots_logistica: otsLogistica,
@@ -96,6 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('flexoERP_users', JSON.stringify(USERS));
         localStorage.setItem('flexoERP_clients', JSON.stringify(CLIENTS));
         localStorage.setItem('flexoERP_remitos', JSON.stringify(REMITOS));
+        localStorage.setItem('flexoERP_pagos', JSON.stringify(PAGOS));
         localStorage.setItem('flexoERP_ultimo_remito', ultimoRemitoNumero);
         localStorage.setItem('flexoERP_ots_pendientes', JSON.stringify(otsPendientes));
         localStorage.setItem('flexoERP_ots_logistica', JSON.stringify(otsLogistica));
@@ -134,6 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
             USERS = data.users || USERS;
             CLIENTS = data.clients || CLIENTS;
             REMITOS = data.remitos || REMITOS;
+            PAGOS = data.pagos || PAGOS;
             ultimoRemitoNumero = data.ultimo_remito !== undefined ? data.ultimo_remito : ultimoRemitoNumero;
             otsPendientes = data.ots_pendientes || otsPendientes;
             otsLogistica = data.ots_logistica || otsLogistica;
@@ -147,6 +151,7 @@ document.addEventListener('DOMContentLoaded', () => {
             USERS = JSON.parse(localStorage.getItem('flexoERP_users')) || USERS;
             CLIENTS = JSON.parse(localStorage.getItem('flexoERP_clients')) || CLIENTS;
             REMITOS = JSON.parse(localStorage.getItem('flexoERP_remitos')) || REMITOS;
+            PAGOS = JSON.parse(localStorage.getItem('flexoERP_pagos')) || PAGOS;
             
             const savedLastRemito = localStorage.getItem('flexoERP_ultimo_remito');
             if (savedLastRemito) ultimoRemitoNumero = parseInt(savedLastRemito);
@@ -283,8 +288,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderDashboard() {
         const dashIngresos = document.getElementById('dash-ingresos');
-        const dashCostos = document.getElementById('dash-costos');
-        const dashRentabilidad = document.getElementById('dash-rentabilidad');
+        const dashRemitosCount = document.getElementById('dash-remitos-count');
+        const dashSaldoTotal = document.getElementById('dash-saldo-total');
         const tbodyRentabilidad = document.getElementById('tbody-rentabilidad');
 
         let totalIngresos = 0;
@@ -292,35 +297,34 @@ document.addEventListener('DOMContentLoaded', () => {
             totalIngresos += parseFloat(r.total) || 0;
         });
 
-        let totalCostos = totalIngresos * 0.55;
-        let totalRentabilidadNetaPercent = totalIngresos > 0 ? ((totalIngresos - totalCostos) / totalIngresos) * 100 : 0;
-
         if (dashIngresos) {
             dashIngresos.innerText = `$ ${totalIngresos.toLocaleString('es-AR', {minimumFractionDigits: 0})}`;
         }
-        if (dashCostos) {
-            dashCostos.innerText = `$ ${totalCostos.toLocaleString('es-AR', {minimumFractionDigits: 0})}`;
+        if (dashRemitosCount) {
+            dashRemitosCount.innerText = REMITOS.length;
         }
-        if (dashRentabilidad) {
-            dashRentabilidad.innerText = `${totalRentabilidadNetaPercent.toFixed(1)}%`;
+
+        // Calcular saldo total de todos los clientes
+        let totalPagado = PAGOS.reduce((acc, p) => acc + (parseFloat(p.importe) || 0), 0);
+        let saldoTotal = totalIngresos - totalPagado;
+        if (dashSaldoTotal) {
+            dashSaldoTotal.innerText = `$ ${saldoTotal.toLocaleString('es-AR', {minimumFractionDigits: 0})}`;
         }
 
         if (tbodyRentabilidad) {
             tbodyRentabilidad.innerHTML = '';
-            
+
             const clientStats = {};
             CLIENTS.forEach(c => {
-                clientStats[c.nombre] = { remitosCount: 0, ingresos: 0, costos: 0 };
+                clientStats[c.nombre] = { remitosCount: 0, ingresos: 0 };
             });
 
             REMITOS.forEach(r => {
                 if (!clientStats[r.cliente]) {
-                    clientStats[r.cliente] = { remitosCount: 0, ingresos: 0, costos: 0 };
+                    clientStats[r.cliente] = { remitosCount: 0, ingresos: 0 };
                 }
-                const ing = parseFloat(r.total) || 0;
                 clientStats[r.cliente].remitosCount++;
-                clientStats[r.cliente].ingresos += ing;
-                clientStats[r.cliente].costos += ing * 0.55;
+                clientStats[r.cliente].ingresos += parseFloat(r.total) || 0;
             });
 
             const sortedClients = Object.keys(clientStats)
@@ -329,17 +333,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 .sort((a, b) => b.ingresos - a.ingresos);
 
             if (sortedClients.length === 0) {
-                tbodyRentabilidad.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">No se registran remitos emitidos.</td></tr>`;
+                tbodyRentabilidad.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">No se registran remitos emitidos.</td></tr>`;
             } else {
                 sortedClients.forEach(c => {
-                    const margin = c.ingresos > 0 ? ((c.ingresos - c.costos) / c.ingresos) * 100 : 0;
+                    const pagosCli = PAGOS.filter(p => p.cliente === c.name).reduce((acc, p) => acc + (parseFloat(p.importe) || 0), 0);
+                    const saldoCli = c.ingresos - pagosCli;
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
                         <td><strong>${c.name}</strong></td>
                         <td>${c.remitosCount}</td>
                         <td style="font-family:monospace; color:#00f5d4;">$ ${c.ingresos.toLocaleString('es-AR', {minimumFractionDigits: 0})}</td>
-                        <td style="font-family:monospace; color:var(--danger);">$ ${c.costos.toLocaleString('es-AR', {minimumFractionDigits: 0})}</td>
-                        <td><span class="badge ${margin >= 45 ? 'success' : 'warning'}">${margin.toFixed(0)}%</span></td>
+                        <td style="font-family:monospace; color:${saldoCli > 0 ? 'var(--danger)' : 'var(--success)'};">$ ${saldoCli.toLocaleString('es-AR', {minimumFractionDigits: 0})}</td>
                     `;
                     tbodyRentabilidad.appendChild(tr);
                 });
@@ -348,6 +352,283 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
+    // ── TABS FINANCIERO ───────────────────────────────────────
+    const btnTabsFin = document.querySelectorAll('.btn-tab-fin');
+    const finTabsContent = document.querySelectorAll('.fin-tab-content');
+
+    btnTabsFin.forEach(btn => {
+        btn.addEventListener('click', () => {
+            btnTabsFin.forEach(b => {
+                b.classList.remove('btn-primary');
+                b.classList.add('btn-secondary');
+            });
+            btn.classList.remove('btn-secondary');
+            btn.classList.add('btn-primary');
+
+            const targetId = btn.getAttribute('data-target');
+            finTabsContent.forEach(tc => {
+                tc.style.display = tc.id === targetId ? 'block' : 'none';
+            });
+
+            if (targetId === 'fin-cuentas') {
+                populateCuentasDropdown();
+            }
+        });
+    });
+
+    // ── CUENTAS CORRIENTES ─────────────────────────────────────
+    const selCuentaCliente = document.getElementById('sel-cuenta-cliente');
+    const cuentaDetalleContainer = document.getElementById('cuenta-detalle-container');
+    const btnRegistrarPago = document.getElementById('btn-registrar-pago');
+    const btnDescargarEstadoCuenta = document.getElementById('btn-descargar-estado-cuenta');
+
+    function populateCuentasDropdown() {
+        if (!selCuentaCliente) return;
+        const prev = selCuentaCliente.value;
+        selCuentaCliente.innerHTML = '<option value="">-- Seleccione un Cliente --</option>';
+        CLIENTS.forEach(cli => {
+            const opt = document.createElement('option');
+            opt.value = cli.nombre;
+            opt.textContent = cli.nombre;
+            selCuentaCliente.appendChild(opt);
+        });
+        if (prev && CLIENTS.some(c => c.nombre === prev)) {
+            selCuentaCliente.value = prev;
+        } else {
+            if (cuentaDetalleContainer) cuentaDetalleContainer.style.display = 'none';
+            if (btnRegistrarPago) btnRegistrarPago.style.display = 'none';
+            if (btnDescargarEstadoCuenta) btnDescargarEstadoCuenta.style.display = 'none';
+        }
+    }
+
+    if (selCuentaCliente) {
+        selCuentaCliente.addEventListener('change', () => {
+            if (selCuentaCliente.value) {
+                cuentaDetalleContainer.style.display = 'block';
+                btnRegistrarPago.style.display = 'inline-block';
+                btnDescargarEstadoCuenta.style.display = 'inline-block';
+                renderCuentasCorrientes(selCuentaCliente.value);
+            } else {
+                cuentaDetalleContainer.style.display = 'none';
+                btnRegistrarPago.style.display = 'none';
+                btnDescargarEstadoCuenta.style.display = 'none';
+            }
+        });
+    }
+
+    function parseFechaArg(fechaStr) {
+        if (!fechaStr) return 0;
+        if (fechaStr.includes('-')) return new Date(fechaStr).getTime();
+        const p = fechaStr.split('/');
+        if (p.length === 3) return new Date(`${p[2]}-${p[1]}-${p[0]}T12:00:00`).getTime();
+        return 0;
+    }
+
+    function renderCuentasCorrientes(clienteNombre) {
+        const tbodyMov = document.getElementById('tbody-movimientos-cuenta');
+        const lblTotalFacturado = document.getElementById('cuenta-total-facturado');
+        const lblTotalPagado = document.getElementById('cuenta-total-pagado');
+        const lblSaldoActual = document.getElementById('cuenta-saldo-actual');
+        if (!tbodyMov) return;
+        tbodyMov.innerHTML = '';
+
+        const remitosCli = REMITOS.filter(r => r.cliente === clienteNombre).map(r => ({
+            id: r.numero, fecha: r.fecha, tipo: 'Cargo',
+            detalle: 'Remito #' + r.numero,
+            importe: parseFloat(r.total) || 0,
+            sortDate: parseFechaArg(r.fecha)
+        }));
+        const pagosCli = PAGOS.filter(p => p.cliente === clienteNombre).map(p => ({
+            id: p.id, fecha: p.fecha, tipo: 'Abono',
+            detalle: p.notas ? 'Pago (' + p.notas + ')' : 'Pago',
+            importe: parseFloat(p.importe) || 0,
+            sortDate: parseFechaArg(p.fecha)
+        }));
+
+        const movimientos = [...remitosCli, ...pagosCli].sort((a, b) => a.sortDate - b.sortDate);
+        let saldo = 0, totalCargos = 0, totalAbonos = 0;
+
+        if (movimientos.length === 0) {
+            tbodyMov.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#adb5bd;">No hay movimientos para este cliente.</td></tr>';
+        } else {
+            movimientos.forEach(m => {
+                if (m.tipo === 'Cargo') { saldo += m.importe; totalCargos += m.importe; }
+                else { saldo -= m.importe; totalAbonos += m.importe; }
+                const tr = document.createElement('tr');
+                let acciones = '';
+                if (m.tipo === 'Abono') {
+                    acciones = `<button class="btn btn-icon btn-editar-pago" data-id="${m.id}" style="color:var(--secondary);" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>
+                                <button class="btn btn-icon btn-borrar-pago" data-id="${m.id}" style="color:var(--danger);" title="Eliminar"><i class="fa-solid fa-trash-can"></i></button>`;
+                }
+                tr.innerHTML = `
+                    <td>${m.fecha}</td>
+                    <td><span class="badge ${m.tipo === 'Cargo' ? 'warning' : 'success'}">${m.tipo}</span></td>
+                    <td>${m.detalle}</td>
+                    <td style="color:var(--danger);font-family:monospace;">${m.tipo === 'Cargo' ? '$ ' + m.importe.toLocaleString('es-AR', {minimumFractionDigits:2}) : '-'}</td>
+                    <td style="color:var(--success);font-family:monospace;">${m.tipo === 'Abono' ? '$ ' + m.importe.toLocaleString('es-AR', {minimumFractionDigits:2}) : '-'}</td>
+                    <td style="font-weight:bold;font-family:monospace;">$ ${saldo.toLocaleString('es-AR', {minimumFractionDigits:2})}</td>
+                    <td>${acciones}</td>
+                `;
+                tbodyMov.appendChild(tr);
+            });
+        }
+
+        if (lblTotalFacturado) lblTotalFacturado.innerText = '$ ' + totalCargos.toLocaleString('es-AR', {minimumFractionDigits:2});
+        if (lblTotalPagado) lblTotalPagado.innerText = '$ ' + totalAbonos.toLocaleString('es-AR', {minimumFractionDigits:2});
+        if (lblSaldoActual) lblSaldoActual.innerText = '$ ' + saldo.toLocaleString('es-AR', {minimumFractionDigits:2});
+
+        const cliObj = CLIENTS.find(c => c.nombre === clienteNombre);
+        if (cliObj) cliObj.saldo = saldo;
+    }
+
+    // Modal Pago
+    const modalPago = document.getElementById('modal-pago');
+    const btnGuardarPago = document.getElementById('btn-guardar-pago');
+    const btnCancelarPago = document.getElementById('btn-cancelar-pago');
+
+    if (btnRegistrarPago) {
+        btnRegistrarPago.addEventListener('click', () => {
+            document.getElementById('modal-pago-title').innerHTML = '<i class="fa-solid fa-hand-holding-dollar" style="color:var(--success);"></i> Registrar Pago';
+            document.getElementById('pago-fecha').value = new Date().toISOString().split('T')[0];
+            document.getElementById('pago-importe').value = '';
+            document.getElementById('pago-notas').value = '';
+            document.getElementById('pago-id-editar').value = '';
+            modalPago.style.display = 'flex';
+        });
+    }
+    if (btnCancelarPago) {
+        btnCancelarPago.addEventListener('click', () => { modalPago.style.display = 'none'; });
+    }
+    if (btnGuardarPago) {
+        btnGuardarPago.addEventListener('click', () => {
+            const cliente = selCuentaCliente.value;
+            if (!cliente) return;
+            const fechaRaw = document.getElementById('pago-fecha').value;
+            const importe = parseFloat(document.getElementById('pago-importe').value);
+            const notas = document.getElementById('pago-notas').value.trim();
+            const editId = document.getElementById('pago-id-editar').value;
+            if (!fechaRaw || isNaN(importe) || importe <= 0) { alert('Ingrese fecha y un importe válido.'); return; }
+            const [y, m, d] = fechaRaw.split('-');
+            const fechaFmt = `${d}/${m}/${y}`;
+            if (editId) {
+                const pago = PAGOS.find(p => p.id === editId);
+                if (pago) { pago.fecha = fechaFmt; pago.importe = importe; pago.notas = notas; }
+            } else {
+                PAGOS.push({ id: 'P-' + Date.now(), cliente, fecha: fechaFmt, importe, notas });
+            }
+            saveToServer();
+            modalPago.style.display = 'none';
+            renderCuentasCorrientes(cliente);
+        });
+    }
+
+    // Delegation borrar/editar pagos
+    const tbodyMovimientosCuenta = document.getElementById('tbody-movimientos-cuenta');
+    if (tbodyMovimientosCuenta) {
+        tbodyMovimientosCuenta.addEventListener('click', e => {
+            const btnBorrar = e.target.closest('.btn-borrar-pago');
+            if (btnBorrar) {
+                const id = btnBorrar.getAttribute('data-id');
+                if (confirm('¿Desea eliminar este pago permanentemente?')) {
+                    const idx = PAGOS.findIndex(p => p.id === id);
+                    if (idx > -1) { PAGOS.splice(idx, 1); saveToServer(); renderCuentasCorrientes(selCuentaCliente.value); }
+                }
+                return;
+            }
+            const btnEditar = e.target.closest('.btn-editar-pago');
+            if (btnEditar) {
+                const id = btnEditar.getAttribute('data-id');
+                const pago = PAGOS.find(p => p.id === id);
+                if (pago) {
+                    document.getElementById('modal-pago-title').innerHTML = '<i class="fa-solid fa-pen-to-square" style="color:var(--secondary);"></i> Editar Pago';
+                    const [dd, mm, yy] = pago.fecha.split('/');
+                    document.getElementById('pago-fecha').value = `${yy}-${mm}-${dd}`;
+                    document.getElementById('pago-importe').value = pago.importe;
+                    document.getElementById('pago-notas').value = pago.notas || '';
+                    document.getElementById('pago-id-editar').value = pago.id;
+                    modalPago.style.display = 'flex';
+                }
+            }
+        });
+    }
+
+    // PDF Estado de Cuenta
+    if (btnDescargarEstadoCuenta) {
+        btnDescargarEstadoCuenta.addEventListener('click', () => {
+            const cliente = selCuentaCliente.value;
+            if (!cliente) return;
+            generarEstadoCuentaPDF(cliente);
+        });
+    }
+
+    function generarEstadoCuentaPDF(clienteNombre) {
+        const cliObj = CLIENTS.find(c => c.nombre === clienteNombre) || {};
+        const remitosCli = REMITOS.filter(r => r.cliente === clienteNombre).map(r => ({
+            fecha: r.fecha, tipo: 'Cargo', detalle: 'Remito #' + r.numero,
+            importe: parseFloat(r.total) || 0, sortDate: parseFechaArg(r.fecha)
+        }));
+        const pagosCli = PAGOS.filter(p => p.cliente === clienteNombre).map(p => ({
+            fecha: p.fecha, tipo: 'Abono', detalle: p.notas ? 'Pago (' + p.notas + ')' : 'Pago',
+            importe: parseFloat(p.importe) || 0, sortDate: parseFechaArg(p.fecha)
+        }));
+        const movimientos = [...remitosCli, ...pagosCli].sort((a, b) => a.sortDate - b.sortDate);
+        let saldo = 0;
+        let filasHtml = '';
+        if (movimientos.length === 0) {
+            filasHtml = '<tr><td colspan="5" style="text-align:center;padding:10px;">No hay movimientos</td></tr>';
+        } else {
+            movimientos.forEach(m => {
+                if (m.tipo === 'Cargo') saldo += m.importe; else saldo -= m.importe;
+                filasHtml += '<tr style="border-bottom:1px solid #e2e8f0;">' +
+                    '<td style="padding:8px 5px;font-size:12px;">' + m.fecha + '</td>' +
+                    '<td style="padding:8px 5px;font-size:12px;">' + m.detalle + '</td>' +
+                    '<td style="padding:8px 5px;font-size:12px;text-align:right;color:#e11d48;">' + (m.tipo === 'Cargo' ? '$' + m.importe.toLocaleString('es-AR', {minimumFractionDigits:2}) : '') + '</td>' +
+                    '<td style="padding:8px 5px;font-size:12px;text-align:right;color:#10b981;">' + (m.tipo === 'Abono' ? '$' + m.importe.toLocaleString('es-AR', {minimumFractionDigits:2}) : '') + '</td>' +
+                    '<td style="padding:8px 5px;font-size:12px;text-align:right;font-weight:bold;">$' + saldo.toLocaleString('es-AR', {minimumFractionDigits:2}) + '</td>' +
+                    '</tr>';
+            });
+        }
+        const div = document.createElement('div');
+        div.style.cssText = 'background:#fff;color:#000;padding:20px;font-family:Arial,sans-serif;';
+        div.innerHTML =
+            '<div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #9d4edd;padding-bottom:15px;margin-bottom:20px;">' +
+                '<div style="display:flex;align-items:center;gap:15px;">' +
+                    '<img src="mlf_logo.png" style="height:60px;" alt="Logo">' +
+                    '<div><h1 style="margin:0;font-size:22px;color:#9d4edd;">MLF Soluciones Gráficas</h1>' +
+                    '<p style="margin:0;font-size:12px;color:#666;">Tel: 261 5545 5247 | Salta 2455, Mendoza</p></div>' +
+                '</div>' +
+                '<div style="text-align:right;">' +
+                    '<h2 style="margin:0;font-size:20px;color:#111;">ESTADO DE CUENTA</h2>' +
+                    '<p style="margin:5px 0 0;font-size:14px;font-weight:bold;color:#64748b;">Fecha: ' + new Date().toLocaleDateString('es-AR') + '</p>' +
+                '</div>' +
+            '</div>' +
+            '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:15px;margin-bottom:20px;">' +
+                '<p style="margin:0 0 5px;font-size:12px;color:#64748b;text-transform:uppercase;font-weight:bold;">Cliente / Bodega</p>' +
+                '<h3 style="margin:0 0 5px;font-size:18px;color:#0f172a;">' + clienteNombre + '</h3>' +
+                '<p style="margin:0;font-size:13px;color:#334155;">CUIT: ' + (cliObj.cuit || 'S/D') + ' | Domicilio: ' + (cliObj.domicilio || 'S/D') + '</p>' +
+            '</div>' +
+            '<table style="width:100%;border-collapse:collapse;margin-bottom:20px;">' +
+                '<thead><tr style="background:#f1f5f9;">' +
+                    '<th style="padding:10px 5px;text-align:left;font-size:12px;color:#475569;border-bottom:2px solid #cbd5e1;">Fecha</th>' +
+                    '<th style="padding:10px 5px;text-align:left;font-size:12px;color:#475569;border-bottom:2px solid #cbd5e1;">Detalle</th>' +
+                    '<th style="padding:10px 5px;text-align:right;font-size:12px;color:#475569;border-bottom:2px solid #cbd5e1;">Cargos</th>' +
+                    '<th style="padding:10px 5px;text-align:right;font-size:12px;color:#475569;border-bottom:2px solid #cbd5e1;">Abonos</th>' +
+                    '<th style="padding:10px 5px;text-align:right;font-size:12px;color:#475569;border-bottom:2px solid #cbd5e1;">Saldo</th>' +
+                '</tr></thead>' +
+                '<tbody>' + filasHtml + '</tbody>' +
+            '</table>' +
+            '<div style="text-align:right;margin-top:20px;">' +
+                '<h3 style="margin:0;font-size:14px;color:#64748b;text-transform:uppercase;">Saldo Deudor Final</h3>' +
+                '<h2 style="margin:5px 0 0;font-size:24px;color:' + (saldo > 0 ? '#e11d48' : '#10b981') + ';">$' + saldo.toLocaleString('es-AR', {minimumFractionDigits:2}) + '</h2>' +
+            '</div>';
+        html2pdf().set({
+            margin: 10,
+            filename: 'Estado_Cuenta_' + clienteNombre.replace(/\s+/g, '_') + '.pdf',
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        }).from(div).save();
+    }
 
     function refreshTallerSelector() {
         const sel = document.getElementById('ot-selector-taller');
