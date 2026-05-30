@@ -76,10 +76,14 @@ document.addEventListener('DOMContentLoaded', () => {
     ];
     let otsLogistica   = JSON.parse(localStorage.getItem('flexoERP_ots_logistica')) || [];
     let ultimoNumeroOt = parseInt(localStorage.getItem('flexoERP_ultimo_numero_ot')) || 1044;
-    let todasLasOts    = JSON.parse(localStorage.getItem('flexoERP_todas_las_ots')) || {
-        1042: otsPendientes.find(o => o.numero === 1042) || otsPendientes[0],
-        1044: otsPendientes.find(o => o.numero === 1044) || otsPendientes[1]
-    };
+    let todasLasOts    = JSON.parse(localStorage.getItem('flexoERP_todas_las_ots')) || {};
+    // Ensure default items exist if empty
+    if (Object.keys(todasLasOts).length === 0) {
+        const item1 = otsPendientes.find(o => o.numero === 1042) || otsPendientes[0];
+        const item2 = otsPendientes.find(o => o.numero === 1044) || otsPendientes[1];
+        if (item1 && item1.numero) todasLasOts[item1.numero] = item1;
+        if (item2 && item2.numero) todasLasOts[item2.numero] = item2;
+    }
 
     async function saveToServer() {
         const payload = {
@@ -693,18 +697,19 @@ document.addEventListener('DOMContentLoaded', () => {
         // 1. Obtener lista base según la pestaña activa
         let listaOts = [];
         if (otActiveTab === 'activas') {
-            listaOts = [...otsPendientes];
+            listaOts = [...otsPendientes].filter(ot => ot && ot.numero);
         } else {
             // Finalizadas: OTs en todasLasOts que no están en otsPendientes
-            listaOts = Object.values(todasLasOts).filter(ot => !otsPendientes.some(p => p.numero === ot.numero));
+            listaOts = Object.values(todasLasOts).filter(ot => ot && ot.numero && !otsPendientes.some(p => p && p.numero === ot.numero));
         }
 
         // 2. Aplicar filtro de búsqueda
         if (otSearchQuery) {
             listaOts = listaOts.filter(ot => {
-                const numStr = String(ot.numero);
+                if (!ot) return false;
+                const numStr = String(ot.numero || '');
                 const cli = (ot.cliente || '').toLowerCase();
-                const resumen = ot.items.map(i => `${i.tipo || ''} ${i.marca || ''} ${i.varietal || ''}`).join(' ').toLowerCase();
+                const resumen = ot.items ? ot.items.map(i => `${i.tipo || ''} ${i.marca || ''} ${i.varietal || ''}`).join(' ').toLowerCase() : '';
                 return numStr.includes(otSearchQuery) || cli.includes(otSearchQuery) || resumen.includes(otSearchQuery);
             });
         }
@@ -1157,7 +1162,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             if (ot.cliente === clientEdicionNombre) ot.cliente = nombre;
                         });
                         Object.keys(todasLasOts).forEach(k => {
-                            if (todasLasOts[k].cliente === clientEdicionNombre) todasLasOts[k].cliente = nombre;
+                            if (todasLasOts[k] && todasLasOts[k].cliente === clientEdicionNombre) todasLasOts[k].cliente = nombre;
                         });
                         REMITOS.forEach(r => {
                             if (r.cliente === clientEdicionNombre) r.cliente = nombre;
