@@ -1,0 +1,6 @@
+FlexoERP local server started on http://localhost:8080
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+127.0.0.1 - - [01/Jun/2026 17:03:45] "GET /api/data HTTP/1.1" 200 -
+127.0.0.1 - - [01/Jun/2026 17:03:45] code 404, message File not found
+127.0.0.1 - - [01/Jun/2026 17:03:45] "GET /favicon.ico HTTP/1.1" 404 -

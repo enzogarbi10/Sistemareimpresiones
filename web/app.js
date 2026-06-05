@@ -86,7 +86,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function saveToServer() {
+        const currentDbId = localStorage.getItem('flexoERP_db_id') || "reset_20260601";
         const payload = {
+            db_id: currentDbId,
             users: USERS,
             clients: CLIENTS,
             remitos: REMITOS,
@@ -99,6 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         
         // Always mirror to localStorage as local fallback
+        localStorage.setItem('flexoERP_db_id', currentDbId);
         localStorage.setItem('flexoERP_users', JSON.stringify(USERS));
         localStorage.setItem('flexoERP_clients', JSON.stringify(CLIENTS));
         localStorage.setItem('flexoERP_remitos', JSON.stringify(REMITOS));
@@ -147,15 +150,54 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!res.ok) throw new Error('API response not OK');
             const data = await res.json();
             
-            USERS = data.users || USERS;
-            CLIENTS = data.clients || CLIENTS;
-            REMITOS = data.remitos || REMITOS;
-            PAGOS = data.pagos || PAGOS;
-            ultimoRemitoNumero = data.ultimo_remito !== undefined ? data.ultimo_remito : ultimoRemitoNumero;
-            otsPendientes = data.ots_pendientes || otsPendientes;
-            otsLogistica = data.ots_logistica || otsLogistica;
-            ultimoNumeroOt = data.ultimo_numero_ot !== undefined ? data.ultimo_numero_ot : ultimoNumeroOt;
-            todasLasOts = data.todas_las_ots || todasLasOts;
+            const serverDbId = data.db_id || "default";
+            const localDbId = localStorage.getItem('flexoERP_db_id') || "default";
+            
+            if (serverDbId !== localDbId) {
+                console.log("Database reset detected. Clearing local storage state.");
+                localStorage.setItem('flexoERP_db_id', serverDbId);
+                
+                USERS = data.users || USERS;
+                CLIENTS = [];
+                REMITOS = [];
+                PAGOS = [];
+                ultimoRemitoNumero = 0;
+                otsPendientes = [];
+                otsLogistica = [];
+                ultimoNumeroOt = 0;
+                todasLasOts = {};
+                
+                localStorage.setItem('flexoERP_users', JSON.stringify(USERS));
+                localStorage.setItem('flexoERP_clients', JSON.stringify([]));
+                localStorage.setItem('flexoERP_remitos', JSON.stringify([]));
+                localStorage.setItem('flexoERP_pagos', JSON.stringify([]));
+                localStorage.setItem('flexoERP_ultimo_remito', '0');
+                localStorage.setItem('flexoERP_ots_pendientes', JSON.stringify([]));
+                localStorage.setItem('flexoERP_ots_logistica', JSON.stringify([]));
+                localStorage.setItem('flexoERP_todas_las_ots', JSON.stringify({}));
+                localStorage.setItem('flexoERP_ultimo_numero_ot', '0');
+            } else {
+                USERS = data.users || USERS;
+                CLIENTS = data.clients || CLIENTS;
+                REMITOS = data.remitos || REMITOS;
+                PAGOS = data.pagos || PAGOS;
+                ultimoRemitoNumero = data.ultimo_remito !== undefined ? data.ultimo_remito : ultimoRemitoNumero;
+                otsPendientes = data.ots_pendientes || otsPendientes;
+                otsLogistica = data.ots_logistica || otsLogistica;
+                ultimoNumeroOt = data.ultimo_numero_ot !== undefined ? data.ultimo_numero_ot : ultimoNumeroOt;
+                todasLasOts = data.todas_las_ots || todasLasOts;
+                
+                // Sync to localStorage
+                localStorage.setItem('flexoERP_users', JSON.stringify(USERS));
+                localStorage.setItem('flexoERP_clients', JSON.stringify(CLIENTS));
+                localStorage.setItem('flexoERP_remitos', JSON.stringify(REMITOS));
+                localStorage.setItem('flexoERP_pagos', JSON.stringify(PAGOS));
+                localStorage.setItem('flexoERP_ultimo_remito', ultimoRemitoNumero);
+                localStorage.setItem('flexoERP_ots_pendientes', JSON.stringify(otsPendientes));
+                localStorage.setItem('flexoERP_ots_logistica', JSON.stringify(otsLogistica));
+                localStorage.setItem('flexoERP_todas_las_ots', JSON.stringify(todasLasOts));
+                localStorage.setItem('flexoERP_ultimo_numero_ot', ultimoNumeroOt);
+            }
             
             console.log("Data loaded successfully from Python server database.");
         } catch (e) {
@@ -529,9 +571,10 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 PAGOS.push({ id: 'P-' + Date.now(), cliente, fecha: fechaFmt, importe, notas });
             }
-            saveToServer();
+            recalcularSaldosClientes();
             modalPago.style.display = 'none';
             renderCuentasCorrientes(cliente);
+            renderClientes();
         });
     }
 
@@ -544,7 +587,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 const id = btnBorrar.getAttribute('data-id');
                 if (confirm('¿Desea eliminar este pago permanentemente?')) {
                     const idx = PAGOS.findIndex(p => p.id === id);
-                    if (idx > -1) { PAGOS.splice(idx, 1); saveToServer(); renderCuentasCorrientes(selCuentaCliente.value); }
+                    if (idx > -1) { 
+                        PAGOS.splice(idx, 1); 
+                        recalcularSaldosClientes(); 
+                        renderCuentasCorrientes(selCuentaCliente.value); 
+                        renderClientes();
+                    }
                 }
                 return;
             }
@@ -1958,14 +2006,15 @@ document.addEventListener('DOMContentLoaded', () => {
             if (ot) {
                 ot.items.forEach(item => {
                     const qty = parseInt(item.cantidad) || 0;
-                    const priceMillar = parseFloat(item.precio) || 0;
+                    const priceMillar = parseFloat(String(item.precio).replace(',', '.')) || 0;
                     const subtotal = (qty / 1000) * priceMillar;
-                    totalAcumulado += subtotal;
                     
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
                         <td>${qty.toLocaleString('es-AR')} u</td>
                         <td><strong>${item.tipo ? item.tipo + ' - ' : ''}${item.marca ? item.marca + ' ' : ''}${item.varietal}</strong></td>
+                        <td style="text-align: right;">$ ${priceMillar.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
+                        <td style="text-align: right;">$ ${subtotal.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
                     `;
                     tbodyItems.appendChild(tr);
                 });
@@ -1973,14 +2022,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (ot.herramentales) {
                     const hQty = parseInt(ot.herramentales.cantidad) || 1;
                     const hImp = parseFloat(ot.herramentales.importe) || 0;
-                    totalAcumulado += hImp;
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
                         <td>${hQty.toLocaleString('es-AR')} u</td>
                         <td><strong>Herramentales</strong></td>
+                        <td style="text-align: right;">$ ${hImp.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
+                        <td style="text-align: right;">$ ${hImp.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
                     `;
                     tbodyItems.appendChild(tr);
                 }
+                totalAcumulado = rem.total;
             } else {
                 // Fallback si la OT histórica ya no existe
                 totalAcumulado = rem.total;
@@ -1988,6 +2039,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 tr.innerHTML = `
                     <td>1 u</td>
                     <td><strong>Servicio de Impresión Etiquetas (OT #${rem.otNumero})</strong></td>
+                    <td style="text-align: right;">$ ${rem.total.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
+                    <td style="text-align: right;">$ ${rem.total.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
                 `;
                 tbodyItems.appendChild(tr);
             }
@@ -2014,7 +2067,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             ot.items.forEach(item => {
                 const qty = parseInt(item.cantidad) || 0;
-                const priceMillar = parseFloat(item.precio) || 0;
+                const priceMillar = parseFloat(String(item.precio).replace(',', '.')) || 0;
                 const subtotal = (qty / 1000) * priceMillar;
                 totalAcumulado += subtotal;
                 
@@ -2022,9 +2075,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 tr.innerHTML = `
                     <td>${qty.toLocaleString('es-AR')} u</td>
                     <td><strong>${item.tipo ? item.tipo + ' - ' : ''}${item.marca ? item.marca + ' ' : ''}${item.varietal}</strong></td>
+                    <td style="text-align: right;">$ ${priceMillar.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
+                    <td style="text-align: right;">$ ${subtotal.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
                 `;
                 tbodyItems.appendChild(tr);
             });
+            // Herramentales
+            if (ot.herramentales) {
+                const hQty = parseInt(ot.herramentales.cantidad) || 1;
+                const hImp = parseFloat(ot.herramentales.importe) || 0;
+                totalAcumulado += hImp;
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${hQty.toLocaleString('es-AR')} u</td>
+                    <td><strong>Herramentales</strong></td>
+                    <td style="text-align: right;">$ ${hImp.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
+                    <td style="text-align: right;">$ ${hImp.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
+                `;
+                tbodyItems.appendChild(tr);
+            }
         }
         
         document.getElementById('remito-val-numero').innerText = `Nro: ${remitoNumStr}`;
@@ -2073,14 +2142,13 @@ document.addEventListener('DOMContentLoaded', () => {
             let totalAcumulado = 0;
             ot.items.forEach(item => {
                 const qty = parseInt(item.cantidad) || 0;
-                const priceMillar = parseFloat(item.precio) || 0;
+                const priceMillar = parseFloat(String(item.precio).replace(',', '.')) || 0;
                 totalAcumulado += (qty / 1000) * priceMillar;
             });
             
-            if (clientObj) {
-                clientObj.saldo = (clientObj.saldo || 0) + totalAcumulado;
-                saveClients();
-                renderClientes();
+            if (ot.herramentales) {
+                const hImp = parseFloat(ot.herramentales.importe) || 0;
+                totalAcumulado += hImp;
             }
             
             ultimoRemitoNumero++;
@@ -2094,6 +2162,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 emailEnviado: clientObj ? clientObj.email : 'compras@bodega.com'
             });
             saveRemitos();
+            
+            // Recalcular saldos de clientes y actualizar UI
+            recalcularSaldosClientes();
+            renderClientes();
             
             showEmailToast(clientObj ? clientObj.email : 'compras@bodega.com', ultimoRemitoNumero);
             

@@ -8,51 +8,56 @@ from http.server import SimpleHTTPRequestHandler, HTTPServer
 PORT = 8080
 
 # Determine base directory
-# If compiled, sys.executable is the path to the exe.
 if getattr(sys, 'frozen', False):
     exe_dir = os.path.dirname(sys.executable)
 else:
     exe_dir = os.path.dirname(os.path.abspath(__file__))
 
-base_dir = exe_dir
+# If compiled and inside a 'dist' folder, move up one level
+if getattr(sys, 'frozen', False) and os.path.basename(exe_dir).lower() == 'dist':
+    base_dir = os.path.dirname(exe_dir)
+else:
+    base_dir = exe_dir
+
+# Fallback: if E:\FlexoERP exists, prioritize it
+if os.path.exists(r"E:\FlexoERP"):
+    base_dir = r"E:\FlexoERP"
+
+class LogWriter:
+    def __init__(self, filepath):
+        self.filepath = filepath
+    def write(self, s):
+        try:
+            with open(self.filepath, 'a', encoding='utf-8') as f:
+                f.write(s)
+        except Exception:
+            pass
+    def flush(self):
+        pass
+
+if getattr(sys, 'frozen', False) or sys.stdout is None or sys.stderr is None:
+    log_path = os.path.join(base_dir, "server_log.txt")
+    sys.stdout = LogWriter(log_path)
+    sys.stderr = LogWriter(log_path)
 
 db_path = os.path.join(base_dir, "database.json")
 web_dir = os.path.join(base_dir, "web")
 
 # Default seeding data
 DEFAULT_DATA = {
+    "db_id": "reset_20260601",
     "users": [
         { "username": "superadmin", "password": "superadmin123", "name": "Super Admin", "role": "superadmin", "allowedModules": ["dashboard","clientes","ots","taller","logistica","usuarios"] },
         { "username": "admin",      "password": "123",           "name": "Administrador", "role": "admin",      "allowedModules": ["dashboard","clientes","ots","taller","logistica"] },
         { "username": "operador",   "password": "123",           "name": "Juan Perez",     "role": "operador",   "allowedModules": ["taller"] }
     ],
-    "clients": [
-        { "nombre": "Bodega Norton", "cuit": "30-12345678-9", "factura": "SI", "email": "compras@norton.com.ar", "telefono": "+54 9 261 444-1111", "domicilio": "Ruta 15 Km 23.5", "localidad": "Luján de Cuyo", "provincia": "Mendoza", "moneda": "Pesos", "saldo": 0 },
-        { "nombre": "Catena Zapata", "cuit": "30-98765432-1", "factura": "SI", "email": "administracion@catenazapata.com.ar", "telefono": "+54 9 261 444-2222", "domicilio": "Cobos s/n", "localidad": "Agrelo", "provincia": "Mendoza", "moneda": "Pesos", "saldo": 0 },
-        { "nombre": "Salentein", "cuit": "30-44556677-8", "factura": "SI", "email": "logistica@salentein.com", "telefono": "+54 9 261 555-9999", "domicilio": "Ruta 89 Km 14", "localidad": "Tunuyán", "provincia": "Mendoza", "moneda": "Pesos", "saldo": 0 }
-    ],
+    "clients": [],
     "remitos": [],
-    "ultimo_remito": 8000,
-    "ots_pendientes": [
-        { "numero": 1042, "cliente": "Bodega Norton", "fechaAlta": "05/05/2026", "items": [
-            { "varietal": "Malbec Reserva", "cantidad": "50000", "precio": "12", "colores": "4", "barniz": "SI", "fecha": "2026-06-01", "imagenB64": None, "status": "pendiente" },
-            { "varietal": "Cabernet Sauvignon", "cantidad": "30000", "precio": "12", "colores": "4", "barniz": "NO", "fecha": "2026-06-01", "imagenB64": None, "status": "pendiente" }
-        ]},
-        { "numero": 1044, "cliente": "Salentein", "fechaAlta": "08/05/2026", "items": [
-            { "varietal": "Chardonnay", "cantidad": "10000", "precio": "15", "colores": "3", "barniz": "NO", "fecha": "2026-06-15", "imagenB64": None, "status": "pendiente" }
-        ]}
-    ],
+    "ultimo_remito": 0,
+    "ots_pendientes": [],
     "ots_logistica": [],
-    "ultimo_numero_ot": 1044,
-    "todas_las_ots": {
-        "1042": { "numero": 1042, "cliente": "Bodega Norton", "fechaAlta": "05/05/2026", "items": [
-            { "varietal": "Malbec Reserva", "cantidad": "50000", "precio": "12", "colores": "4", "barniz": "SI", "fecha": "2026-06-01", "imagenB64": None, "status": "pendiente" },
-            { "varietal": "Cabernet Sauvignon", "cantidad": "30000", "precio": "12", "colores": "4", "barniz": "NO", "fecha": "2026-06-01", "imagenB64": None, "status": "pendiente" }
-        ]},
-        "1044": { "numero": 1044, "cliente": "Salentein", "fechaAlta": "08/05/2026", "items": [
-            { "varietal": "Chardonnay", "cantidad": "10000", "precio": "15", "colores": "3", "barniz": "NO", "fecha": "2026-06-15", "imagenB64": None, "status": "pendiente" }
-        ]}
-    },
+    "ultimo_numero_ot": 0,
+    "todas_las_ots": {},
     "pagos": []
 }
 
@@ -134,23 +139,39 @@ class ERPRequestHandler(SimpleHTTPRequestHandler):
 def open_browser():
     webbrowser.open(f'http://localhost:{PORT}')
 
+import traceback
+
 def main():
-    os.makedirs(web_dir, exist_ok=True)
-    load_db()
-    
-    server_address = ('', PORT)
-    httpd = HTTPServer(server_address, ERPRequestHandler)
-    print(f"FlexoERP local server started on http://localhost:{PORT}")
-    print(f"Web folder: {web_dir}")
-    print(f"Database path: {db_path}")
-    
-    # threading.Timer(1.0, open_browser).start()
-    
     try:
-        httpd.serve_forever()
-    except KeyboardInterrupt:
-        print("Server shutting down.")
-        httpd.server_close()
+        os.makedirs(web_dir, exist_ok=True)
+        load_db()
+        
+        server_address = ('', PORT)
+        try:
+            httpd = HTTPServer(server_address, ERPRequestHandler)
+        except OSError as e:
+            # Port already in use: server is already running. Just open browser and exit.
+            if getattr(e, 'winerror', None) == 10048 or "already in use" in str(e).lower():
+                open_browser()
+                return
+            raise e
+
+        print(f"FlexoERP local server started on http://localhost:{PORT}")
+        print(f"Web folder: {web_dir}")
+        print(f"Database path: {db_path}")
+        
+        # Start browser automatically
+        threading.Timer(1.0, open_browser).start()
+        
+        try:
+            httpd.serve_forever()
+        except KeyboardInterrupt:
+            print("Server shutting down.")
+            httpd.server_close()
+    except Exception as e:
+        with open(os.path.join(base_dir, "crash_log.txt"), "w") as f:
+            f.write(f"Exception in main: {e}\n")
+            traceback.print_exc(file=f)
 
 if __name__ == '__main__':
     main()
