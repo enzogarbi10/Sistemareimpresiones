@@ -85,6 +85,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (item2 && item2.numero) todasLasOts[item2.numero] = item2;
     }
 
+    let priceLists = JSON.parse(localStorage.getItem('flexoERP_price_lists')) || [];
+
     async function saveToServer() {
         const currentDbId = localStorage.getItem('flexoERP_db_id') || "reset_20260601";
         const payload = {
@@ -97,7 +99,8 @@ document.addEventListener('DOMContentLoaded', () => {
             ots_pendientes: otsPendientes,
             ots_logistica: otsLogistica,
             ultimo_numero_ot: ultimoNumeroOt,
-            todas_las_ots: todasLasOts
+            todas_las_ots: todasLasOts,
+            price_lists: priceLists
         };
         
         // Always mirror to localStorage as local fallback
@@ -111,6 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('flexoERP_ots_logistica', JSON.stringify(otsLogistica));
         localStorage.setItem('flexoERP_todas_las_ots', JSON.stringify(todasLasOts));
         localStorage.setItem('flexoERP_ultimo_numero_ot', ultimoNumeroOt);
+        localStorage.setItem('flexoERP_price_lists', JSON.stringify(priceLists));
 
         try {
             await fetch('/api/save', {
@@ -166,6 +170,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 otsLogistica = [];
                 ultimoNumeroOt = 0;
                 todasLasOts = {};
+                priceLists = data.price_lists || [];
                 
                 localStorage.setItem('flexoERP_users', JSON.stringify(USERS));
                 localStorage.setItem('flexoERP_clients', JSON.stringify([]));
@@ -176,6 +181,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 localStorage.setItem('flexoERP_ots_logistica', JSON.stringify([]));
                 localStorage.setItem('flexoERP_todas_las_ots', JSON.stringify({}));
                 localStorage.setItem('flexoERP_ultimo_numero_ot', '0');
+                localStorage.setItem('flexoERP_price_lists', JSON.stringify(priceLists));
             } else {
                 USERS = data.users || USERS;
                 CLIENTS = data.clients || CLIENTS;
@@ -186,6 +192,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 otsLogistica = data.ots_logistica || otsLogistica;
                 ultimoNumeroOt = data.ultimo_numero_ot !== undefined ? data.ultimo_numero_ot : ultimoNumeroOt;
                 todasLasOts = data.todas_las_ots || todasLasOts;
+                priceLists = data.price_lists || priceLists;
                 
                 // Sync to localStorage
                 localStorage.setItem('flexoERP_users', JSON.stringify(USERS));
@@ -197,6 +204,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 localStorage.setItem('flexoERP_ots_logistica', JSON.stringify(otsLogistica));
                 localStorage.setItem('flexoERP_todas_las_ots', JSON.stringify(todasLasOts));
                 localStorage.setItem('flexoERP_ultimo_numero_ot', ultimoNumeroOt);
+                localStorage.setItem('flexoERP_price_lists', JSON.stringify(priceLists));
             }
             
             console.log("Data loaded successfully from Python server database.");
@@ -207,6 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
             CLIENTS = JSON.parse(localStorage.getItem('flexoERP_clients')) || CLIENTS;
             REMITOS = JSON.parse(localStorage.getItem('flexoERP_remitos')) || REMITOS;
             PAGOS = JSON.parse(localStorage.getItem('flexoERP_pagos')) || PAGOS;
+            priceLists = JSON.parse(localStorage.getItem('flexoERP_price_lists')) || [];
             
             const savedLastRemito = localStorage.getItem('flexoERP_ultimo_remito');
             if (savedLastRemito) ultimoRemitoNumero = parseInt(savedLastRemito);
@@ -224,6 +233,8 @@ document.addEventListener('DOMContentLoaded', () => {
         refreshTallerSelector();
         renderClientes();
         populateClientesDropdown();
+        populatePriceListsDropdown();
+        renderPriceLists();
         renderDashboard();
         renderLogistica();
         renderHistorialRemitos();
@@ -255,10 +266,13 @@ document.addEventListener('DOMContentLoaded', () => {
             ` : `
                 <span style="color:#6c757d; font-size:11.5px; font-style:italic;">Sin permisos</span>
             `;
+            const pl = priceLists.find(x => x.id === cli.priceListId);
+            const plName = pl ? pl.nombre : 'Sin Lista';
             tr.innerHTML = `
                 <td><strong>${cli.nombre}</strong><br><small style="color:#adb5bd;">${cli.email || cli.telefono} | ${cli.moneda}</small></td>
                 <td>${cli.cuit}</td>
                 <td>${cli.factura === 'SI' ? 'Con Factura' : 'Sin Factura'}</td>
+                <td>${plName}</td>
                 <td style="font-family:monospace; font-weight:700; color:var(--secondary); font-size:14px;">$ ${Number(cli.saldo).toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
                 <td>${actionsHtml}</td>
             `;
@@ -294,6 +308,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('new-cli-email').value = cli.email || '';
                 document.getElementById('new-cli-telefono').value = cli.telefono || '';
                 document.getElementById('new-cli-moneda').value = cli.moneda || 'Pesos';
+                document.getElementById('new-cli-listaprecios').value = cli.priceListId || '';
 
                 btnGuardarCliente.innerHTML = '<i class="fa-solid fa-save"></i> Guardar Cambios';
                 formNuevoCliente.scrollIntoView({ behavior: 'smooth' });
@@ -310,6 +325,222 @@ document.addEventListener('DOMContentLoaded', () => {
             opt.value = cli.nombre;
             opt.textContent = cli.nombre;
             select.appendChild(opt);
+        });
+    }
+
+    function populatePriceListsDropdown() {
+        const select = document.getElementById('new-cli-listaprecios');
+        if (!select) return;
+        select.innerHTML = '<option value="">-- Sin Lista de Precios --</option>';
+        priceLists.forEach(pl => {
+            const opt = document.createElement('option');
+            opt.value = pl.id;
+            opt.textContent = pl.nombre;
+            select.appendChild(opt);
+        });
+    }
+
+    // Sub-tab switching logic for Clientes
+    const clientesSubTabButtons = document.querySelectorAll('#clientes .sub-tab-btn');
+    clientesSubTabButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            clientesSubTabButtons.forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('#clientes .sub-tab-content').forEach(c => c.classList.remove('active'));
+            
+            btn.classList.add('active');
+            const targetId = `subtab-${btn.getAttribute('data-subtab')}`;
+            const targetContent = document.getElementById(targetId);
+            if (targetContent) {
+                targetContent.classList.add('active');
+            }
+            
+            // Toggle visibility of top buttons
+            if (btn.getAttribute('data-subtab') === 'price-lists-tab') {
+                document.getElementById('btn-nuevo-cliente').style.display = 'none';
+                document.getElementById('btn-nueva-lista-precios').style.display = 'inline-block';
+                renderPriceLists();
+            } else {
+                document.getElementById('btn-nuevo-cliente').style.display = 'inline-block';
+                document.getElementById('btn-nueva-lista-precios').style.display = 'none';
+                renderClientes();
+            }
+        });
+    });
+
+    let priceListEdicionId = null;
+
+    const btnNuevaListaPrecios = document.getElementById('btn-nueva-lista-precios');
+    const formNuevaListaPrecios = document.getElementById('form-nueva-lista-precios');
+    const btnGuardarListaPrecios = document.getElementById('btn-guardar-lista-precios');
+    const btnCancelarListaPrecios = document.getElementById('btn-cancelar-lista-precios');
+    const btnPlAgregarEscala = document.getElementById('btn-pl-agregar-escala');
+    const tbodyNewPlEscalas = document.getElementById('tbody-new-pl-escalas');
+
+    if (btnNuevaListaPrecios) {
+        btnNuevaListaPrecios.addEventListener('click', () => {
+            priceListEdicionId = null;
+            document.getElementById('form-price-list-title').textContent = 'Crear Nueva Lista de Precios';
+            document.getElementById('new-pl-nombre').value = '';
+            document.getElementById('new-pl-polimero').value = '';
+            tbodyNewPlEscalas.innerHTML = '';
+            formNuevaListaPrecios.style.display = 'block';
+            agregarEscalaRow();
+        });
+    }
+
+    if (btnCancelarListaPrecios) {
+        btnCancelarListaPrecios.addEventListener('click', () => {
+            formNuevaListaPrecios.style.display = 'none';
+            priceListEdicionId = null;
+        });
+    }
+
+    function agregarEscalaRow(cantidad = '', pasada1 = '', pasada2 = '', pasada3 = '') {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><input type="number" class="large-input scale-cantidad" value="${cantidad}" placeholder="Cant. Mínima" min="0" style="width:100%;"></td>
+            <td><input type="number" class="large-input scale-pasada1" value="${pasada1}" placeholder="$ 1 Pasada" min="0" step="any" style="width:100%;"></td>
+            <td><input type="number" class="large-input scale-pasada2" value="${pasada2}" placeholder="$ 2 Pasadas" min="0" step="any" style="width:100%;"></td>
+            <td><input type="number" class="large-input scale-pasada3" value="${pasada3}" placeholder="$ 3 Pasadas" min="0" step="any" style="width:100%;"></td>
+            <td style="text-align:center;"><button class="btn btn-icon btn-eliminar-escala" style="color:var(--danger);"><i class="fa-solid fa-trash-can"></i></button></td>
+        `;
+        
+        tr.querySelector('.btn-eliminar-escala').addEventListener('click', () => {
+            tr.remove();
+        });
+        
+        tbodyNewPlEscalas.appendChild(tr);
+    }
+
+    if (btnPlAgregarEscala) {
+        btnPlAgregarEscala.addEventListener('click', () => {
+            agregarEscalaRow();
+        });
+    }
+
+    if (btnGuardarListaPrecios) {
+        btnGuardarListaPrecios.addEventListener('click', () => {
+            const nombre = document.getElementById('new-pl-nombre').value.trim();
+            const polimero = parseFloat(document.getElementById('new-pl-polimero').value) || 0;
+            
+            if (!nombre) {
+                alert('Ingrese el nombre de la lista de precios.');
+                return;
+            }
+
+            const escalas = [];
+            const rows = tbodyNewPlEscalas.querySelectorAll('tr');
+            for (let row of rows) {
+                const cantVal = parseInt(row.querySelector('.scale-cantidad').value);
+                const p1 = parseFloat(row.querySelector('.scale-pasada1').value);
+                const p2 = parseFloat(row.querySelector('.scale-pasada2').value);
+                const p3 = parseFloat(row.querySelector('.scale-pasada3').value);
+
+                if (isNaN(cantVal) || isNaN(p1) || isNaN(p2) || isNaN(p3)) {
+                    alert('Complete todos los campos de las escalas con valores válidos.');
+                    return;
+                }
+                
+                escalas.push({
+                    cantidad: cantVal,
+                    pasada1: p1,
+                    pasada2: p2,
+                    pasada3: p3
+                });
+            }
+
+            escalas.sort((a, b) => a.cantidad - b.cantidad);
+
+            if (priceListEdicionId !== null) {
+                const pl = priceLists.find(x => x.id === priceListEdicionId);
+                if (pl) {
+                    pl.nombre = nombre;
+                    pl.polimero = polimero;
+                    pl.escalas = escalas;
+                }
+                priceListEdicionId = null;
+            } else {
+                const newId = 'list-' + Date.now();
+                priceLists.push({
+                    id: newId,
+                    nombre: nombre,
+                    polimero: polimero,
+                    escalas: escalas
+                });
+            }
+
+            saveToServer();
+            renderPriceLists();
+            populatePriceListsDropdown();
+            formNuevaListaPrecios.style.display = 'none';
+        });
+    }
+
+    function renderPriceLists() {
+        const tbody = document.getElementById('tbody-price-lists');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+        
+        priceLists.forEach(pl => {
+            const tr = document.createElement('tr');
+            const escalasText = pl.escalas.length > 0 
+                ? `${pl.escalas.length} escalones (${pl.escalas[0].cantidad.toLocaleString()} a ${pl.escalas[pl.escalas.length - 1].cantidad.toLocaleString()})`
+                : 'Sin escalas';
+
+            tr.innerHTML = `
+                <td><strong>${pl.nombre}</strong></td>
+                <td>$ ${Number(pl.polimero).toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
+                <td>${escalasText}</td>
+                <td>
+                    <div style="display:flex; gap:0.5rem;">
+                        <button class="btn btn-icon btn-editar-pl" data-id="${pl.id}" style="color:var(--secondary);" title="Editar Lista"><i class="fa-solid fa-pen-to-square"></i></button>
+                        <button class="btn btn-icon btn-eliminar-pl" data-id="${pl.id}" style="color:var(--danger);" title="Eliminar Lista"><i class="fa-solid fa-trash-can"></i></button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        tbody.querySelectorAll('.btn-eliminar-pl').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = btn.getAttribute('data-id');
+                const pl = priceLists.find(x => x.id === id);
+                if (!pl) return;
+                
+                const inUse = CLIENTS.some(c => c.priceListId === id);
+                if (inUse) {
+                    alert('No se puede eliminar esta lista de precios porque está asignada a uno o más clientes.');
+                    return;
+                }
+
+                if (confirm(`¿Está seguro de que desea eliminar la lista de precios "${pl.nombre}"?`)) {
+                    priceLists = priceLists.filter(x => x.id !== id);
+                    saveToServer();
+                    renderPriceLists();
+                    populatePriceListsDropdown();
+                }
+            });
+        });
+
+        tbody.querySelectorAll('.btn-editar-pl').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = btn.getAttribute('data-id');
+                const pl = priceLists.find(x => x.id === id);
+                if (!pl) return;
+
+                priceListEdicionId = id;
+                formNuevaListaPrecios.style.display = 'block';
+                document.getElementById('form-price-list-title').textContent = `Editar Lista de Precios: ${pl.nombre}`;
+                document.getElementById('new-pl-nombre').value = pl.nombre;
+                document.getElementById('new-pl-polimero').value = pl.polimero;
+
+                tbodyNewPlEscalas.innerHTML = '';
+                pl.escalas.forEach(esc => {
+                    agregarEscalaRow(esc.cantidad, esc.pasada1, esc.pasada2, esc.pasada3);
+                });
+                
+                formNuevaListaPrecios.scrollIntoView({ behavior: 'smooth' });
+            });
         });
     }
 
@@ -964,6 +1195,7 @@ document.addEventListener('DOMContentLoaded', () => {
         tbody.innerHTML = '';
         if (!itemsActuales.length) {
             listaItemsContainer.style.display = 'none';
+            recalcularHerramentalesAutomaticos();
             return;
         }
         listaItemsContainer.style.display = 'block';
@@ -991,17 +1223,123 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderItemsOtForm();
             });
         });
+        recalcularHerramentalesAutomaticos();
+    }
+
+    function recalcularHerramentalesAutomaticos() {
+        const type = document.getElementById('new-ot-herramentales').value;
+        const groupHerrDetalles = document.getElementById('group-herr-detalles');
+        const inputCant = document.getElementById('new-ot-herr-cantidad');
+        const inputImp = document.getElementById('new-ot-herr-importe');
+        
+        if (!type || type === 'NO') {
+            if (groupHerrDetalles) groupHerrDetalles.style.display = 'none';
+            if (inputCant) { inputCant.value = ''; inputCant.readOnly = false; }
+            if (inputImp) { inputImp.value = ''; inputImp.readOnly = false; }
+            return;
+        }
+        
+        if (groupHerrDetalles) groupHerrDetalles.style.display = 'flex';
+        
+        if (type === 'POLIMEROS') {
+            const clientNombre = document.getElementById('new-ot-cliente').value;
+            const client = CLIENTS.find(c => c.nombre === clientNombre);
+            const priceList = priceLists.find(pl => pl.id === (client ? client.priceListId : ''));
+            const costoPolimero = priceList ? parseFloat(priceList.polimero) : 0;
+            
+            // Sum of colors in itemsActuales
+            const totalColores = itemsActuales.reduce((acc, it) => acc + (parseInt(it.colores) || 0), 0);
+            
+            if (inputCant) {
+                inputCant.value = totalColores;
+                inputCant.readOnly = true;
+            }
+            if (inputImp) {
+                inputImp.value = totalColores * costoPolimero;
+                inputImp.readOnly = true;
+            }
+        } else if (type === 'PERSONALIZADO') {
+            if (inputCant) inputCant.readOnly = false;
+            if (inputImp) inputImp.readOnly = false;
+        }
+    }
+
+    function updatePrecioSugeridoItem() {
+        const clientNombre = document.getElementById('new-ot-cliente').value;
+        if (!clientNombre) {
+            clearHelperText();
+            return;
+        }
+        const client = CLIENTS.find(c => c.nombre === clientNombre);
+        const priceList = priceLists.find(pl => pl.id === (client ? client.priceListId : ''));
+        if (!priceList) {
+            clearHelperText('El cliente no tiene una lista de precios asignada.');
+            return;
+        }
+        
+        const cantVal = parseInt(document.getElementById('new-item-cantidad').value) || 0;
+        const coloresVal = parseInt(document.getElementById('new-item-colores').value) || 0;
+        
+        if (cantVal <= 0 || coloresVal <= 0) {
+            clearHelperText('Ingrese cantidad y colores para calcular el precio.');
+            return;
+        }
+        
+        const sortedEscalas = [...priceList.escalas].sort((a, b) => a.cantidad - b.cantidad);
+        if (sortedEscalas.length === 0) {
+            clearHelperText('La lista de precios no tiene escalas registradas.');
+            return;
+        }
+        
+        let selectedScale = null;
+        for (let i = sortedEscalas.length - 1; i >= 0; i--) {
+            if (sortedEscalas[i].cantidad <= cantVal) {
+                selectedScale = sortedEscalas[i];
+                break;
+            }
+        }
+        if (!selectedScale) {
+            selectedScale = sortedEscalas[0];
+        }
+        
+        let pasadaKey = 'pasada3';
+        if (coloresVal === 1) pasadaKey = 'pasada1';
+        else if (coloresVal === 2) pasadaKey = 'pasada2';
+        
+        const precioSugerido = selectedScale[pasadaKey];
+        document.getElementById('new-item-precio').value = precioSugerido;
+        
+        const helper = document.getElementById('price-suggestion-helper');
+        if (helper) {
+            helper.innerHTML = `Sugerido: $ ${precioSugerido.toLocaleString('es-AR', {minimumFractionDigits: 2})} (Escala: ${selectedScale.cantidad.toLocaleString()} u, ${coloresVal} col -> ${pasadaKey.replace('pasada', '')} pas)`;
+        }
+    }
+
+    function clearHelperText(msg = '') {
+        const helper = document.getElementById('price-suggestion-helper');
+        if (helper) {
+            helper.textContent = msg;
+        }
     }
 
     const selHerramentales = document.getElementById('new-ot-herramentales');
     const groupHerrDetalles = document.getElementById('group-herr-detalles');
-    if (selHerramentales && groupHerrDetalles) {
-        selHerramentales.addEventListener('change', (e) => {
-            if (e.target.value === 'SI') {
-                groupHerrDetalles.style.display = 'flex';
-            } else {
-                groupHerrDetalles.style.display = 'none';
-            }
+    if (selHerramentales) {
+        selHerramentales.addEventListener('change', () => {
+            recalcularHerramentalesAutomaticos();
+        });
+    }
+
+    const inputItemCant = document.getElementById('new-item-cantidad');
+    const inputItemColores = document.getElementById('new-item-colores');
+    if (inputItemCant) inputItemCant.addEventListener('input', updatePrecioSugeridoItem);
+    if (inputItemColores) inputItemColores.addEventListener('input', updatePrecioSugeridoItem);
+    
+    const selectOtCliente = document.getElementById('new-ot-cliente');
+    if (selectOtCliente) {
+        selectOtCliente.addEventListener('change', () => {
+            updatePrecioSugeridoItem();
+            recalcularHerramentalesAutomaticos();
         });
     }
 
@@ -1018,8 +1356,15 @@ document.addEventListener('DOMContentLoaded', () => {
             if (document.getElementById('new-ot-observaciones')) document.getElementById('new-ot-observaciones').value = '';
             if (selHerramentales) selHerramentales.value = 'NO';
             if (groupHerrDetalles) groupHerrDetalles.style.display = 'none';
-            if (document.getElementById('new-ot-herr-cantidad')) document.getElementById('new-ot-herr-cantidad').value = '';
-            if (document.getElementById('new-ot-herr-importe')) document.getElementById('new-ot-herr-importe').value = '';
+            if (document.getElementById('new-ot-herr-cantidad')) {
+                document.getElementById('new-ot-herr-cantidad').value = '';
+                document.getElementById('new-ot-herr-cantidad').readOnly = false;
+            }
+            if (document.getElementById('new-ot-herr-importe')) {
+                document.getElementById('new-ot-herr-importe').value = '';
+                document.getElementById('new-ot-herr-importe').readOnly = false;
+            }
+            clearHelperText();
         });
         btnCancelarOt.addEventListener('click', () => {
             formNuevaOt.style.display = 'none';
@@ -1112,6 +1457,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (document.getElementById('new-item-tipo')) document.getElementById('new-item-tipo').value = 'Etiqueta';
             ['new-item-marca','new-item-varietal','new-item-cantidad','new-item-precio','new-item-fecha'].forEach(id => document.getElementById(id).value = '');
             document.getElementById('new-item-img').value = '';
+            clearHelperText();
         });
 
         btnGuardarOt.addEventListener('click', () => {
@@ -1123,10 +1469,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const herramentalesVal = document.getElementById('new-ot-herramentales').value;
             let herramentales = null;
-            if (herramentalesVal === 'SI') {
+            if (herramentalesVal !== 'NO') {
                 herramentales = {
-                    cantidad: document.getElementById('new-ot-herr-cantidad').value || 1,
-                    importe: document.getElementById('new-ot-herr-importe').value || 0
+                    tipo: herramentalesVal,
+                    cantidad: parseInt(document.getElementById('new-ot-herr-cantidad').value) || 1,
+                    importe: parseFloat(document.getElementById('new-ot-herr-importe').value) || 0
                 };
             }
 
@@ -1179,6 +1526,7 @@ document.addEventListener('DOMContentLoaded', () => {
             formNuevoCliente.style.display = 'none';
             clientEdicionNombre = null;
             ['new-cli-nombre','new-cli-cuit','new-cli-domicilio','new-cli-email','new-cli-telefono'].forEach(id => document.getElementById(id).value = '');
+            document.getElementById('new-cli-listaprecios').value = '';
             document.getElementById('form-cliente-title').innerHTML = 'Registrar Nueva Bodega';
             btnGuardarCliente.innerHTML = '<i class="fa-solid fa-save"></i> Guardar Cliente';
         });
@@ -1190,6 +1538,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const tel     = document.getElementById('new-cli-telefono').value.trim();
             const moneda  = document.getElementById('new-cli-moneda').value;
             const domicilio = document.getElementById('new-cli-domicilio').value.trim() || 'Domicilio no registrado';
+            const priceListId = document.getElementById('new-cli-listaprecios').value;
             
             if (!nombre) { alert('Ingrese la razón social'); return; }
             
@@ -1223,6 +1572,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     cli.telefono = tel;
                     cli.domicilio = domicilio;
                     cli.moneda = moneda;
+                    cli.priceListId = priceListId;
                 }
                 clientEdicionNombre = null;
             } else {
@@ -1242,7 +1592,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     localidad: 'Luján de Cuyo',
                     provincia: 'Mendoza',
                     moneda,
-                    saldo: 0
+                    saldo: 0,
+                    priceListId: priceListId
                 });
             }
             
@@ -1252,6 +1603,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             formNuevoCliente.style.display = 'none';
             ['new-cli-nombre','new-cli-cuit','new-cli-domicilio','new-cli-email','new-cli-telefono'].forEach(id => document.getElementById(id).value = '');
+            document.getElementById('new-cli-listaprecios').value = '';
             document.getElementById('form-cliente-title').innerHTML = 'Registrar Nueva Bodega';
             btnGuardarCliente.innerHTML = '<i class="fa-solid fa-save"></i> Guardar Cliente';
         });
@@ -1686,15 +2038,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 // Herramentales
                 if (ot.herramentales) {
-                    document.getElementById('new-ot-herramentales').value = 'SI';
+                    const tipoHerr = ot.herramentales.tipo || (ot.herramentales.cantidad > 0 ? 'POLIMEROS' : 'PERSONALIZADO');
+                    document.getElementById('new-ot-herramentales').value = tipoHerr;
                     document.getElementById('group-herr-detalles').style.display = 'flex';
                     document.getElementById('new-ot-herr-cantidad').value = ot.herramentales.cantidad;
                     document.getElementById('new-ot-herr-importe').value = ot.herramentales.importe;
+                    if (tipoHerr === 'POLIMEROS') {
+                        document.getElementById('new-ot-herr-cantidad').readOnly = true;
+                        document.getElementById('new-ot-herr-importe').readOnly = true;
+                    } else {
+                        document.getElementById('new-ot-herr-cantidad').readOnly = false;
+                        document.getElementById('new-ot-herr-importe').readOnly = false;
+                    }
                 } else {
                     document.getElementById('new-ot-herramentales').value = 'NO';
                     document.getElementById('group-herr-detalles').style.display = 'none';
                     document.getElementById('new-ot-herr-cantidad').value = '';
                     document.getElementById('new-ot-herr-importe').value = '';
+                    document.getElementById('new-ot-herr-cantidad').readOnly = false;
+                    document.getElementById('new-ot-herr-importe').readOnly = false;
                 }
                 
                 // Cargar items actuales y renderizar

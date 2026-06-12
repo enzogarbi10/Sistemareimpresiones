@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FlexoERP - Gestión de Etiquetas de Vino</title>
-    <link rel="stylesheet" href="styles.css?v=9">
+    <link rel="stylesheet" href="styles.css?v=10">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -322,10 +322,11 @@
                             <h4 style="margin-bottom:1rem;color:var(--warning);"><i class="fa-solid fa-toolbox"></i> Herramentales</h4>
                             <div class="form-row">
                                 <div class="form-group half">
-                                    <label>¿Lleva Herramentales?</label>
+                                    <label>Tipo de Herramental</label>
                                     <select class="large-input" id="new-ot-herramentales">
-                                        <option value="NO">No</option>
-                                        <option value="SI">Sí, lleva herramentales</option>
+                                        <option value="NO">Sin Herramental</option>
+                                        <option value="POLIMEROS">Polímeros (Automático)</option>
+                                        <option value="PERSONALIZADO">Personalizado (Manual)</option>
                                     </select>
                                 </div>
                                 <div class="form-group half" id="group-herr-detalles" style="display:none; gap: 10px;">
@@ -389,7 +390,8 @@
                                 </div>
                                 <div class="form-group half">
                                     <label>Precio x Millar</label>
-                                    <input type="number" class="large-input" id="new-item-precio" placeholder="Ej. 15.50">
+                                    <input type="number" class="large-input" id="new-item-precio" placeholder="Ej. 15.50" step="any">
+                                    <span id="price-suggestion-helper" style="display:block;font-size:11px;color:var(--secondary);margin-top:4px;font-style:italic;"></span>
                                 </div>
                             </div>
                             <div class="form-row mt-1">
@@ -449,38 +451,125 @@
                 <section id="clientes" class="module">
                     <div class="module-header">
                         <h2>Gestión de Bodegas</h2>
-                        <button class="btn btn-primary" id="btn-nuevo-cliente"><i class="fa-solid fa-plus"></i> Nueva Bodega</button>
-                    </div>
-
-                    <div class="card glass mt-2" id="form-nuevo-cliente" style="display:none;">
-                        <h3 id="form-cliente-title">Registrar Nueva Bodega</h3>
-                        <div class="form-row">
-                            <div class="form-group half"><label>Razón Social</label><input type="text" class="large-input" id="new-cli-nombre" placeholder="Ej. Bodega Chandon"></div>
-                            <div class="form-group half"><label>CUIT</label><input type="text" class="large-input" id="new-cli-cuit" placeholder="30-XXXXXXXX-X"></div>
-                        </div>
-                        <div class="form-row mt-1">
-                            <div class="form-group half"><label>Domicilio de Entrega</label><input type="text" class="large-input" id="new-cli-domicilio" placeholder="Ej. Ruta 82 Km 25"></div>
-                            <div class="form-group half"><label>¿Lleva Factura?</label><select class="large-input" id="new-cli-factura"><option value="SI">Sí, emite factura</option><option value="NO">No</option></select></div>
-                        </div>
-                        <div class="form-row mt-1">
-                            <div class="form-group half"><label>Email de Contacto</label><input type="email" class="large-input" id="new-cli-email" placeholder="compras@bodega.com"></div>
-                            <div class="form-group half"><label>Teléfono</label><input type="text" class="large-input" id="new-cli-telefono" placeholder="+54 9 261 555-5555"></div>
-                        </div>
-                        <div class="form-row mt-1">
-                            <div class="form-group half"><label>Moneda Operativa</label><select class="large-input" id="new-cli-moneda"><option value="Pesos">Pesos (ARS)</option><option value="Dólar Divisa">Dólar Divisa</option><option value="Dólar Billete">Dólar Billete</option></select></div>
-                        </div>
-                        <div class="action-buttons mt-2">
-                            <button class="btn btn-success" id="btn-guardar-cliente"><i class="fa-solid fa-save"></i> Guardar Cliente</button>
-                            <button class="btn btn-danger" id="btn-cancelar-cliente">Cancelar</button>
+                        <div>
+                            <button class="btn btn-primary" id="btn-nuevo-cliente"><i class="fa-solid fa-plus"></i> Nueva Bodega</button>
+                            <button class="btn btn-secondary" id="btn-nueva-lista-precios" style="display:none; margin-left: 10px;"><i class="fa-solid fa-plus"></i> Nueva Lista de Precios</button>
                         </div>
                     </div>
 
-                    <div class="card glass mt-2">
-                        <table class="data-table" id="tabla-clientes">
-                            <thead><tr><th>Bodega</th><th>CUIT</th><th>Factura / Email</th><th>Saldo Pendiente</th><th>Acciones</th></tr></thead>
-                            <tbody id="tbody-clientes">
-                            </tbody>
-                        </table>
+                    <div class="sub-tabs-container mt-2">
+                        <button class="sub-tab-btn active" id="btn-sub-tab-clientes-list" data-subtab="clientes-list">
+                            <i class="fa-solid fa-users"></i> Bodegas Registradas
+                        </button>
+                        <button class="sub-tab-btn" id="btn-sub-tab-price-lists" data-subtab="price-lists-tab">
+                            <i class="fa-solid fa-tags"></i> Listas de Precios
+                        </button>
+                    </div>
+
+                    <!-- Subtab: Bodegas -->
+                    <div id="subtab-clientes-list" class="sub-tab-content active">
+                        <div class="card glass mt-2" id="form-nuevo-cliente" style="display:none;">
+                            <h3 id="form-cliente-title">Registrar Nueva Bodega</h3>
+                            <div class="form-row">
+                                <div class="form-group half"><label>Razón Social</label><input type="text" class="large-input" id="new-cli-nombre" placeholder="Ej. Bodega Chandon"></div>
+                                <div class="form-group half"><label>CUIT</label><input type="text" class="large-input" id="new-cli-cuit" placeholder="30-XXXXXXXX-X"></div>
+                            </div>
+                            <div class="form-row mt-1">
+                                <div class="form-group half"><label>Domicilio de Entrega</label><input type="text" class="large-input" id="new-cli-domicilio" placeholder="Ej. Ruta 82 Km 25"></div>
+                                <div class="form-group half"><label>¿Lleva Factura?</label><select class="large-input" id="new-cli-factura"><option value="SI">Sí, emite factura</option><option value="NO">No</option></select></div>
+                            </div>
+                            <div class="form-row mt-1">
+                                <div class="form-group half"><label>Email de Contacto</label><input type="email" class="large-input" id="new-cli-email" placeholder="compras@bodega.com"></div>
+                                <div class="form-group half"><label>Teléfono</label><input type="text" class="large-input" id="new-cli-telefono" placeholder="+54 9 261 555-5555"></div>
+                            </div>
+                            <div class="form-row mt-1">
+                                <div class="form-group half">
+                                    <label>Moneda Operativa</label>
+                                    <select class="large-input" id="new-cli-moneda">
+                                        <option value="Pesos">Pesos (ARS)</option>
+                                        <option value="Dólar Divisa">Dólar Divisa</option>
+                                        <option value="Dólar Billete">Dólar Billete</option>
+                                    </select>
+                                </div>
+                                <div class="form-group half">
+                                    <label>Lista de Precios</label>
+                                    <select class="large-input" id="new-cli-listaprecios">
+                                        <option value="">-- Sin Lista de Precios --</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="action-buttons mt-2">
+                                <button class="btn btn-success" id="btn-guardar-cliente"><i class="fa-solid fa-save"></i> Guardar Cliente</button>
+                                <button class="btn btn-danger" id="btn-cancelar-cliente">Cancelar</button>
+                            </div>
+                        </div>
+
+                        <div class="card glass mt-2">
+                            <table class="data-table" id="tabla-clientes">
+                                <thead><tr><th>Bodega</th><th>CUIT</th><th>Factura / Email</th><th>Lista Precios</th><th>Saldo Pendiente</th><th>Acciones</th></tr></thead>
+                                <tbody id="tbody-clientes">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Subtab: Listas de Precios -->
+                    <div id="subtab-price-lists-tab" class="sub-tab-content">
+                        <!-- Form for new/edit price list -->
+                        <div class="card glass mt-2" id="form-nueva-lista-precios" style="display:none; border:2px solid var(--secondary);">
+                            <h3 id="form-price-list-title">Crear Nueva Lista de Precios</h3>
+                            <div class="form-row">
+                                <div class="form-group half">
+                                    <label>Nombre de la Lista</label>
+                                    <input type="text" class="large-input" id="new-pl-nombre" placeholder="Ej. Reimpresiones en Bobina">
+                                </div>
+                                <div class="form-group half">
+                                    <label>Costo del Polímero ($)</label>
+                                    <input type="number" class="large-input" id="new-pl-polimero" placeholder="Ej. 12000" min="0">
+                                </div>
+                            </div>
+
+                            <div style="margin-top:1.5rem;padding:1.5rem;background:rgba(0,0,0,0.2);border-radius:8px;">
+                                <h4 style="margin-bottom:1rem;color:var(--secondary);">Escalas de Precios (por Millar)</h4>
+                                <table class="data-table" id="tabla-new-pl-escalas">
+                                    <thead>
+                                        <tr>
+                                            <th>Cantidad Mínima</th>
+                                            <th>1 Pasada ($)</th>
+                                            <th>2 Pasadas ($)</th>
+                                            <th>3 Pasadas ($)</th>
+                                            <th>Acción</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbody-new-pl-escalas">
+                                        <!-- Will add rows dynamically -->
+                                    </tbody>
+                                </table>
+                                <button type="button" class="btn btn-secondary mt-1" id="btn-pl-agregar-escala"><i class="fa-solid fa-plus"></i> Agregar Escalón</button>
+                            </div>
+
+                            <div class="action-buttons mt-2">
+                                <button class="btn btn-success" id="btn-guardar-lista-precios"><i class="fa-solid fa-save"></i> Guardar Lista</button>
+                                <button class="btn btn-danger" id="btn-cancelar-lista-precios">Cancelar</button>
+                            </div>
+                        </div>
+
+                        <!-- Price Lists View Table -->
+                        <div class="card glass mt-2">
+                            <table class="data-table" id="tabla-price-lists">
+                                <thead>
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th>Costo Polímero</th>
+                                        <th>Escalas Registradas</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbody-price-lists">
+                                    <!-- Dynamic content -->
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </section>
 
@@ -805,6 +894,6 @@
         </div>
     </div>
 
-    <script src="app.js?v=9"></script>
+    <script src="app.js?v=10"></script>
 </body>
 </html>

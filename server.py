@@ -58,7 +58,40 @@ DEFAULT_DATA = {
     "ots_logistica": [],
     "ultimo_numero_ot": 0,
     "todas_las_ots": {},
-    "pagos": []
+    "pagos": [],
+    "price_lists": [
+        {
+            "id": "list-reimpresiones-bobina",
+            "nombre": "Reimpresiones en Bobina",
+            "polimero": 12000.0,
+            "escalas": [
+                { "cantidad": 1000, "pasada1": 19000.00, "pasada2": 32813.83, "pasada3": 44301.24 },
+                { "cantidad": 2000, "pasada1": 15400.33, "pasada2": 20231.73, "pasada3": 27161.82 },
+                { "cantidad": 3000, "pasada1": 12470.52, "pasada2": 13743.77, "pasada3": 20051.97 },
+                { "cantidad": 4000, "pasada1": 9843.99,  "pasada2": 10936.49, "pasada3": 15237.40 },
+                { "cantidad": 5000, "pasada1": 8050.20,  "pasada2": 9974.71,  "pasada3": 13468.05 },
+                { "cantidad": 6000, "pasada1": 6922.77,  "pasada2": 9228.75,  "pasada3": 12454.16 },
+                { "cantidad": 7000, "pasada1": 6028.04,  "pasada2": 8750.18,  "pasada3": 11812.08 },
+                { "cantidad": 8000, "pasada1": 5888.95,  "pasada2": 8477.10,  "pasada3": 11441.56 },
+                { "cantidad": 9000, "pasada1": 5492.90,  "pasada2": 8236.19,  "pasada3": 11124.43 },
+                { "cantidad": 10000, "pasada1": 5381.32, "pasada2": 7781.72,  "pasada3": 10100.50 },
+                { "cantidad": 11000, "pasada1": 5040.54, "pasada2": 7118.39,  "pasada3": 9611.48 },
+                { "cantidad": 12000, "pasada1": 5029.87, "pasada2": 7111.05,  "pasada3": 9598.14 },
+                { "cantidad": 13000, "pasada1": 5012.65, "pasada2": 7106.63,  "pasada3": 9595.26 },
+                { "cantidad": 14000, "pasada1": 5011.32, "pasada2": 7090.96,  "pasada3": 9575.95 },
+                { "cantidad": 15000, "pasada1": 5001.02, "pasada2": 7086.25,  "pasada3": 9567.80 },
+                { "cantidad": 20000, "pasada1": 4652.00, "pasada2": 6410.71,  "pasada3": 8652.68 },
+                { "cantidad": 30000, "pasada1": 4190.24, "pasada2": 5956.37,  "pasada3": 8040.88 },
+                { "cantidad": 40000, "pasada1": 4179.48, "pasada2": 5947.26,  "pasada3": 8016.22 },
+                { "cantidad": 50000, "pasada1": 4174.85, "pasada2": 5937.61,  "pasada3": 8014.98 },
+                { "cantidad": 60000, "pasada1": 4172.16, "pasada2": 5931.20,  "pasada3": 8007.52 },
+                { "cantidad": 70000, "pasada1": 4164.22, "pasada2": 5728.02,  "pasada3": 7976.19 },
+                { "cantidad": 80000, "pasada1": 4155.69, "pasada2": 5899.23,  "pasada3": 7968.12 },
+                { "cantidad": 90000, "pasada1": 4153.47, "pasada2": 5896.46,  "pasada3": 7965.52 },
+                { "cantidad": 100000, "pasada1": 4045.43, "pasada2": 5861.09, "pasada3": 7913.87 }
+            ]
+        }
+    ]
 }
 
 def load_db():
