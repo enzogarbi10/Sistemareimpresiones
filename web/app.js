@@ -1252,11 +1252,11 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (inputCant) {
                 inputCant.value = totalColores;
-                inputCant.readOnly = true;
+                inputCant.readOnly = false;
             }
             if (inputImp) {
                 inputImp.value = totalColores * costoPolimero;
-                inputImp.readOnly = true;
+                inputImp.readOnly = false;
             }
         } else if (type === 'PERSONALIZADO') {
             if (inputCant) inputCant.readOnly = false;
@@ -1327,6 +1327,24 @@ document.addEventListener('DOMContentLoaded', () => {
     if (selHerramentales) {
         selHerramentales.addEventListener('change', () => {
             recalcularHerramentalesAutomaticos();
+        });
+    }
+
+    const inputHerrCant = document.getElementById('new-ot-herr-cantidad');
+    if (inputHerrCant) {
+        inputHerrCant.addEventListener('input', () => {
+            const type = document.getElementById('new-ot-herramentales').value;
+            if (type === 'POLIMEROS') {
+                const clientNombre = document.getElementById('new-ot-cliente').value;
+                const client = CLIENTS.find(c => c.nombre === clientNombre);
+                const priceList = priceLists.find(pl => pl.id === (client ? client.priceListId : ''));
+                const costoPolimero = priceList ? parseFloat(priceList.polimero) : 0;
+                const qty = parseInt(inputHerrCant.value) || 0;
+                const inputImp = document.getElementById('new-ot-herr-importe');
+                if (inputImp) {
+                    inputImp.value = qty * costoPolimero;
+                }
+            }
         });
     }
 
@@ -2043,13 +2061,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.getElementById('group-herr-detalles').style.display = 'flex';
                     document.getElementById('new-ot-herr-cantidad').value = ot.herramentales.cantidad;
                     document.getElementById('new-ot-herr-importe').value = ot.herramentales.importe;
-                    if (tipoHerr === 'POLIMEROS') {
-                        document.getElementById('new-ot-herr-cantidad').readOnly = true;
-                        document.getElementById('new-ot-herr-importe').readOnly = true;
-                    } else {
-                        document.getElementById('new-ot-herr-cantidad').readOnly = false;
-                        document.getElementById('new-ot-herr-importe').readOnly = false;
-                    }
+                    document.getElementById('new-ot-herr-cantidad').readOnly = false;
+                    document.getElementById('new-ot-herr-importe').readOnly = false;
                 } else {
                     document.getElementById('new-ot-herramentales').value = 'NO';
                     document.getElementById('group-herr-detalles').style.display = 'none';
