@@ -184,7 +184,7 @@ document.addEventListener('DOMContentLoaded', () => {
             remainingPaid -= impPago;
             const saldoRemito = total - impPago;
             
-            const esVencido = (saldoRemito > 0.01) && (dueDateMs < nowMs);
+            const esVencido = (saldoRemito > 0.01) && (dueDateMs <= nowMs);
             
             vencimientos.push({
                 numero: r.numero,
@@ -272,7 +272,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                         <div style="display:flex; justify-content:space-between; color:#adb5bd; font-size:11px; margin-top:2px;">
                             <span>Remito R-${v.numero}</span>
-                            <span style="font-weight:700; color:var(--warning);">Vencido hace ${v.diasRetraso}d (vencía ${v.fechaVencimiento})</span>
+                            <span style="font-weight:700; color:var(--warning);">Vencido ${v.diasRetraso === 0 ? 'hoy' : 'hace ' + v.diasRetraso + 'd'} (vencía ${v.fechaVencimiento})</span>
                         </div>
                     `;
                     listContainer.appendChild(div);
@@ -915,7 +915,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     const diasPlazoText = vInfo.diasVencimiento > 0 ? `${vInfo.diasVencimiento}d` : 'Contado';
                     if (vInfo.vencido) {
-                        detalleExtra = `<br><small style="color:var(--danger); font-size:11px; font-weight:700;"><i class="fa-solid fa-triangle-exclamation"></i> VENCIDO (Venció el ${vInfo.fechaVencimiento} - hace ${vInfo.diasRetraso} días)</small>`;
+                        detalleExtra = `<br><small style="color:var(--danger); font-size:11px; font-weight:700;"><i class="fa-solid fa-triangle-exclamation"></i> VENCIDO (Venció el ${vInfo.fechaVencimiento} - ${vInfo.diasRetraso === 0 ? 'hoy' : 'hace ' + vInfo.diasRetraso + ' días'})</small>`;
                     } else {
                         detalleExtra = `<br><small style="color:#adb5bd; font-size:11px;"><i class="fa-solid fa-clock"></i> Pendiente (Plazo: ${diasPlazoText}, Vence: ${vInfo.fechaVencimiento})</small>`;
                     }
