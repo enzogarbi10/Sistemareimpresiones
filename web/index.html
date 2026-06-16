@@ -64,6 +64,22 @@
                 </div>
                 <div class="user-profile">
                     <button class="btn-icon-small" id="btn-top-usuarios" style="display:none;margin-right:15px;color:var(--secondary);background:transparent;border:none;font-size:1.15rem;cursor:pointer;transition:transform 0.2s ease;" title="Gestión de Usuarios"><i class="fa-solid fa-users-gear"></i></button>
+                    <!-- Notification Bell -->
+                    <div style="position:relative; margin-right:15px; display:inline-block;">
+                        <button class="btn-icon-small" id="btn-top-notifications" style="color:#f4a261;background:transparent;border:none;font-size:1.15rem;cursor:pointer;position:relative;" title="Notificaciones de Vencimientos">
+                            <i class="fa-solid fa-bell"></i>
+                            <span id="notification-badge" style="display:none; position:absolute; top:-5px; right:-5px; background:var(--danger); color:white; font-size:10px; font-weight:bold; padding:2px 5px; border-radius:50%; line-height:1;">0</span>
+                        </button>
+                        <div class="glass" id="notifications-dropdown" style="display:none; position:absolute; top:40px; right:0; width:340px; max-height:400px; overflow-y:auto; z-index:1000; padding:12px; border-radius:8px; border:1px solid rgba(255,255,255,0.08); box-shadow:0 10px 30px rgba(0,0,0,0.5); background:rgba(20,20,30,0.95); backdrop-filter:blur(10px);">
+                            <h4 style="margin:0 0 10px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:5px; color:#fff; font-size:14px; display:flex; justify-content:space-between; align-items:center;">
+                                <span><i class="fa-solid fa-triangle-exclamation" style="color:var(--warning); margin-right:5px;"></i> Facturas Vencidas</span>
+                                <span style="font-size:11px; font-weight:normal; color:#adb5bd;" id="notifications-count-text">0 alertas</span>
+                            </h4>
+                            <div id="notifications-list" style="display:flex; flex-direction:column; gap:8px;">
+                                <p style="color:#adb5bd; font-size:12px; text-align:center; margin:10px 0;">No hay vencimientos pendientes</p>
+                            </div>
+                        </div>
+                    </div>
                     <div class="avatar" id="user-avatar">OM</div>
                     <span id="user-role-name">Operador Máquina</span>
                     <button class="btn-icon-small" id="btn-logout" title="Cerrar Sesión" style="margin-left:10px;color:var(--danger);"><i class="fa-solid fa-power-off"></i></button>
@@ -229,6 +245,10 @@
                             <div class="stat-card glass">
                                 <div class="stat-icon warning"><i class="fa-solid fa-hand-holding-dollar"></i></div>
                                 <div class="stat-data"><h3>Saldo Deudor Total</h3><h2 id="dash-saldo-total">$ 0</h2></div>
+                            </div>
+                            <div class="stat-card glass" id="card-vencidos-dash" style="cursor: pointer;">
+                                <div class="stat-icon danger" style="color:var(--danger); background:rgba(230,57,70,0.1);"><i class="fa-solid fa-calendar-times"></i></div>
+                                <div class="stat-data"><h3>Remitos Vencidos</h3><h2 id="dash-vencidos-count" style="color:var(--danger);">0</h2></div>
                             </div>
                         </div>
                         
@@ -483,7 +503,7 @@
                                 <div class="form-group half"><label>Teléfono</label><input type="text" class="large-input" id="new-cli-telefono" placeholder="+54 9 261 555-5555"></div>
                             </div>
                             <div class="form-row mt-1">
-                                <div class="form-group half">
+                                <div class="form-group third" style="flex:1;">
                                     <label>Moneda Operativa</label>
                                     <select class="large-input" id="new-cli-moneda">
                                         <option value="Pesos">Pesos (ARS)</option>
@@ -491,10 +511,22 @@
                                         <option value="Dólar Billete">Dólar Billete</option>
                                     </select>
                                 </div>
-                                <div class="form-group half">
+                                <div class="form-group third" style="flex:1; margin-left: 10px;">
                                     <label>Lista de Precios</label>
                                     <select class="large-input" id="new-cli-listaprecios">
                                         <option value="">-- Sin Lista de Precios --</option>
+                                    </select>
+                                </div>
+                                <div class="form-group third" style="flex:1; margin-left: 10px;">
+                                    <label>Condición de Pago</label>
+                                    <select class="large-input" id="new-cli-condicionpago">
+                                        <option value="0">Contado (0 días)</option>
+                                        <option value="7">7 días</option>
+                                        <option value="15">15 días</option>
+                                        <option value="30">30 días</option>
+                                        <option value="45">45 días</option>
+                                        <option value="60">60 días</option>
+                                        <option value="90">90 días</option>
                                     </select>
                                 </div>
                             </div>

@@ -133,6 +133,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function saveRemitos() {
         saveToServer();
+        if (typeof actualizarAlertasVencimientos === 'function') {
+            actualizarAlertasVencimientos();
+        }
     }
 
     function recalcularSaldosClientes() {
@@ -142,6 +145,156 @@ document.addEventListener('DOMContentLoaded', () => {
             cli.saldo = totalRemitos - totalPagos;
         });
         saveClients();
+        if (typeof actualizarAlertasVencimientos === 'function') {
+            actualizarAlertasVencimientos();
+        }
+    }
+
+    function obtenerVencimientosCliente(clienteNombre) {
+        const cli = CLIENTS.find(c => c.nombre === clienteNombre);
+        if (!cli) return [];
+        
+        const diasVencimiento = parseInt(cli.condicionPago) || 0;
+        
+        // Remitos sorted chronologically
+        const remitosCli = REMITOS.filter(r => r.cliente === clienteNombre)
+            .map(r => ({ ...r, sortDate: parseFechaArg(r.fecha) }))
+            .sort((a, b) => a.sortDate - b.sortDate);
+            
+        // Total payments of client
+        const totalPagado = PAGOS.filter(p => p.cliente === clienteNombre)
+            .reduce((acc, p) => acc + (parseFloat(p.importe) || 0), 0);
+            
+        let remainingPaid = totalPagado;
+        const now = new Date();
+        now.setHours(12, 0, 0, 0);
+        const nowMs = now.getTime();
+        
+        const vencimientos = [];
+        
+        remitosCli.forEach(r => {
+            const creationDateMs = r.sortDate;
+            const dueDate = new Date(creationDateMs);
+            dueDate.setDate(dueDate.getDate() + diasVencimiento);
+            dueDate.setHours(12, 0, 0, 0);
+            const dueDateMs = dueDate.getTime();
+            
+            const total = parseFloat(r.total) || 0;
+            const impPago = Math.min(total, remainingPaid);
+            remainingPaid -= impPago;
+            const saldoRemito = total - impPago;
+            
+            const esVencido = (saldoRemito > 0.01) && (dueDateMs < nowMs);
+            
+            vencimientos.push({
+                numero: r.numero,
+                otNumero: r.otNumero,
+                fecha: r.fecha,
+                fechaVencimiento: `${dueDate.getDate()}/${dueDate.getMonth() + 1}/${dueDate.getFullYear()}`,
+                total: total,
+                saldo: saldoRemito,
+                diasVencimiento: diasVencimiento,
+                vencido: esVencido,
+                diasRetraso: esVencido ? Math.ceil((nowMs - dueDateMs) / (1000 * 60 * 60 * 24)) : 0
+            });
+        });
+        
+        return vencimientos;
+    }
+
+    function obtenerTodosLosVencidos() {
+        let todosVencidos = [];
+        CLIENTS.forEach(cli => {
+            const vencidos = obtenerVencimientosCliente(cli.nombre).filter(v => v.vencido);
+            vencidos.forEach(v => {
+                todosVencidos.push({
+                    cliente: cli.nombre,
+                    ...v
+                });
+            });
+        });
+        return todosVencidos.sort((a, b) => b.diasRetraso - a.diasRetraso);
+    }
+
+    function actualizarAlertasVencimientos() {
+        const todosVencidos = obtenerTodosLosVencidos();
+        
+        const badge = document.getElementById('notification-badge');
+        const countText = document.getElementById('notifications-count-text');
+        const listContainer = document.getElementById('notifications-list');
+        
+        if (badge) {
+            if (todosVencidos.length > 0) {
+                badge.innerText = todosVencidos.length;
+                badge.style.display = 'block';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+        
+        if (countText) {
+            countText.innerText = `${todosVencidos.length} ${todosVencidos.length === 1 ? 'alerta' : 'alertas'}`;
+        }
+        
+        if (listContainer) {
+            listContainer.innerHTML = '';
+            if (todosVencidos.length === 0) {
+                listContainer.innerHTML = '<p style="color:#adb5bd; font-size:12px; text-align:center; margin:10px 0;">No hay vencimientos pendientes</p>';
+            } else {
+                todosVencidos.forEach(v => {
+                    const div = document.createElement('div');
+                    div.style.cssText = 'padding:10px; background:rgba(255,255,255,0.03); border-left:4px solid var(--danger); border-radius:4px; font-size:12px; display:flex; flex-direction:column; gap:4px; cursor:pointer; transition:background 0.2s;';
+                    div.addEventListener('mouseenter', () => div.style.background = 'rgba(255,255,255,0.06)');
+                    div.addEventListener('mouseleave', () => div.style.background = 'rgba(255,255,255,0.03)');
+                    div.addEventListener('click', () => {
+                        const navItems = document.querySelectorAll('.nav-item');
+                        const dashNavItem = Array.from(navItems).find(n => n.getAttribute('data-target') === 'dashboard');
+                        if (dashNavItem) dashNavItem.click();
+                        
+                        const btnTabsFin = document.querySelectorAll('.btn-tab-fin');
+                        const btnCuentas = Array.from(btnTabsFin).find(b => b.getAttribute('data-target') === 'fin-cuentas');
+                        if (btnCuentas) btnCuentas.click();
+                        
+                        const selCuentaCliente = document.getElementById('sel-cuenta-cliente');
+                        if (selCuentaCliente) {
+                            selCuentaCliente.value = v.cliente;
+                            selCuentaCliente.dispatchEvent(new Event('change'));
+                        }
+                        
+                        const dropdownNotifications = document.getElementById('notifications-dropdown');
+                        if (dropdownNotifications) dropdownNotifications.style.display = 'none';
+                    });
+                    
+                    div.innerHTML = `
+                        <div style="display:flex; justify-content:space-between; font-weight:bold; color:#fff;">
+                            <span>${v.cliente}</span>
+                            <span style="color:var(--danger);">$ ${v.saldo.toLocaleString('es-AR', {minimumFractionDigits:2})}</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; color:#adb5bd; font-size:11px; margin-top:2px;">
+                            <span>Remito R-${v.numero}</span>
+                            <span style="font-weight:700; color:var(--warning);">Vencido hace ${v.diasRetraso}d (vencía ${v.fechaVencimiento})</span>
+                        </div>
+                    `;
+                    listContainer.appendChild(div);
+                });
+            }
+        }
+        
+        const dashVencidosCount = document.getElementById('dash-vencidos-count');
+        if (dashVencidosCount) {
+            dashVencidosCount.innerText = todosVencidos.length;
+        }
+        
+        const cardVencidosDash = document.getElementById('card-vencidos-dash');
+        if (cardVencidosDash) {
+            if (todosVencidos.length > 0) {
+                cardVencidosDash.style.borderColor = 'var(--danger)';
+                cardVencidosDash.style.boxShadow = '0 0 10px rgba(230,57,70,0.15)';
+            } else {
+                cardVencidosDash.style.borderColor = 'rgba(255,255,255,0.08)';
+                cardVencidosDash.style.boxShadow = 'none';
+            }
+        }
     }
 
     function saveOts() {
@@ -240,6 +393,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderHistorialRemitos();
         renderOts();
         renderUsuarios();
+        actualizarAlertasVencimientos();
         
         if (currentUser) {
             loginScreen.style.display  = 'none';
@@ -249,6 +403,37 @@ document.addEventListener('DOMContentLoaded', () => {
             loginScreen.style.display  = 'flex';
             appContainer.style.display = 'none';
         }
+    }
+
+    // Alertas de Vencimientos Popover Toggle
+    const btnTopNotifications = document.getElementById('btn-top-notifications');
+    const dropdownNotifications = document.getElementById('notifications-dropdown');
+    
+    if (btnTopNotifications && dropdownNotifications) {
+        btnTopNotifications.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dropdownNotifications.style.display = dropdownNotifications.style.display === 'none' ? 'block' : 'none';
+        });
+        
+        document.addEventListener('click', (e) => {
+            if (!dropdownNotifications.contains(e.target) && e.target !== btnTopNotifications && !btnTopNotifications.contains(e.target)) {
+                dropdownNotifications.style.display = 'none';
+            }
+        });
+    }
+
+    // Dashboard card navigation
+    const cardVencidosDash = document.getElementById('card-vencidos-dash');
+    if (cardVencidosDash) {
+        cardVencidosDash.addEventListener('click', () => {
+            const navItems = document.querySelectorAll('.nav-item');
+            const dashNavItem = Array.from(navItems).find(n => n.getAttribute('data-target') === 'dashboard');
+            if (dashNavItem) dashNavItem.click();
+            
+            const btnTabsFin = document.querySelectorAll('.btn-tab-fin');
+            const btnCuentas = Array.from(btnTabsFin).find(b => b.getAttribute('data-target') === 'fin-cuentas');
+            if (btnCuentas) btnCuentas.click();
+        });
     }
 
     function renderClientes() {
@@ -269,7 +454,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const pl = priceLists.find(x => x.id === cli.priceListId);
             const plName = pl ? pl.nombre : 'Sin Lista';
             tr.innerHTML = `
-                <td><strong>${cli.nombre}</strong><br><small style="color:#adb5bd;">${cli.email || cli.telefono} | ${cli.moneda}</small></td>
+                <td><strong>${cli.nombre}</strong><br><small style="color:#adb5bd;">${cli.email || cli.telefono} | ${cli.moneda} | ${cli.condicionPago !== undefined && cli.condicionPago !== '0' ? 'Plazo: ' + cli.condicionPago + 'd' : 'Contado'}</small></td>
                 <td>${cli.cuit}</td>
                 <td>${cli.factura === 'SI' ? 'Con Factura' : 'Sin Factura'}</td>
                 <td>${plName}</td>
@@ -309,6 +494,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('new-cli-telefono').value = cli.telefono || '';
                 document.getElementById('new-cli-moneda').value = cli.moneda || 'Pesos';
                 document.getElementById('new-cli-listaprecios').value = cli.priceListId || '';
+                document.getElementById('new-cli-condicionpago').value = cli.condicionPago !== undefined ? cli.condicionPago : '0';
 
                 btnGuardarCliente.innerHTML = '<i class="fa-solid fa-save"></i> Guardar Cambios';
                 formNuevoCliente.scrollIntoView({ behavior: 'smooth' });
@@ -718,15 +904,33 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!tbodyMov) return;
         tbodyMov.innerHTML = '';
 
-        const remitosCli = REMITOS.filter(r => r.cliente === clienteNombre).map(r => ({
-            id: r.numero, fecha: r.fecha, tipo: 'Cargo',
-            detalle: 'Remito #' + r.numero,
-            importe: parseFloat(r.total) || 0,
-            sortDate: parseFechaArg(r.fecha)
-        }));
+        const vencimientos = obtenerVencimientosCliente(clienteNombre);
+
+        const remitosCli = REMITOS.filter(r => r.cliente === clienteNombre).map(r => {
+            const vInfo = vencimientos.find(v => v.numero === r.numero);
+            let detalleExtra = '';
+            if (vInfo) {
+                if (vInfo.saldo <= 0.01) {
+                    detalleExtra = `<br><small style="color:var(--success); font-size:11px;"><i class="fa-solid fa-check-double"></i> Totalmente Pagado (Vencía ${vInfo.fechaVencimiento})</small>`;
+                } else {
+                    const diasPlazoText = vInfo.diasVencimiento > 0 ? `${vInfo.diasVencimiento}d` : 'Contado';
+                    if (vInfo.vencido) {
+                        detalleExtra = `<br><small style="color:var(--danger); font-size:11px; font-weight:700;"><i class="fa-solid fa-triangle-exclamation"></i> VENCIDO (Venció el ${vInfo.fechaVencimiento} - hace ${vInfo.diasRetraso} días)</small>`;
+                    } else {
+                        detalleExtra = `<br><small style="color:#adb5bd; font-size:11px;"><i class="fa-solid fa-clock"></i> Pendiente (Plazo: ${diasPlazoText}, Vence: ${vInfo.fechaVencimiento})</small>`;
+                    }
+                }
+            }
+            return {
+                id: r.numero, fecha: r.fecha, tipo: 'Cargo',
+                detalle: 'Remito #' + r.numero + detalleExtra,
+                importe: parseFloat(r.total) || 0,
+                sortDate: parseFechaArg(r.fecha)
+            };
+        });
         const pagosCli = PAGOS.filter(p => p.cliente === clienteNombre).map(p => ({
             id: p.id, fecha: p.fecha, tipo: 'Abono',
-            detalle: p.notas ? 'Pago (' + p.notas + ')' : 'Pago',
+            detalle: p.notes ? 'Pago (' + p.notes + ')' : (p.notas ? 'Pago (' + p.notas + ')' : 'Pago'),
             importe: parseFloat(p.importe) || 0,
             sortDate: parseFechaArg(p.fecha)
         }));
@@ -1545,6 +1749,7 @@ document.addEventListener('DOMContentLoaded', () => {
             clientEdicionNombre = null;
             ['new-cli-nombre','new-cli-cuit','new-cli-domicilio','new-cli-email','new-cli-telefono'].forEach(id => document.getElementById(id).value = '');
             document.getElementById('new-cli-listaprecios').value = '';
+            document.getElementById('new-cli-condicionpago').value = '0';
             document.getElementById('form-cliente-title').innerHTML = 'Registrar Nueva Bodega';
             btnGuardarCliente.innerHTML = '<i class="fa-solid fa-save"></i> Guardar Cliente';
         });
@@ -1557,6 +1762,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const moneda  = document.getElementById('new-cli-moneda').value;
             const domicilio = document.getElementById('new-cli-domicilio').value.trim() || 'Domicilio no registrado';
             const priceListId = document.getElementById('new-cli-listaprecios').value;
+            const condicionPago = document.getElementById('new-cli-condicionpago').value;
             
             if (!nombre) { alert('Ingrese la razón social'); return; }
             
@@ -1591,6 +1797,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     cli.domicilio = domicilio;
                     cli.moneda = moneda;
                     cli.priceListId = priceListId;
+                    cli.condicionPago = condicionPago;
                 }
                 clientEdicionNombre = null;
             } else {
@@ -1611,17 +1818,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     provincia: 'Mendoza',
                     moneda,
                     saldo: 0,
-                    priceListId: priceListId
+                    priceListId: priceListId,
+                    condicionPago: condicionPago
                 });
             }
             
             saveClients();
             renderClientes();
             populateClientesDropdown();
+            if (typeof actualizarAlertasVencimientos === 'function') {
+                actualizarAlertasVencimientos();
+            }
             
             formNuevoCliente.style.display = 'none';
             ['new-cli-nombre','new-cli-cuit','new-cli-domicilio','new-cli-email','new-cli-telefono'].forEach(id => document.getElementById(id).value = '');
             document.getElementById('new-cli-listaprecios').value = '';
+            document.getElementById('new-cli-condicionpago').value = '0';
             document.getElementById('form-cliente-title').innerHTML = 'Registrar Nueva Bodega';
             btnGuardarCliente.innerHTML = '<i class="fa-solid fa-save"></i> Guardar Cliente';
         });
