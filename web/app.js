@@ -890,9 +890,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function parseFechaArg(fechaStr) {
         if (!fechaStr) return 0;
-        if (fechaStr.includes('-')) return new Date(fechaStr).getTime();
+        if (fechaStr.includes('-')) {
+            const p = fechaStr.split('-');
+            if (p.length === 3) {
+                return new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2]), 12, 0, 0).getTime();
+            }
+        }
         const p = fechaStr.split('/');
-        if (p.length === 3) return new Date(`${p[2]}-${p[1]}-${p[0]}T12:00:00`).getTime();
+        if (p.length === 3) {
+            return new Date(parseInt(p[2]), parseInt(p[1]) - 1, parseInt(p[0]), 12, 0, 0).getTime();
+        }
         return 0;
     }
 
