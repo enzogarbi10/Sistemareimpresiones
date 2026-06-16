@@ -568,6 +568,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('form-price-list-title').textContent = 'Crear Nueva Lista de Precios';
             document.getElementById('new-pl-nombre').value = '';
             document.getElementById('new-pl-polimero').value = '';
+            document.getElementById('new-pl-tipocalculo').value = 'por_millar';
             tbodyNewPlEscalas.innerHTML = '';
             formNuevaListaPrecios.style.display = 'block';
             agregarEscalaRow();
@@ -608,6 +609,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btnGuardarListaPrecios.addEventListener('click', () => {
             const nombre = document.getElementById('new-pl-nombre').value.trim();
             const polimero = parseFloat(document.getElementById('new-pl-polimero').value) || 0;
+            const tipoCalculo = document.getElementById('new-pl-tipocalculo').value || 'por_millar';
             
             if (!nombre) {
                 alert('Ingrese el nombre de la lista de precios.');
@@ -642,6 +644,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (pl) {
                     pl.nombre = nombre;
                     pl.polimero = polimero;
+                    pl.tipoCalculo = tipoCalculo;
                     pl.escalas = escalas;
                 }
                 priceListEdicionId = null;
@@ -651,6 +654,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     id: newId,
                     nombre: nombre,
                     polimero: polimero,
+                    tipoCalculo: tipoCalculo,
                     escalas: escalas
                 });
             }
@@ -669,9 +673,10 @@ document.addEventListener('DOMContentLoaded', () => {
         
         priceLists.forEach(pl => {
             const tr = document.createElement('tr');
+            const tipoCalculoText = pl.tipoCalculo === 'precio_fijo' ? 'Precio Fijo' : 'Por Millar';
             const escalasText = pl.escalas.length > 0 
-                ? `${pl.escalas.length} escalones (${pl.escalas[0].cantidad.toLocaleString()} a ${pl.escalas[pl.escalas.length - 1].cantidad.toLocaleString()})`
-                : 'Sin escalas';
+                ? `${pl.escalas.length} escalones (${pl.escalas[0].cantidad.toLocaleString()} a ${pl.escalas[pl.escalas.length - 1].cantidad.toLocaleString()}) [${tipoCalculoText}]`
+                : `Sin escalas [${tipoCalculoText}]`;
 
             tr.innerHTML = `
                 <td><strong>${pl.nombre}</strong></td>
@@ -719,6 +724,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('form-price-list-title').textContent = `Editar Lista de Precios: ${pl.nombre}`;
                 document.getElementById('new-pl-nombre').value = pl.nombre;
                 document.getElementById('new-pl-polimero').value = pl.polimero;
+                document.getElementById('new-pl-tipocalculo').value = pl.tipoCalculo || 'por_millar';
 
                 tbodyNewPlEscalas.innerHTML = '';
                 pl.escalas.forEach(esc => {
@@ -901,6 +907,20 @@ document.addEventListener('DOMContentLoaded', () => {
             return new Date(parseInt(p[2]), parseInt(p[1]) - 1, parseInt(p[0]), 12, 0, 0).getTime();
         }
         return 0;
+    }
+
+    function calcularSubtotalItem(clienteNombre, qty, price) {
+        if (!clienteNombre) {
+            const calcQty = Math.max(1000, qty);
+            return (calcQty / 1000) * price;
+        }
+        const client = CLIENTS.find(c => c.nombre === clienteNombre);
+        const priceList = priceLists.find(pl => pl.id === (client ? client.priceListId : ''));
+        if (priceList && priceList.tipoCalculo === 'precio_fijo') {
+            return price;
+        }
+        const calcQty = Math.max(1000, qty);
+        return (calcQty / 1000) * price;
     }
 
     function renderCuentasCorrientes(clienteNombre) {
@@ -1522,7 +1542,8 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const helper = document.getElementById('price-suggestion-helper');
         if (helper) {
-            helper.innerHTML = `Sugerido: $ ${precioSugerido.toLocaleString('es-AR', {minimumFractionDigits: 2})} (Escala: ${selectedScale.cantidad.toLocaleString()} u, ${coloresVal} col -> ${pasadaKey.replace('pasada', '')} pas)`;
+            const tipoCalculoText = priceList.tipoCalculo === 'precio_fijo' ? 'Precio Fijo' : 'Por Millar';
+            helper.innerHTML = `Sugerido: $ ${precioSugerido.toLocaleString('es-AR', {minimumFractionDigits: 2})} [${tipoCalculoText}] (Escala: ${selectedScale.cantidad.toLocaleString()} u, ${coloresVal} col -> ${pasadaKey.replace('pasada', '')} pas)`;
         }
     }
 
@@ -2601,7 +2622,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 ot.items.forEach(item => {
                     const qty = parseInt(item.cantidad) || 0;
                     const priceMillar = parseFloat(String(item.precio).replace(',', '.')) || 0;
-                    const subtotal = (qty / 1000) * priceMillar;
+                    const subtotal = calcularSubtotalItem(ot.cliente, qty, priceMillar);
                     
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
@@ -2662,7 +2683,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ot.items.forEach(item => {
                 const qty = parseInt(item.cantidad) || 0;
                 const priceMillar = parseFloat(String(item.precio).replace(',', '.')) || 0;
-                const subtotal = (qty / 1000) * priceMillar;
+                const subtotal = calcularSubtotalItem(ot.cliente, qty, priceMillar);
                 totalAcumulado += subtotal;
                 
                 const tr = document.createElement('tr');
@@ -2737,7 +2758,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ot.items.forEach(item => {
                 const qty = parseInt(item.cantidad) || 0;
                 const priceMillar = parseFloat(String(item.precio).replace(',', '.')) || 0;
-                totalAcumulado += (qty / 1000) * priceMillar;
+                totalAcumulado += calcularSubtotalItem(ot.cliente, qty, priceMillar);
             });
             
             if (ot.herramentales) {

@@ -551,13 +551,20 @@
                         <div class="card glass mt-2" id="form-nueva-lista-precios" style="display:none; border:2px solid var(--secondary);">
                             <h3 id="form-price-list-title">Crear Nueva Lista de Precios</h3>
                             <div class="form-row">
-                                <div class="form-group half">
+                                <div class="form-group third" style="flex:1;">
                                     <label>Nombre de la Lista</label>
                                     <input type="text" class="large-input" id="new-pl-nombre" placeholder="Ej. Reimpresiones en Bobina">
                                 </div>
-                                <div class="form-group half">
+                                <div class="form-group third" style="flex:1; margin-left: 10px;">
                                     <label>Costo del Polímero ($)</label>
                                     <input type="number" class="large-input" id="new-pl-polimero" placeholder="Ej. 12000" min="0">
+                                </div>
+                                <div class="form-group third" style="flex:1; margin-left: 10px;">
+                                    <label>Tipo de Cálculo</label>
+                                    <select class="large-input" id="new-pl-tipocalculo">
+                                        <option value="por_millar">Por Millar</option>
+                                        <option value="precio_fijo">Precio Fijo Total</option>
+                                    </select>
                                 </div>
                             </div>
 
