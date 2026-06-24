@@ -3,6 +3,7 @@ import sys
 import json
 import webbrowser
 import threading
+import datetime
 from http.server import SimpleHTTPRequestHandler, HTTPServer
 
 PORT = 8080
@@ -35,7 +36,16 @@ class LogWriter:
     def flush(self):
         pass
 
-if getattr(sys, 'frozen', False) or sys.stdout is None or sys.stderr is None:
+use_log_writer = False
+try:
+    if sys.stdout is not None:
+        sys.stdout.write("")
+    if sys.stderr is not None:
+        sys.stderr.write("")
+except Exception:
+    use_log_writer = True
+
+if getattr(sys, 'frozen', False) or sys.stdout is None or sys.stderr is None or use_log_writer:
     log_path = os.path.join(base_dir, "server_log.txt")
     sys.stdout = LogWriter(log_path)
     sys.stderr = LogWriter(log_path)
@@ -94,22 +104,58 @@ DEFAULT_DATA = {
     ]
 }
 
+def realizar_backup_diario(data):
+    def run_backup():
+        try:
+            backup_paths = []
+            
+            # 1. OneDrive backup folder
+            onedrive_dir = r"C:\Users\ENZO\OneDrive\Desktop\sistema Reimpresiones\backups"
+            if os.path.exists(r"C:\Users\ENZO\OneDrive\Desktop\sistema Reimpresiones"):
+                backup_paths.append(onedrive_dir)
+                
+            # 2. Local fallback backup folder in base_dir
+            local_backup_dir = os.path.join(base_dir, "backups")
+            backup_paths.append(local_backup_dir)
+            
+            # Get today's date
+            today_str = datetime.date.today().strftime("%Y-%m-%d")
+            
+            for b_dir in backup_paths:
+                os.makedirs(b_dir, exist_ok=True)
+                backup_file = os.path.join(b_dir, f"database_backup_{today_str}.json")
+                
+                # If the backup file for today doesn't exist, create it
+                if not os.path.exists(backup_file):
+                    with open(backup_file, 'w', encoding='utf-8') as f:
+                        json.dump(data, f, indent=4, ensure_ascii=False)
+                    print(f"Backup permanente diario creado en: {backup_file}")
+        except Exception as e:
+            print(f"Error al realizar backup diario: {e}")
+
+    threading.Thread(target=run_backup, daemon=True).start()
+
 def load_db():
     if not os.path.exists(db_path):
         with open(db_path, 'w', encoding='utf-8') as f:
             json.dump(DEFAULT_DATA, f, indent=4, ensure_ascii=False)
+        realizar_backup_diario(DEFAULT_DATA)
         return DEFAULT_DATA
     try:
         with open(db_path, 'r', encoding='utf-8') as f:
-            return json.load(f)
+            data = json.load(f)
+        realizar_backup_diario(data)
+        return data
     except Exception as e:
         print(f"Error reading database, using default: {e}")
+        realizar_backup_diario(DEFAULT_DATA)
         return DEFAULT_DATA
 
 def save_db(data):
     try:
         with open(db_path, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=4, ensure_ascii=False)
+        realizar_backup_diario(data)
         return True
     except Exception as e:
         print(f"Error saving database: {e}")
@@ -126,6 +172,12 @@ class ERPRequestHandler(SimpleHTTPRequestHandler):
         if os.path.isdir(res_path):
             res_path = os.path.join(res_path, "index.html")
         return res_path
+
+    def end_headers(self):
+        self.send_header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+        self.send_header('Pragma', 'no-cache')
+        self.send_header('Expires', '0')
+        super().end_headers()
 
     def do_GET(self):
         if self.path == '/api/data':

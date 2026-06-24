@@ -562,8 +562,8 @@
                                 <div class="form-group third" style="flex:1; margin-left: 10px;">
                                     <label>Tipo de Cálculo</label>
                                     <select class="large-input" id="new-pl-tipocalculo">
-                                        <option value="por_millar">Por Millar</option>
-                                        <option value="precio_fijo">Precio Fijo Total</option>
+                                        <option value="por_millar">Por Millar (Escalado)</option>
+                                        <option value="precio_fijo">Precio Único x Millar</option>
                                     </select>
                                 </div>
                             </div>
@@ -651,7 +651,13 @@
                     <!-- Sub-tab 2: Historial -->
                     <div id="subtab-historial" class="sub-tab-content">
                         <div class="card glass">
-                            <h3><i class="fa-solid fa-receipt" style="color:var(--secondary);"></i> Remitos Emitidos</h3>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
+                                <h3 style="margin: 0;"><i class="fa-solid fa-receipt" style="color:var(--secondary);"></i> Remitos Emitidos</h3>
+                                <div class="search-box-remitos" style="display: flex; align-items: center; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 0.4rem 0.8rem; min-width: 300px; height: 38px;">
+                                    <i class="fa-solid fa-search" style="color: #adb5bd; margin-right: 0.5rem; font-size: 13px;"></i>
+                                    <input type="text" id="input-busqueda-remitos" placeholder="Buscar por cliente o nro de remito..." style="background: transparent; border: none; color: #fff; width: 100%; font-size: 13px; outline: none;">
+                                </div>
+                            </div>
                             <table class="data-table mt-1" id="tabla-remitos-historial">
                                 <thead><tr><th>Remito Nro</th><th>OT</th><th>Cliente</th><th>Fecha</th><th>Total</th><th>Email Duplicado</th><th>Acciones</th></tr></thead>
                                 <tbody id="tbody-remitos-historial">
@@ -877,8 +883,10 @@
                 <table class="remito-table">
                     <thead>
                         <tr>
-                            <th style="width:150px;">Cantidad</th>
+                            <th style="width: 100px;">Cantidad</th>
                             <th>Descripción / Varietal</th>
+                            <th style="text-align: right; width: 120px;">Precio Unit.</th>
+                            <th style="text-align: right; width: 120px;">Subtotal</th>
                         </tr>
                     </thead>
                     <tbody id="remito-tbody-items">
@@ -933,6 +941,6 @@
         </div>
     </div>
 
-    <script src="app.js?v=10"></script>
+    <script src="app.js?v=12"></script>
 </body>
 </html>

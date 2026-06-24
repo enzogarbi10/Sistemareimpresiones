@@ -673,7 +673,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         priceLists.forEach(pl => {
             const tr = document.createElement('tr');
-            const tipoCalculoText = pl.tipoCalculo === 'precio_fijo' ? 'Precio Fijo' : 'Por Millar';
+            const tipoCalculoText = pl.tipoCalculo === 'precio_fijo' ? 'Precio Único x Millar' : 'Por Millar (Escalado)';
             const escalasText = pl.escalas.length > 0 
                 ? `${pl.escalas.length} escalones (${pl.escalas[0].cantidad.toLocaleString()} a ${pl.escalas[pl.escalas.length - 1].cantidad.toLocaleString()}) [${tipoCalculoText}]`
                 : `Sin escalas [${tipoCalculoText}]`;
@@ -771,12 +771,27 @@ document.addEventListener('DOMContentLoaded', () => {
         const tbodyRentabilidad = document.getElementById('tbody-rentabilidad');
 
         let totalIngresos = 0;
+        let totalNeto = 0;
+        let totalIva = 0;
+
         REMITOS.forEach(r => {
-            totalIngresos += parseFloat(r.total) || 0;
+            const gross = parseFloat(r.total) || 0;
+            const sub = r.subtotal !== undefined ? (parseFloat(r.subtotal) || 0) : gross;
+            const iva = r.iva !== undefined ? (parseFloat(r.iva) || 0) : 0;
+            
+            totalIngresos += gross;
+            totalNeto += sub;
+            totalIva += iva;
         });
 
         if (dashIngresos) {
-            dashIngresos.innerText = `$ ${totalIngresos.toLocaleString('es-AR', {minimumFractionDigits: 0})}`;
+            dashIngresos.innerHTML = `
+                $ ${totalIngresos.toLocaleString('es-AR', {minimumFractionDigits: 0})}
+                <div style="font-size: 11px; color: #ced4da; margin-top: 4px; font-weight: normal; line-height:1.2;">
+                    Neto: $ ${totalNeto.toLocaleString('es-AR', {minimumFractionDigits: 0})}<br>
+                    IVA (21%): $ ${totalIva.toLocaleString('es-AR', {minimumFractionDigits: 0})}
+                </div>
+            `;
         }
         if (dashRemitosCount) {
             dashRemitosCount.innerText = REMITOS.length;
@@ -794,15 +809,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const clientStats = {};
             CLIENTS.forEach(c => {
-                clientStats[c.nombre] = { remitosCount: 0, ingresos: 0 };
+                clientStats[c.nombre] = { remitosCount: 0, ingresos: 0, neto: 0, iva: 0 };
             });
 
             REMITOS.forEach(r => {
                 if (!clientStats[r.cliente]) {
-                    clientStats[r.cliente] = { remitosCount: 0, ingresos: 0 };
+                    clientStats[r.cliente] = { remitosCount: 0, ingresos: 0, neto: 0, iva: 0 };
                 }
                 clientStats[r.cliente].remitosCount++;
-                clientStats[r.cliente].ingresos += parseFloat(r.total) || 0;
+                const gross = parseFloat(r.total) || 0;
+                const sub = r.subtotal !== undefined ? (parseFloat(r.subtotal) || 0) : gross;
+                const iva = r.iva !== undefined ? (parseFloat(r.iva) || 0) : 0;
+                
+                clientStats[r.cliente].ingresos += gross;
+                clientStats[r.cliente].neto += sub;
+                clientStats[r.cliente].iva += iva;
             });
 
             const sortedClients = Object.keys(clientStats)
@@ -820,7 +841,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     tr.innerHTML = `
                         <td><strong>${c.name}</strong></td>
                         <td>${c.remitosCount}</td>
-                        <td style="font-family:monospace; color:#00f5d4;">$ ${c.ingresos.toLocaleString('es-AR', {minimumFractionDigits: 0})}</td>
+                        <td style="font-family:monospace; color:#00f5d4; line-height: 1.3;">
+                            $ ${c.ingresos.toLocaleString('es-AR', {minimumFractionDigits: 0})}
+                            <div style="font-size:10px; color:#adb5bd; font-weight:normal;">
+                                Neto: $ ${c.neto.toLocaleString('es-AR', {minimumFractionDigits: 0})}<br>
+                                IVA: $ ${c.iva.toLocaleString('es-AR', {minimumFractionDigits: 0})}
+                            </div>
+                        </td>
                         <td style="font-family:monospace; color:${saldoCli > 0 ? 'var(--danger)' : 'var(--success)'};">$ ${saldoCli.toLocaleString('es-AR', {minimumFractionDigits: 0})}</td>
                     `;
                     tbodyRentabilidad.appendChild(tr);
@@ -910,15 +937,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function calcularSubtotalItem(clienteNombre, qty, price) {
-        if (!clienteNombre) {
-            const calcQty = Math.max(1000, qty);
-            return (calcQty / 1000) * price;
-        }
-        const client = CLIENTS.find(c => c.nombre === clienteNombre);
-        const priceList = priceLists.find(pl => pl.id === (client ? client.priceListId : ''));
-        if (priceList && priceList.tipoCalculo === 'precio_fijo') {
-            return price;
-        }
         const calcQty = Math.max(1000, qty);
         return (calcQty / 1000) * price;
     }
@@ -948,10 +966,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
             }
+
+            const sub = r.subtotal !== undefined ? (parseFloat(r.subtotal) || 0) : (parseFloat(r.total) || 0);
+            const iva = r.iva !== undefined ? (parseFloat(r.iva) || 0) : 0;
+            let ivaDetalle = '';
+            if (iva > 0) {
+                ivaDetalle = `<br><small style="color:#f4a261; font-size:11px;">Neto: $ ${sub.toLocaleString('es-AR', {minimumFractionDigits: 2})} + IVA: $ ${iva.toLocaleString('es-AR', {minimumFractionDigits: 2})}</small>`;
+            }
+
             return {
                 id: r.numero, fecha: r.fecha, tipo: 'Cargo',
-                detalle: 'Remito #' + r.numero + detalleExtra,
+                detalle: 'Remito #' + r.numero + ivaDetalle + detalleExtra,
                 importe: parseFloat(r.total) || 0,
+                subtotal: sub,
+                iva: iva,
                 sortDate: parseFechaArg(r.fecha)
             };
         });
@@ -964,13 +992,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const movimientos = [...remitosCli, ...pagosCli].sort((a, b) => a.sortDate - b.sortDate);
         let saldo = 0, totalCargos = 0, totalAbonos = 0;
+        let totalNetoCargos = 0, totalIvaCargos = 0;
 
         if (movimientos.length === 0) {
             tbodyMov.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#adb5bd;">No hay movimientos para este cliente.</td></tr>';
         } else {
             movimientos.forEach(m => {
-                if (m.tipo === 'Cargo') { saldo += m.importe; totalCargos += m.importe; }
-                else { saldo -= m.importe; totalAbonos += m.importe; }
+                if (m.tipo === 'Cargo') {
+                    saldo += m.importe;
+                    totalCargos += m.importe;
+                    totalNetoCargos += m.subtotal || m.importe;
+                    totalIvaCargos += m.iva || 0;
+                } else {
+                    saldo -= m.importe;
+                    totalAbonos += m.importe;
+                }
                 const tr = document.createElement('tr');
                 let acciones = '';
                 if (m.tipo === 'Abono') {
@@ -990,7 +1026,15 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        if (lblTotalFacturado) lblTotalFacturado.innerText = '$ ' + totalCargos.toLocaleString('es-AR', {minimumFractionDigits:2});
+        if (lblTotalFacturado) {
+            lblTotalFacturado.innerHTML = `
+                $ ${totalCargos.toLocaleString('es-AR', {minimumFractionDigits:2})}
+                <div style="font-size: 11px; color: #adb5bd; margin-top: 4px; font-weight: normal; line-height:1.2;">
+                    Neto: $ ${totalNetoCargos.toLocaleString('es-AR', {minimumFractionDigits:2})}<br>
+                    IVA (21%): $ ${totalIvaCargos.toLocaleString('es-AR', {minimumFractionDigits:2})}
+                </div>
+            `;
+        }
         if (lblTotalPagado) lblTotalPagado.innerText = '$ ' + totalAbonos.toLocaleString('es-AR', {minimumFractionDigits:2});
         if (lblSaldoActual) lblSaldoActual.innerText = '$ ' + saldo.toLocaleString('es-AR', {minimumFractionDigits:2});
 
@@ -1383,6 +1427,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let otEdicionNumero = null;
     let otActiveTab = 'activas';
     let otSearchQuery = '';
+    let remitosSearchQuery = '';
 
     // OTs Tabs & Search Listeners
     const tabOtActivas = document.getElementById('tab-ot-activas');
@@ -1417,6 +1462,14 @@ document.addEventListener('DOMContentLoaded', () => {
         inputBusquedaOts.addEventListener('input', (e) => {
             otSearchQuery = e.target.value.toLowerCase().trim();
             renderOts();
+        });
+    }
+
+    const inputBusquedaRemitos = document.getElementById('input-busqueda-remitos');
+    if (inputBusquedaRemitos) {
+        inputBusquedaRemitos.addEventListener('input', (e) => {
+            remitosSearchQuery = e.target.value.toLowerCase().trim();
+            renderHistorialRemitos();
         });
     }
 
@@ -1542,7 +1595,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const helper = document.getElementById('price-suggestion-helper');
         if (helper) {
-            const tipoCalculoText = priceList.tipoCalculo === 'precio_fijo' ? 'Precio Fijo' : 'Por Millar';
+            const tipoCalculoText = priceList.tipoCalculo === 'precio_fijo' ? 'Precio Único x Millar' : 'Por Millar (Escalado)';
             helper.innerHTML = `Sugerido: $ ${precioSugerido.toLocaleString('es-AR', {minimumFractionDigits: 2})} [${tipoCalculoText}] (Escala: ${selectedScale.cantidad.toLocaleString()} u, ${coloresVal} col -> ${pasadaKey.replace('pasada', '')} pas)`;
         }
     }
@@ -2637,11 +2690,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (ot.herramentales) {
                     const hQty = parseInt(ot.herramentales.cantidad) || 1;
                     const hImp = parseFloat(ot.herramentales.importe) || 0;
+                    const hUnit = hQty > 0 ? (hImp / hQty) : hImp;
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
                         <td>${hQty.toLocaleString('es-AR')} u</td>
                         <td><strong>Herramentales</strong></td>
-                        <td style="text-align: right;">$ ${hImp.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
+                        <td style="text-align: right;">$ ${hUnit.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
                         <td style="text-align: right;">$ ${hImp.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
                     `;
                     tbodyItems.appendChild(tr);
@@ -2699,18 +2753,84 @@ document.addEventListener('DOMContentLoaded', () => {
             if (ot.herramentales) {
                 const hQty = parseInt(ot.herramentales.cantidad) || 1;
                 const hImp = parseFloat(ot.herramentales.importe) || 0;
+                const hUnit = hQty > 0 ? (hImp / hQty) : hImp;
                 totalAcumulado += hImp;
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>${hQty.toLocaleString('es-AR')} u</td>
                     <td><strong>Herramentales</strong></td>
-                    <td style="text-align: right;">$ ${hImp.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
+                    <td style="text-align: right;">$ ${hUnit.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
                     <td style="text-align: right;">$ ${hImp.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
                 `;
                 tbodyItems.appendChild(tr);
             }
         }
         
+        // Calcular subtotal, IVA y total para el remito
+        let subtotalNeto = 0;
+        let iva = 0;
+        let totalConIva = 0;
+        let necesitaFactura = false;
+
+        if (esHistorial) {
+            const rem = REMITOS.find(r => r.numero === num);
+            if (rem) {
+                totalConIva = parseFloat(rem.total) || 0;
+                subtotalNeto = rem.subtotal !== undefined ? (parseFloat(rem.subtotal) || 0) : totalConIva;
+                iva = rem.iva !== undefined ? (parseFloat(rem.iva) || 0) : 0;
+                necesitaFactura = rem.factura === 'SI' || (rem.iva > 0);
+            }
+        } else {
+            subtotalNeto = totalAcumulado;
+            necesitaFactura = (clientObj && clientObj.factura === 'SI');
+            if (necesitaFactura) {
+                iva = subtotalNeto * 0.21;
+                totalConIva = subtotalNeto + iva;
+            } else {
+                iva = 0;
+                totalConIva = subtotalNeto;
+            }
+        }
+
+        // Agregar filas de totales discriminados al remito
+        if (necesitaFactura) {
+            const trSub = document.createElement('tr');
+            trSub.className = 'total-row';
+            trSub.innerHTML = `
+                <td colspan="2" style="text-align: right; font-weight: bold; border-top: 2px solid #1a1921;">Subtotal:</td>
+                <td style="text-align: right; font-family: monospace; border-top: 2px solid #1a1921;">-</td>
+                <td style="text-align: right; font-family: monospace; border-top: 2px solid #1a1921;">$ ${subtotalNeto.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
+            `;
+            tbodyItems.appendChild(trSub);
+
+            const trIva = document.createElement('tr');
+            trIva.className = 'total-row';
+            trIva.innerHTML = `
+                <td colspan="2" style="text-align: right; font-weight: bold; color: #e63946;">IVA (21%):</td>
+                <td style="text-align: right; font-family: monospace; color: #e63946;">-</td>
+                <td style="text-align: right; font-family: monospace; color: #e63946;">$ ${iva.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
+            `;
+            tbodyItems.appendChild(trIva);
+
+            const trTotal = document.createElement('tr');
+            trTotal.className = 'total-row';
+            trTotal.innerHTML = `
+                <td colspan="2" style="text-align: right; font-weight: 800; font-size: 14px;">Total (con IVA):</td>
+                <td style="text-align: right; font-family: monospace; font-weight: 800; font-size: 14px;">-</td>
+                <td style="text-align: right; font-family: monospace; font-weight: 800; font-size: 14px;">$ ${totalConIva.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
+            `;
+            tbodyItems.appendChild(trTotal);
+        } else {
+            const trTotal = document.createElement('tr');
+            trTotal.className = 'total-row';
+            trTotal.innerHTML = `
+                <td colspan="2" style="text-align: right; font-weight: 800; font-size: 14px; border-top: 2px solid #1a1921;">Total:</td>
+                <td style="text-align: right; font-family: monospace; font-weight: 800; font-size: 14px; border-top: 2px solid #1a1921;">-</td>
+                <td style="text-align: right; font-family: monospace; font-weight: 800; font-size: 14px; border-top: 2px solid #1a1921;">$ ${subtotalNeto.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
+            `;
+            tbodyItems.appendChild(trTotal);
+        }
+
         document.getElementById('remito-val-numero').innerText = `Nro: ${remitoNumStr}`;
         document.getElementById('remito-val-fecha').innerText = `FECHA: ${todayStr}`;
         
@@ -2723,7 +2843,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const valTotalEl = document.getElementById('remito-val-total');
         if (valTotalEl) {
-            valTotalEl.innerText = `$ ${totalAcumulado.toLocaleString('es-AR', {minimumFractionDigits: 2})}`;
+            valTotalEl.innerText = `$ ${totalConIva.toLocaleString('es-AR', {minimumFractionDigits: 2})}`;
         }
         
         // Observaciones del remito
@@ -2766,13 +2886,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 totalAcumulado += hImp;
             }
             
+            const necesitaFactura = (clientObj && clientObj.factura === 'SI');
+            const subtotal = totalAcumulado;
+            const iva = necesitaFactura ? (subtotal * 0.21) : 0;
+            const total = subtotal + iva;
+
             ultimoRemitoNumero++;
             REMITOS.push({
                 numero: ultimoRemitoNumero,
                 otNumero: ot.numero,
                 cliente: ot.cliente,
                 fecha: new Date().toLocaleDateString('es-AR'),
-                total: totalAcumulado,
+                subtotal: subtotal,
+                iva: iva,
+                total: total,
+                factura: necesitaFactura ? 'SI' : 'NO',
                 observaciones: ot._observacionesDespacho || '',
                 emailEnviado: clientObj ? clientObj.email : 'compras@bodega.com'
             });
@@ -2863,7 +2991,25 @@ document.addEventListener('DOMContentLoaded', () => {
         const isPriv = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin');
         
         // Reverse array to show latest first
-        const remitosOrdenados = [...REMITOS].reverse();
+        let remitosOrdenados = [...REMITOS].reverse();
+        
+        if (remitosSearchQuery) {
+            remitosOrdenados = remitosOrdenados.filter(rem => {
+                const numStr = `R-0002-${String(rem.numero).padStart(8, '0')}`;
+                const cli = (rem.cliente || '').toLowerCase();
+                const numRaw = String(rem.numero || '');
+                const otNum = String(rem.otNumero || '');
+                return numStr.toLowerCase().includes(remitosSearchQuery) || 
+                       numRaw.includes(remitosSearchQuery) || 
+                       cli.includes(remitosSearchQuery) ||
+                       otNum.includes(remitosSearchQuery);
+            });
+        }
+        
+        if (!remitosOrdenados.length) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#adb5bd;padding:2rem;">No se encontraron remitos que coincidan con la búsqueda.</td></tr>';
+            return;
+        }
         
         remitosOrdenados.forEach(rem => {
             const numStr = `R-0002-${String(rem.numero).padStart(8, '0')}`;
@@ -2876,6 +3022,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 <button class="btn btn-icon btn-ver-remito-historial" data-numero="${rem.numero}" style="color:var(--primary);" title="Ver Remito"><i class="fa-solid fa-eye"></i></button>
                 <button class="btn btn-icon btn-descargar-pdf-historial" data-numero="${rem.numero}" style="color:#ff4d6d;" title="Descargar PDF"><i class="fa-solid fa-file-pdf"></i></button>
             `;
+
+            const sub = rem.subtotal !== undefined ? (parseFloat(rem.subtotal) || 0) : Number(rem.total);
+            const iva = rem.iva !== undefined ? (parseFloat(rem.iva) || 0) : 0;
+            let totalDetailHtml = `$ ${Number(rem.total).toLocaleString('es-AR', {minimumFractionDigits: 2})}`;
+            if (iva > 0) {
+                totalDetailHtml += `<br><span style="font-size:10px; color:#adb5bd; font-weight:normal; display:block; line-height:1.2;">Neto: $ ${sub.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>`;
+            }
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
@@ -3010,6 +3163,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 rem.fecha = nuevaFecha;
                 rem.total = nuevoTotal;
                 rem.observaciones = nuevasObs;
+                
+                const clientObj = CLIENTS.find(c => c.nombre === rem.cliente);
+                const isFactura = (rem.factura === 'SI' || (!rem.factura && clientObj && clientObj.factura === 'SI'));
+                rem.factura = isFactura ? 'SI' : 'NO';
+                if (isFactura) {
+                    rem.subtotal = nuevoTotal / 1.21;
+                    rem.iva = nuevoTotal - rem.subtotal;
+                } else {
+                    rem.subtotal = nuevoTotal;
+                    rem.iva = 0;
+                }
                 
                 saveRemitos();
                 recalcularSaldosClientes();
