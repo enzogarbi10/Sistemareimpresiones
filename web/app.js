@@ -1228,8 +1228,20 @@ document.addEventListener('DOMContentLoaded', () => {
             tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#adb5bd;padding:2rem;">No hay órdenes finalizadas aún.</td></tr>';
             return;
         }
+        const isPriv = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin');
         otsLogistica.forEach(ot => {
             const tr = document.createElement('tr');
+            const actionsHtml = isPriv ? `
+                <div style="display:flex; gap:0.5rem;">
+                    <button class="btn btn-icon btn-despacho-ot" data-numero="${ot.numero}" style="color:var(--secondary);" title="Despachar y Generar Remito"><i class="fa-solid fa-truck"></i></button>
+                    <button class="btn btn-icon btn-editar-logistica" data-numero="${ot.numero}" style="color:var(--warning);" title="Editar Orden de Despacho"><i class="fa-solid fa-pen-to-square"></i></button>
+                    <button class="btn btn-icon btn-eliminar-logistica" data-numero="${ot.numero}" style="color:var(--danger);" title="Devolver a Taller"><i class="fa-solid fa-trash-can"></i></button>
+                </div>
+            ` : `
+                <div style="display:flex; gap:0.5rem;">
+                    <button class="btn btn-icon btn-despacho-ot" data-numero="${ot.numero}" style="color:var(--secondary);" title="Despachar y Generar Remito"><i class="fa-solid fa-truck"></i></button>
+                </div>
+            `;
             tr.innerHTML = `
                 <td>${ot.numero}</td>
                 <td>${ot.cliente}</td>
@@ -1238,7 +1250,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td><span class="badge ${ot.tipo === 'completo' ? 'success' : 'warning'}">${ot.tipo === 'completo' ? 'Completo' : 'Parcial'}</span></td>
                 <td>${ot.tiempoProd}</td>
                 <td>${ot.tiempoImprod}</td>
-                <td><button class="btn btn-icon btn-despacho-ot" data-numero="${ot.numero}" style="color:var(--secondary);" title="Despachar y Generar Remito"><i class="fa-solid fa-truck"></i></button></td>`;
+                <td>${actionsHtml}</td>`;
             tbody.appendChild(tr);
         });
     }
@@ -3131,6 +3143,153 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // --- EDITAR LOGISTICA (PENDIENTE DE DESPACHO) HANDLERS ---
+    const modalEditarLogistica = document.getElementById('modal-editar-logistica');
+    const btnGuardarEditarLogistica = document.getElementById('btn-guardar-editar-logistica');
+    const btnCancelarEditarLogistica = document.getElementById('btn-cancelar-editar-logistica');
+
+    function abrirEditarLogisticaModal(num) {
+        const ot = otsLogistica.find(o => o.numero === num);
+        if (!ot) return;
+
+        document.getElementById('editar-logistica-ot-num').value = ot.numero;
+        document.getElementById('label-editar-logistica-ot').innerText = `Orden de Trabajo #${ot.numero}`;
+
+        // Populate clients dropdown
+        const selectCliente = document.getElementById('editar-logistica-cliente');
+        selectCliente.innerHTML = '';
+        CLIENTS.forEach(cli => {
+            const opt = document.createElement('option');
+            opt.value = cli.nombre;
+            opt.textContent = cli.nombre;
+            if (cli.nombre === ot.cliente) opt.selected = true;
+            selectCliente.appendChild(opt);
+        });
+
+        // Populate items
+        const container = document.getElementById('editar-logistica-items-container');
+        container.innerHTML = '<h4 style="color:var(--secondary); margin-bottom:0.8rem;">Ítems de la Orden</h4>';
+        
+        ot.items.forEach((item, idx) => {
+            const itemDiv = document.createElement('div');
+            itemDiv.style.cssText = 'background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 8px; margin-bottom: 0.8rem; border: 1px solid rgba(255,255,255,0.06);';
+            itemDiv.innerHTML = `
+                <h5 style="color:var(--primary); margin:0 0 0.6rem 0;">Ítem #${idx + 1} (${item.tipo || 'Etiqueta'})</h5>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.6rem; margin-bottom:0.6rem;">
+                    <div class="form-group">
+                        <label style="font-size:11px;">Marca</label>
+                        <input type="text" class="medium-input edit-item-marca" data-idx="${idx}" value="${item.marca || ''}" style="width:100%;">
+                    </div>
+                    <div class="form-group">
+                        <label style="font-size:11px;">Varietal / Descripción</label>
+                        <input type="text" class="medium-input edit-item-varietal" data-idx="${idx}" value="${item.varietal || ''}" style="width:100%;">
+                    </div>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.6rem;">
+                    <div class="form-group">
+                        <label style="font-size:11px;">Cantidad (Unidades)</label>
+                        <input type="number" class="medium-input edit-item-cantidad" data-idx="${idx}" value="${item.cantidad || ''}" style="width:100%;" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label style="font-size:11px;">Precio x Millar ($)</label>
+                        <input type="number" class="medium-input edit-item-precio" data-idx="${idx}" value="${item.precio || ''}" style="width:100%;" min="0" step="any">
+                    </div>
+                </div>
+            `;
+            container.appendChild(itemDiv);
+        });
+
+        // Herramentales
+        if (ot.herramentales) {
+            document.getElementById('editar-logistica-herr-tipo').value = ot.herramentales.tipo || 'NO';
+            document.getElementById('editar-logistica-herr-cant').value = ot.herramentales.cantidad || 0;
+            document.getElementById('editar-logistica-herr-imp').value = ot.herramentales.importe || 0;
+        } else {
+            document.getElementById('editar-logistica-herr-tipo').value = 'NO';
+            document.getElementById('editar-logistica-herr-cant').value = '';
+            document.getElementById('editar-logistica-herr-imp').value = '';
+        }
+
+        modalEditarLogistica.style.display = 'flex';
+    }
+
+    if (btnCancelarEditarLogistica) {
+        btnCancelarEditarLogistica.addEventListener('click', () => {
+            modalEditarLogistica.style.display = 'none';
+        });
+    }
+
+    if (btnGuardarEditarLogistica) {
+        btnGuardarEditarLogistica.addEventListener('click', () => {
+            const num = parseInt(document.getElementById('editar-logistica-ot-num').value);
+            const ot = otsLogistica.find(o => o.numero === num);
+            if (!ot) return;
+
+            const nuevoCliente = document.getElementById('editar-logistica-cliente').value;
+            if (!nuevoCliente) {
+                alert('Debe seleccionar un cliente.');
+                return;
+            }
+
+            // Validar items
+            const inputsMarca = document.querySelectorAll('.edit-item-marca');
+            const inputsVarietal = document.querySelectorAll('.edit-item-varietal');
+            const inputsCantidad = document.querySelectorAll('.edit-item-cantidad');
+            const inputsPrecio = document.querySelectorAll('.edit-item-precio');
+
+            let allValid = true;
+            for (let i = 0; i < ot.items.length; i++) {
+                const qty = parseInt(inputsCantidad[i].value);
+                const prc = parseFloat(inputsPrecio[i].value);
+                if (isNaN(qty) || qty <= 0 || isNaN(prc) || prc < 0) {
+                    allValid = false;
+                    break;
+                }
+            }
+
+            if (!allValid) {
+                alert('Por favor ingrese cantidades mayores a 0 y precios válidos.');
+                return;
+            }
+
+            // Guardar cambios en el objeto ot
+            ot.cliente = nuevoCliente;
+            for (let i = 0; i < ot.items.length; i++) {
+                ot.items[i].marca = inputsMarca[i].value.trim();
+                ot.items[i].varietal = inputsVarietal[i].value.trim();
+                ot.items[i].cantidad = parseInt(inputsCantidad[i].value);
+                ot.items[i].precio = parseFloat(inputsPrecio[i].value);
+            }
+
+            // Herramentales
+            const herrTipo = document.getElementById('editar-logistica-herr-tipo').value;
+            if (herrTipo !== 'NO') {
+                ot.herramentales = {
+                    tipo: herrTipo,
+                    cantidad: parseInt(document.getElementById('editar-logistica-herr-cant').value) || 0,
+                    importe: parseFloat(document.getElementById('editar-logistica-herr-imp').value) || 0
+                };
+            } else {
+                ot.herramentales = null;
+            }
+
+            // Sincronizar en todasLasOts
+            if (todasLasOts[ot.numero]) {
+                todasLasOts[ot.numero].cliente = ot.cliente;
+                todasLasOts[ot.numero].items = ot.items.map(i => ({ ...i }));
+                todasLasOts[ot.numero].herramentales = ot.herramentales;
+            }
+
+            saveOts();
+            
+            // Re-renderizar la tabla de logística
+            renderLogistica();
+            renderOts();
+
+            modalEditarLogistica.style.display = 'none';
+        });
+    }
+
     // Modal Editar Remito Event Listeners
     const modalEditarRemito = document.getElementById('modal-editar-remito');
     const btnGuardarEditarRemito = document.getElementById('btn-guardar-editar-remito');
@@ -3193,6 +3352,45 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Event delegation at document level for logistics table truck button & history buttons
     document.addEventListener('click', (e) => {
+        // Pending dispatch Edit
+        const btnEditarLogistica = e.target.closest('.btn-editar-logistica');
+        if (btnEditarLogistica) {
+            const num = parseInt(btnEditarLogistica.getAttribute('data-numero'));
+            abrirEditarLogisticaModal(num);
+            return;
+        }
+
+        // Pending dispatch Delete / Devolver a taller
+        const btnEliminarLogistica = e.target.closest('.btn-eliminar-logistica');
+        if (btnEliminarLogistica) {
+            const num = parseInt(btnEliminarLogistica.getAttribute('data-numero'));
+            if (confirm(`¿Está seguro de que desea eliminar la Orden de Trabajo #${num} de Logística?\nEsto la devolverá al Taller/Producción como pendiente.`)) {
+                const otIndex = otsLogistica.findIndex(o => o.numero === num);
+                if (otIndex > -1) {
+                    const ot = otsLogistica[otIndex];
+                    
+                    // Devolver a taller si no está allí
+                    if (!otsPendientes.some(o => o.numero === ot.numero)) {
+                        ot.items.forEach(item => {
+                            if (item.status === 'finalizado' || item.status === 'parcial') {
+                                item.status = 'pendiente';
+                            }
+                        });
+                        otsPendientes.push({ ...ot });
+                    }
+                    
+                    otsLogistica.splice(otIndex, 1);
+                    saveOts();
+                    
+                    renderLogistica();
+                    renderOts();
+                    refreshTallerSelector();
+                    renderDashboard();
+                }
+            }
+            return;
+        }
+
         // Pending dispatch
         const btnDespacho = e.target.closest('.btn-despacho-ot');
         if (btnDespacho) {
