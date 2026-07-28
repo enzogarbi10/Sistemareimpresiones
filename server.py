@@ -20,9 +20,6 @@ if getattr(sys, 'frozen', False) and os.path.basename(exe_dir).lower() == 'dist'
 else:
     base_dir = exe_dir
 
-# Fallback: if E:\FlexoERP_Test exists, prioritize it
-if os.path.exists(r"E:\FlexoERP_Test"):
-    base_dir = r"E:\FlexoERP_Test"
 
 class SafeStream:
     def __init__(self, stream, log_path):
