@@ -6,7 +6,7 @@ import threading
 import datetime
 from http.server import SimpleHTTPRequestHandler, HTTPServer
 
-PORT = 8080
+PORT = 8081
 
 # Determine base directory
 if getattr(sys, 'frozen', False):
@@ -20,35 +20,37 @@ if getattr(sys, 'frozen', False) and os.path.basename(exe_dir).lower() == 'dist'
 else:
     base_dir = exe_dir
 
-# Fallback: if E:\FlexoERP exists, prioritize it
-if os.path.exists(r"E:\FlexoERP"):
-    base_dir = r"E:\FlexoERP"
+# Fallback: if E:\FlexoERP_Test exists, prioritize it
+if os.path.exists(r"E:\FlexoERP_Test"):
+    base_dir = r"E:\FlexoERP_Test"
 
-class LogWriter:
-    def __init__(self, filepath):
-        self.filepath = filepath
+class SafeStream:
+    def __init__(self, stream, log_path):
+        self.stream = stream
+        self.log_path = log_path
+
     def write(self, s):
         try:
-            with open(self.filepath, 'a', encoding='utf-8') as f:
+            with open(self.log_path, 'a', encoding='utf-8') as f:
                 f.write(s)
         except Exception:
             pass
+        try:
+            if self.stream:
+                self.stream.write(s)
+        except Exception:
+            pass
+
     def flush(self):
-        pass
+        try:
+            if self.stream:
+                self.stream.flush()
+        except Exception:
+            pass
 
-use_log_writer = False
-try:
-    if sys.stdout is not None:
-        sys.stdout.write("")
-    if sys.stderr is not None:
-        sys.stderr.write("")
-except Exception:
-    use_log_writer = True
-
-if getattr(sys, 'frozen', False) or sys.stdout is None or sys.stderr is None or use_log_writer:
-    log_path = os.path.join(base_dir, "server_log.txt")
-    sys.stdout = LogWriter(log_path)
-    sys.stderr = LogWriter(log_path)
+log_path = os.path.join(base_dir, "server_log.txt")
+sys.stdout = SafeStream(sys.stdout, log_path)
+sys.stderr = SafeStream(sys.stderr, log_path)
 
 db_path = os.path.join(base_dir, "database.json")
 web_dir = os.path.join(base_dir, "web")
@@ -178,6 +180,10 @@ class ERPRequestHandler(SimpleHTTPRequestHandler):
         self.send_header('Pragma', 'no-cache')
         self.send_header('Expires', '0')
         super().end_headers()
+
+    def log_message(self, format, *args):
+        # Override to prevent OSError: [Errno 22] Invalid argument on Windows hidden consoles
+        pass
 
     def do_GET(self):
         if self.path == '/api/data':

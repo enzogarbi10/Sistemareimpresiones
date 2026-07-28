@@ -4,15 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FlexoERP - Gestión de Etiquetas de Vino</title>
-    <link rel="stylesheet" href="styles.css?v=10">
+    <link rel="stylesheet" href="styles.css?v=19">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css?v=2">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js?v=2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js?v=2"></script>
     <script>
         if (window['pdfjs-dist/build/pdf']) {
             window.pdfjsLib = window['pdfjs-dist/build/pdf'];
-            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js?v=2';
         }
     </script>
 </head>
@@ -629,6 +629,9 @@
                         <button class="sub-tab-btn" id="btn-sub-tab-historial" data-subtab="historial">
                             <i class="fa-solid fa-clock-rotate-left"></i> Historial de Remitos
                         </button>
+                        <button class="sub-tab-btn" id="btn-sub-tab-papelera" data-subtab="papelera">
+                            <i class="fa-solid fa-trash-can"></i> Papelera
+                        </button>
                     </div>
 
                     <!-- Sub-tab 1: Pendientes -->
@@ -662,6 +665,21 @@
                                 <thead><tr><th>Remito Nro</th><th>OT</th><th>Cliente</th><th>Fecha</th><th>Total</th><th>Email Duplicado</th><th>Acciones</th></tr></thead>
                                 <tbody id="tbody-remitos-historial">
                                     <tr><td colspan="7" style="text-align:center;color:#adb5bd;padding:2rem;">No se registran remitos generados.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Sub-tab 3: Papelera -->
+                    <div id="subtab-papelera" class="sub-tab-content">
+                        <div class="card glass">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                                <h3 style="margin: 0; color:var(--danger);"><i class="fa-solid fa-trash-can"></i> Remitos en Papelera</h3>
+                            </div>
+                            <table class="data-table mt-1" id="tabla-remitos-papelera">
+                                <thead><tr><th>Remito Nro</th><th>OT</th><th>Cliente</th><th>Fecha</th><th>Total</th><th>Acciones</th></tr></thead>
+                                <tbody id="tbody-remitos-papelera">
+                                    <tr><td colspan="6" style="text-align:center;color:#adb5bd;padding:2rem;">La papelera está vacía.</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -839,12 +857,12 @@
         </div>
     </div>
 
-    <!-- ====== MODAL: REMITO ====== -->
+    <!-- REMITO PREVIEW MODAL (Used for printing directly from Logistics/History) -->
     <div id="modal-remito" class="modal-overlay" style="display:none;">
         <div class="modal-box remito-box">
             <!-- Remito Content (Printable Area) -->
             <div id="remito-printable-area" class="remito-wrapper">
-                <div class="remito-header-container">
+                <div class="remito-header-container" style="display: none !important;">
                     <div class="remito-type-badge">R</div>
                     <div class="remito-header">
                         <div class="remito-header-left">
@@ -864,17 +882,17 @@
                         </div>
                     </div>
                 </div>
-
+                
                 <div class="remito-client-card">
                     <div class="remito-grid-2">
-                        <div class="remito-grid-item">
-                            <p><strong>Señor(es):</strong> <span id="remito-cli-nombre">Bodega Norton</span></p>
-                            <p><strong>Domicilio:</strong> <span id="remito-cli-domicilio">Ruta 15 Km 23.5</span></p>
-                            <p><strong>Localidad:</strong> <span id="remito-cli-localidad">Luján de Cuyo</span></p>
+                        <div>
+                            <p><strong>Señor(es):</strong> <span id="remito-cli-nombre">Bodega Ejemplo</span></p>
+                            <p><strong>Domicilio:</strong> <span id="remito-cli-domicilio">Ruta 8</span></p>
+                            <p><strong>Localidad:</strong> <span id="remito-cli-localidad">Mendoza</span></p>
                         </div>
-                        <div class="remito-grid-item">
-                            <p><strong>Teléfono:</strong> <span id="remito-cli-telefono">+54 9 261 444-1111</span></p>
-                            <p><strong>C.P. / Prov.:</strong> <span id="remito-cli-cpprov">3017 / Mendoza</span></p>
+                        <div>
+                            <p><strong>Teléfono:</strong> <span id="remito-cli-telefono">261 000 0000</span></p>
+                            <p><strong>C.P. / Prov.:</strong> <span id="remito-cli-cpprov">5500 / Mendoza</span></p>
                             <p><strong>CUIT:</strong> <span id="remito-cli-cuit">30-12345678-9</span></p>
                         </div>
                     </div>
@@ -883,10 +901,8 @@
                 <table class="remito-table">
                     <thead>
                         <tr>
-                            <th style="width: 100px;">Cantidad</th>
-                            <th>Descripción / Varietal</th>
-                            <th style="text-align: right; width: 120px;">Precio Unit.</th>
-                            <th style="text-align: right; width: 120px;">Subtotal</th>
+                            <th style="width: 100px;">CANTIDAD</th>
+                            <th>DESCRIPCIÓN / VARIETAL</th>
                         </tr>
                     </thead>
                     <tbody id="remito-tbody-items">
@@ -895,22 +911,24 @@
                 </table>
 
                 <div class="remito-carrier-card">
-                    <h4>Observaciones</h4>
-                    <div id="remito-observaciones-text" style="min-height: 80px; padding: 0.5rem; font-size: 13px; color: #1a1921; line-height: 1.4; white-space: pre-wrap; font-weight: normal;">
+                    <h4 style="text-transform: uppercase; font-size: 10px; font-weight: 700;">OBSERVACIONES</h4>
+                    <div id="remito-observaciones-text" style="min-height: 60px; padding: 0.5rem; font-size: 12px; color: #1a1921; line-height: 1.4; white-space: pre-wrap; font-weight: normal;">
                         <!-- Observaciones del Remito -->
                     </div>
                 </div>
 
                 <div class="remito-signature-box">
-                    <p style="color:#555; font-size:11px; margin:0;">Recibí Conforme:</p>
-                    <div class="remito-signature-line">Firma y Sello Aclaratorio</div>
+                    <p style="color:#555; font-size:10px; margin:0; text-transform: uppercase; margin-bottom: 25px;">Recibí Conforme:</p>
+                    <div style="text-align: right; margin-top: -20px;">
+                        <span style="display:inline-block; border-top: 1px dotted #888; width: 250px; text-align: center; font-size: 10px; padding-top: 4px;">Firma y Sello Aclaratorio</span>
+                    </div>
                 </div>
             </div>
 
-            <!-- Footer Actions -->
-            <div class="remito-footer-actions">
-                <button class="btn btn-primary" id="btn-remito-pdf"><i class="fa-solid fa-file-pdf"></i> Descargar PDF</button>
-                <button class="btn btn-success" id="btn-remito-print"><i class="fa-solid fa-print"></i> Imprimir</button>
+            <!-- Modal Action Buttons (Not printed) -->
+            <div class="action-buttons mt-2 no-print" style="margin-top:2rem; display:flex; justify-content:center; gap:1rem;">
+                <button class="btn btn-primary" id="btn-remito-print"><i class="fa-solid fa-print"></i> Imprimir</button>
+                <button class="btn btn-secondary" id="btn-remito-pdf"><i class="fa-solid fa-file-pdf"></i> Descargar PDF</button>
                 <button class="btn btn-danger" id="btn-remito-cerrar">Cerrar</button>
             </div>
         </div>
@@ -987,6 +1005,6 @@
         </div>
     </div>
 
-    <script src="app.js?v=12"></script>
+    <script src="app2.js?v=11"></script>
 </body>
 </html>

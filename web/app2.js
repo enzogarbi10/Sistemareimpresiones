@@ -62,6 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     let REMITOS = JSON.parse(localStorage.getItem('flexoERP_remitos')) || [];
+    let REMITOS_ELIMINADOS = JSON.parse(localStorage.getItem('flexoERP_remitos_eliminados')) || [];
     let PAGOS = JSON.parse(localStorage.getItem('flexoERP_pagos')) || [];
     let ultimoRemitoNumero = parseInt(localStorage.getItem('flexoERP_ultimo_remito')) || 8000;
 
@@ -94,6 +95,7 @@ document.addEventListener('DOMContentLoaded', () => {
             users: USERS,
             clients: CLIENTS,
             remitos: REMITOS,
+            remitos_eliminados: REMITOS_ELIMINADOS,
             pagos: PAGOS,
             ultimo_remito: ultimoRemitoNumero,
             ots_pendientes: otsPendientes,
@@ -108,6 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('flexoERP_users', JSON.stringify(USERS));
         localStorage.setItem('flexoERP_clients', JSON.stringify(CLIENTS));
         localStorage.setItem('flexoERP_remitos', JSON.stringify(REMITOS));
+        localStorage.setItem('flexoERP_remitos_eliminados', JSON.stringify(REMITOS_ELIMINADOS));
         localStorage.setItem('flexoERP_pagos', JSON.stringify(PAGOS));
         localStorage.setItem('flexoERP_ultimo_remito', ultimoRemitoNumero);
         localStorage.setItem('flexoERP_ots_pendientes', JSON.stringify(otsPendientes));
@@ -317,6 +320,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 USERS = data.users || USERS;
                 CLIENTS = [];
                 REMITOS = [];
+                REMITOS_ELIMINADOS = [];
                 PAGOS = [];
                 ultimoRemitoNumero = 0;
                 otsPendientes = [];
@@ -328,6 +332,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 localStorage.setItem('flexoERP_users', JSON.stringify(USERS));
                 localStorage.setItem('flexoERP_clients', JSON.stringify([]));
                 localStorage.setItem('flexoERP_remitos', JSON.stringify([]));
+                localStorage.setItem('flexoERP_remitos_eliminados', JSON.stringify([]));
                 localStorage.setItem('flexoERP_pagos', JSON.stringify([]));
                 localStorage.setItem('flexoERP_ultimo_remito', '0');
                 localStorage.setItem('flexoERP_ots_pendientes', JSON.stringify([]));
@@ -339,6 +344,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 USERS = data.users || USERS;
                 CLIENTS = data.clients || CLIENTS;
                 REMITOS = data.remitos || REMITOS;
+                REMITOS_ELIMINADOS = data.remitos_eliminados || REMITOS_ELIMINADOS;
                 PAGOS = data.pagos || PAGOS;
                 ultimoRemitoNumero = data.ultimo_remito !== undefined ? data.ultimo_remito : ultimoRemitoNumero;
                 otsPendientes = data.ots_pendientes || otsPendientes;
@@ -351,6 +357,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 localStorage.setItem('flexoERP_users', JSON.stringify(USERS));
                 localStorage.setItem('flexoERP_clients', JSON.stringify(CLIENTS));
                 localStorage.setItem('flexoERP_remitos', JSON.stringify(REMITOS));
+                localStorage.setItem('flexoERP_remitos_eliminados', JSON.stringify(REMITOS_ELIMINADOS));
                 localStorage.setItem('flexoERP_pagos', JSON.stringify(PAGOS));
                 localStorage.setItem('flexoERP_ultimo_remito', ultimoRemitoNumero);
                 localStorage.setItem('flexoERP_ots_pendientes', JSON.stringify(otsPendientes));
@@ -367,6 +374,7 @@ document.addEventListener('DOMContentLoaded', () => {
             USERS = JSON.parse(localStorage.getItem('flexoERP_users')) || USERS;
             CLIENTS = JSON.parse(localStorage.getItem('flexoERP_clients')) || CLIENTS;
             REMITOS = JSON.parse(localStorage.getItem('flexoERP_remitos')) || REMITOS;
+            REMITOS_ELIMINADOS = JSON.parse(localStorage.getItem('flexoERP_remitos_eliminados')) || REMITOS_ELIMINADOS;
             PAGOS = JSON.parse(localStorage.getItem('flexoERP_pagos')) || PAGOS;
             priceLists = JSON.parse(localStorage.getItem('flexoERP_price_lists')) || [];
             
@@ -1795,19 +1803,33 @@ document.addEventListener('DOMContentLoaded', () => {
             if (otEdicionNumero !== null) {
                 // Modo Edición
                 const num = otEdicionNumero;
-                const ot = otsPendientes.find(o => o.numero === num);
-                if (ot) {
-                    ot.cliente = cliente;
-                    ot.herramentales = herramentales;
-                    ot.observaciones = observaciones;
-                    ot.items = [...itemsActuales];
+                
+                // Update in otsPendientes if it exists
+                const otPendiente = otsPendientes.find(o => o.numero === num);
+                if (otPendiente) {
+                    otPendiente.cliente = cliente;
+                    otPendiente.herramentales = herramentales;
+                    otPendiente.observaciones = observaciones;
+                    otPendiente.items = [...itemsActuales];
                 }
+                
+                // Update in otsLogistica if it exists
+                const otLogistica = otsLogistica.find(o => o.numero === num);
+                if (otLogistica) {
+                    otLogistica.cliente = cliente;
+                    otLogistica.herramentales = herramentales;
+                    otLogistica.observaciones = observaciones;
+                    otLogistica.items = [...itemsActuales];
+                }
+                
+                // Always update in todasLasOts
                 if (todasLasOts[num]) {
                     todasLasOts[num].cliente = cliente;
                     todasLasOts[num].herramentales = herramentales;
                     todasLasOts[num].observaciones = observaciones;
                     todasLasOts[num].items = [...itemsActuales];
                 }
+                
                 otEdicionNumero = null;
             } else {
                 // Modo Creación
@@ -2347,7 +2369,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const btnEditar = e.target.closest('.btn-editar-ot');
             if (btnEditar) {
                 const num = parseInt(btnEditar.getAttribute('data-numero'));
-                const ot = otsPendientes.find(o => o.numero === num);
+                const ot = todasLasOts[num];
                 if (!ot) return;
                 
                 // Entrar en modo edición
@@ -2693,8 +2715,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     tr.innerHTML = `
                         <td>${qty.toLocaleString('es-AR')} u</td>
                         <td><strong>${item.tipo ? item.tipo + ' - ' : ''}${item.marca ? item.marca + ' ' : ''}${item.varietal}</strong></td>
-                        <td style="text-align: right;">$ ${priceMillar.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
-                        <td style="text-align: right;">$ ${subtotal.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
                     `;
                     tbodyItems.appendChild(tr);
                 });
@@ -2707,8 +2727,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     tr.innerHTML = `
                         <td>${hQty.toLocaleString('es-AR')} u</td>
                         <td><strong>Herramentales</strong></td>
-                        <td style="text-align: right;">$ ${hUnit.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
-                        <td style="text-align: right;">$ ${hImp.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
                     `;
                     tbodyItems.appendChild(tr);
                 }
@@ -2756,8 +2774,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 tr.innerHTML = `
                     <td>${qty.toLocaleString('es-AR')} u</td>
                     <td><strong>${item.tipo ? item.tipo + ' - ' : ''}${item.marca ? item.marca + ' ' : ''}${item.varietal}</strong></td>
-                    <td style="text-align: right;">$ ${priceMillar.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
-                    <td style="text-align: right;">$ ${subtotal.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
                 `;
                 tbodyItems.appendChild(tr);
             });
@@ -2771,13 +2787,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 tr.innerHTML = `
                     <td>${hQty.toLocaleString('es-AR')} u</td>
                     <td><strong>Herramentales</strong></td>
-                    <td style="text-align: right;">$ ${hUnit.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
-                    <td style="text-align: right;">$ ${hImp.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
                 `;
                 tbodyItems.appendChild(tr);
             }
         }
         
+        // Rellenar la tabla con filas vacías si hay menos de 9 ítems
+        // para asegurar que el pie de página siempre quede en la misma posición
+        while (tbodyItems.children.length < 9) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+            `;
+            tbodyItems.appendChild(tr);
+        }
+
         // Calcular subtotal, IVA y total para el remito
         let subtotalNeto = 0;
         let iva = 0;
@@ -2804,44 +2829,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Agregar filas de totales discriminados al remito
-        if (necesitaFactura) {
-            const trSub = document.createElement('tr');
-            trSub.className = 'total-row';
-            trSub.innerHTML = `
-                <td colspan="2" style="text-align: right; font-weight: bold; border-top: 2px solid #1a1921;">Subtotal:</td>
-                <td style="text-align: right; font-family: monospace; border-top: 2px solid #1a1921;">-</td>
-                <td style="text-align: right; font-family: monospace; border-top: 2px solid #1a1921;">$ ${subtotalNeto.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
-            `;
-            tbodyItems.appendChild(trSub);
-
-            const trIva = document.createElement('tr');
-            trIva.className = 'total-row';
-            trIva.innerHTML = `
-                <td colspan="2" style="text-align: right; font-weight: bold; color: #e63946;">IVA (21%):</td>
-                <td style="text-align: right; font-family: monospace; color: #e63946;">-</td>
-                <td style="text-align: right; font-family: monospace; color: #e63946;">$ ${iva.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
-            `;
-            tbodyItems.appendChild(trIva);
-
-            const trTotal = document.createElement('tr');
-            trTotal.className = 'total-row';
-            trTotal.innerHTML = `
-                <td colspan="2" style="text-align: right; font-weight: 800; font-size: 14px;">Total (con IVA):</td>
-                <td style="text-align: right; font-family: monospace; font-weight: 800; font-size: 14px;">-</td>
-                <td style="text-align: right; font-family: monospace; font-weight: 800; font-size: 14px;">$ ${totalConIva.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
-            `;
-            tbodyItems.appendChild(trTotal);
-        } else {
-            const trTotal = document.createElement('tr');
-            trTotal.className = 'total-row';
-            trTotal.innerHTML = `
-                <td colspan="2" style="text-align: right; font-weight: 800; font-size: 14px; border-top: 2px solid #1a1921;">Total:</td>
-                <td style="text-align: right; font-family: monospace; font-weight: 800; font-size: 14px; border-top: 2px solid #1a1921;">-</td>
-                <td style="text-align: right; font-family: monospace; font-weight: 800; font-size: 14px; border-top: 2px solid #1a1921;">$ ${subtotalNeto.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
-            `;
-            tbodyItems.appendChild(trTotal);
-        }
+        // Totales discriminados ya no se imprimen en el remito,
+        // pero sí se mantienen los cálculos (subtotalNeto, iva, totalConIva, totalAcumulado)
+        // para que se guarden correctamente en la base de datos y sumen a la cuenta del cliente.
 
         document.getElementById('remito-val-numero').innerText = `Nro: ${remitoNumStr}`;
         document.getElementById('remito-val-fecha').innerText = `FECHA: ${todayStr}`;
@@ -2952,7 +2942,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const numClean = numText.replace('Nro: ', '').trim();
             
             const opt = {
-                margin:       0,
+                margin:       [28, 0, 20, 0],
                 filename:     `remito-${numClean}.pdf`,
                 image:        { type: 'jpeg', quality: 0.98 },
                 html2canvas:  { 
@@ -3050,6 +3040,45 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td>${rem.fecha}</td>
                 <td style="font-family:monospace; font-weight:700; color:var(--secondary);">$ ${Number(rem.total).toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
                 <td><small style="color:#adb5bd;">${rem.emailEnviado || 'No registrado'}</small></td>
+                <td>
+                    <div style="display:flex; gap:0.5rem;">
+                        ${actionsHtml}
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function renderPapeleraRemitos() {
+        const tbody = document.getElementById('tbody-remitos-papelera');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+        
+        if (!REMITOS_ELIMINADOS.length) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#adb5bd;padding:2rem;">La papelera está vacía.</td></tr>';
+            return;
+        }
+        
+        const isPriv = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin');
+        let remitosOrdenados = [...REMITOS_ELIMINADOS].reverse();
+        
+        remitosOrdenados.forEach(rem => {
+            const numStr = `R-0002-${String(rem.numero).padStart(8, '0')}`;
+            const actionsHtml = isPriv ? `
+                <button class="btn btn-icon btn-restaurar-remito-papelera" data-numero="${rem.numero}" style="color:var(--success);" title="Restaurar Remito"><i class="fa-solid fa-trash-arrow-up"></i></button>
+                <button class="btn btn-icon btn-eliminar-definitivo-papelera" data-numero="${rem.numero}" style="color:var(--danger);" title="Eliminar Definitivamente"><i class="fa-solid fa-trash"></i></button>
+            ` : `
+                <span style="font-size:12px;color:#adb5bd;">Sin permisos</span>
+            `;
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong style="text-decoration:line-through;color:#adb5bd;">${numStr}</strong></td>
+                <td>#${rem.otNumero}</td>
+                <td>${rem.cliente}</td>
+                <td>${rem.fecha}</td>
+                <td style="font-family:monospace; font-weight:700; color:#adb5bd;">$ ${Number(rem.total).toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
                 <td>
                     <div style="display:flex; gap:0.5rem;">
                         ${actionsHtml}
@@ -3440,12 +3469,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const btnEliminarHistorial = e.target.closest('.btn-eliminar-remito-historial');
         if (btnEliminarHistorial) {
             const num = parseInt(btnEliminarHistorial.getAttribute('data-numero'));
-            if (confirm(`¿Está seguro de que desea eliminar el Remito R-0002-${String(num).padStart(8, '0')}?\nEsto anulará el cargo del cliente y devolverá la Orden de Trabajo a Logística para ser re-despachada si es necesario.`)) {
+            if (confirm(`¿Está seguro de que desea mover a la Papelera el Remito R-0002-${String(num).padStart(8, '0')}?\nEsto anulará el cargo del cliente y pondrá la Orden de Trabajo nuevamente en Logística (lista para hacer el remito nuevamente).`)) {
                 const remIndex = REMITOS.findIndex(r => r.numero === num);
                 if (remIndex > -1) {
                     const rem = REMITOS[remIndex];
                     
-                    // Devolver OT a Logística
+                    // Devolver OT a Logística para poder hacer el remito nuevamente
                     const ot = todasLasOts[rem.otNumero];
                     if (ot) {
                         if (!otsLogistica.some(o => o.numero === ot.numero)) {
@@ -3454,7 +3483,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     }
                     
-                    // Remover de la lista de remitos
+                    // Mover a papelera
+                    REMITOS_ELIMINADOS.push(rem);
                     REMITOS.splice(remIndex, 1);
                     saveRemitos();
                     
@@ -3468,6 +3498,60 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (selCuentaCliente && selCuentaCliente.value) {
                         renderCuentasCorrientes(selCuentaCliente.value);
                     }
+                }
+            }
+            return;
+        }
+
+        // Papelera Restaurar
+        const btnRestaurarPapelera = e.target.closest('.btn-restaurar-remito-papelera');
+        if (btnRestaurarPapelera) {
+            const num = parseInt(btnRestaurarPapelera.getAttribute('data-numero'));
+            if (confirm(`¿Está seguro de que desea restaurar el Remito R-0002-${String(num).padStart(8, '0')}?\nEsto volverá a cargar el saldo al cliente y quitará la Orden de Trabajo de Logística si aún está allí.`)) {
+                const remIndex = REMITOS_ELIMINADOS.findIndex(r => r.numero === num);
+                if (remIndex > -1) {
+                    const rem = REMITOS_ELIMINADOS[remIndex];
+                    
+                    // Remover de papelera y volver a remitos
+                    REMITOS_ELIMINADOS.splice(remIndex, 1);
+                    REMITOS.push(rem);
+                    REMITOS.sort((a, b) => a.numero - b.numero); // sort ascending by numero
+                    
+                    // Quitar OT de Logística si está
+                    const logIndex = otsLogistica.findIndex(o => o.numero === rem.otNumero);
+                    if (logIndex > -1) {
+                        otsLogistica.splice(logIndex, 1);
+                        saveOts();
+                    }
+                    
+                    saveRemitos();
+                    
+                    // Recalcular y renderizar
+                    recalcularSaldosClientes();
+                    renderHistorialRemitos();
+                    renderPapeleraRemitos();
+                    renderDashboard();
+                    renderLogistica();
+                    renderClientes();
+                    const selCuentaCliente = document.getElementById('sel-cuenta-cliente');
+                    if (selCuentaCliente && selCuentaCliente.value) {
+                        renderCuentasCorrientes(selCuentaCliente.value);
+                    }
+                }
+            }
+            return;
+        }
+
+        // Papelera Eliminar Definitivamente
+        const btnEliminarDefinitivo = e.target.closest('.btn-eliminar-definitivo-papelera');
+        if (btnEliminarDefinitivo) {
+            const num = parseInt(btnEliminarDefinitivo.getAttribute('data-numero'));
+            if (confirm(`¡ATENCIÓN!\n¿Está absolutamente seguro de que desea ELIMINAR PARA SIEMPRE el Remito R-0002-${String(num).padStart(8, '0')}?\nEsta acción no se puede deshacer.`)) {
+                const remIndex = REMITOS_ELIMINADOS.findIndex(r => r.numero === num);
+                if (remIndex > -1) {
+                    REMITOS_ELIMINADOS.splice(remIndex, 1);
+                    saveRemitos();
+                    renderPapeleraRemitos();
                 }
             }
             return;
