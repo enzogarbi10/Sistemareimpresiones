@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FlexoERP - Gestión de Etiquetas de Vino</title>
-    <link rel="stylesheet" href="styles.css?v=20">
+    <link rel="stylesheet" href="styles.css?v=21">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css?v=2">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js?v=2"></script>
@@ -904,12 +904,19 @@
                         <tr>
                             <th style="width: 100px;">CANTIDAD</th>
                             <th>DESCRIPCIÓN / VARIETAL</th>
+                            <th class="remito-x-col" style="width: 120px; text-align: right;">P. UNITARIO</th>
+                            <th class="remito-x-col" style="width: 120px; text-align: right;">IMPORTE</th>
                         </tr>
                     </thead>
                     <tbody id="remito-tbody-items">
                         <!-- Dynamic items -->
                     </tbody>
                 </table>
+                <div class="remito-totales remito-x-col" style="margin-top: 10px; text-align: right; font-size: 13px; padding-right: 10px;">
+                    <p style="margin: 3px 0;"><strong>Subtotal:</strong> <span id="remito-val-subtotal">$ 0,00</span></p>
+                    <p style="margin: 3px 0;"><strong>IVA (21%):</strong> <span id="remito-val-iva">$ 0,00</span></p>
+                    <p style="margin: 3px 0; font-size: 15px;"><strong>Total:</strong> <span id="remito-val-total">$ 0,00</span></p>
+                </div>
 
                 <div class="remito-carrier-card">
                     <h4 style="text-transform: uppercase; font-size: 10px; font-weight: 700;">OBSERVACIONES</h4>
@@ -1006,6 +1013,6 @@
         </div>
     </div>
 
-    <script src="app2.js?v=15"></script>
+    <script src="app2.js?v=16"></script>
 </body>
 </html>

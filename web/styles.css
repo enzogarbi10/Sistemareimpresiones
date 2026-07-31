@@ -1107,8 +1107,9 @@ label {
         line-height: 1.4 !important;
     }
 
-    /* Ocultar el encabezado original del sistema porque se imprimirá sobre el papel preimpreso */
-    .remito-header-container {
+
+    /* Ocultar el encabezado original del sistema porque se imprimirá sobre el papel preimpreso, EXCEPTO para remitos X */
+    .remito-wrapper:not(.remito-x) .remito-header-container {
         display: none !important;
     }
 
@@ -1294,6 +1295,14 @@ label {
 @keyframes subTabFadeIn {
     from { opacity: 0; transform: translateY(8px); }
     to { opacity: 1; transform: translateY(0); }
+}
+
+/* Remito X specifics */
+.remito-wrapper:not(.remito-x) .remito-x-col {
+    display: none !important;
+}
+.remito-wrapper.remito-x .remito-absolute-date {
+    display: none !important;
 }
 
 

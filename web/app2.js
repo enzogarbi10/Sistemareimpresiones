@@ -65,6 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let REMITOS_ELIMINADOS = JSON.parse(localStorage.getItem('flexoERP_remitos_eliminados')) || [];
     let PAGOS = JSON.parse(localStorage.getItem('flexoERP_pagos')) || [];
     let ultimoRemitoNumero = parseInt(localStorage.getItem('flexoERP_ultimo_remito')) || 8000;
+    let ultimoRemitoXNumero = parseInt(localStorage.getItem('flexoERP_ultimo_remito_x')) || 0;
 
     let otsPendientes  = JSON.parse(localStorage.getItem('flexoERP_ots_pendientes')) || [
         { numero: 1042, cliente: 'Bodega Norton', fechaAlta: '05/05/2026', items: [
@@ -98,6 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
             remitos_eliminados: REMITOS_ELIMINADOS,
             pagos: PAGOS,
             ultimo_remito: ultimoRemitoNumero,
+            ultimo_remito_x: ultimoRemitoXNumero,
             ots_pendientes: otsPendientes,
             ots_logistica: otsLogistica,
             ultimo_numero_ot: ultimoNumeroOt,
@@ -113,6 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('flexoERP_remitos_eliminados', JSON.stringify(REMITOS_ELIMINADOS));
         localStorage.setItem('flexoERP_pagos', JSON.stringify(PAGOS));
         localStorage.setItem('flexoERP_ultimo_remito', ultimoRemitoNumero);
+        localStorage.setItem('flexoERP_ultimo_remito_x', ultimoRemitoXNumero);
         localStorage.setItem('flexoERP_ots_pendientes', JSON.stringify(otsPendientes));
         localStorage.setItem('flexoERP_ots_logistica', JSON.stringify(otsLogistica));
         localStorage.setItem('flexoERP_todas_las_ots', JSON.stringify(todasLasOts));
@@ -323,6 +326,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 REMITOS_ELIMINADOS = [];
                 PAGOS = [];
                 ultimoRemitoNumero = 0;
+                ultimoRemitoXNumero = 0;
                 otsPendientes = [];
                 otsLogistica = [];
                 ultimoNumeroOt = 0;
@@ -347,6 +351,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 REMITOS_ELIMINADOS = data.remitos_eliminados || REMITOS_ELIMINADOS;
                 PAGOS = data.pagos || PAGOS;
                 ultimoRemitoNumero = data.ultimo_remito !== undefined ? data.ultimo_remito : ultimoRemitoNumero;
+                ultimoRemitoXNumero = data.ultimo_remito_x !== undefined ? data.ultimo_remito_x : ultimoRemitoXNumero;
                 otsPendientes = data.ots_pendientes || otsPendientes;
                 otsLogistica = data.ots_logistica || otsLogistica;
                 ultimoNumeroOt = data.ultimo_numero_ot !== undefined ? data.ultimo_numero_ot : ultimoNumeroOt;
@@ -360,6 +365,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 localStorage.setItem('flexoERP_remitos_eliminados', JSON.stringify(REMITOS_ELIMINADOS));
                 localStorage.setItem('flexoERP_pagos', JSON.stringify(PAGOS));
                 localStorage.setItem('flexoERP_ultimo_remito', ultimoRemitoNumero);
+                localStorage.setItem('flexoERP_ultimo_remito_x', ultimoRemitoXNumero);
                 localStorage.setItem('flexoERP_ots_pendientes', JSON.stringify(otsPendientes));
                 localStorage.setItem('flexoERP_ots_logistica', JSON.stringify(otsLogistica));
                 localStorage.setItem('flexoERP_todas_las_ots', JSON.stringify(todasLasOts));
@@ -380,6 +386,9 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const savedLastRemito = localStorage.getItem('flexoERP_ultimo_remito');
             if (savedLastRemito) ultimoRemitoNumero = parseInt(savedLastRemito);
+            
+            const savedLastRemitoX = localStorage.getItem('flexoERP_ultimo_remito_x');
+            if (savedLastRemitoX) ultimoRemitoXNumero = parseInt(savedLastRemitoX);
             
             otsPendientes = JSON.parse(localStorage.getItem('flexoERP_ots_pendientes')) || otsPendientes;
             otsLogistica = JSON.parse(localStorage.getItem('flexoERP_ots_logistica')) || otsLogistica;
@@ -2690,7 +2699,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const rem = REMITOS.find(r => r.numero === num);
             if (!rem) return;
             
-            remitoNumStr = `R-0002-${String(rem.numero).padStart(8, '0')}`;
+            const prefixStr = rem.tipoRemito === 'X' ? 'X-0000-' : 'R-0002-';
+            remitoNumStr = `${prefixStr}${String(rem.numero).padStart(8, '0')}`;
             todayStr = rem.fecha;
             
             clientObj = CLIENTS.find(c => c.nombre === rem.cliente) || {
@@ -2715,6 +2725,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     tr.innerHTML = `
                         <td>${qty.toLocaleString('es-AR')} u</td>
                         <td><strong>${item.tipo ? item.tipo + ' - ' : ''}${item.marca ? item.marca + ' ' : ''}${item.varietal}${item.colores ? ' (' + item.colores + ' pasadas)' : ''}</strong></td>
+                        <td class="remito-x-col" style="text-align: right;">$ ${priceMillar.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
+                        <td class="remito-x-col" style="text-align: right;">$ ${subtotal.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
                     `;
                     tbodyItems.appendChild(tr);
                 });
@@ -2727,6 +2739,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     tr.innerHTML = `
                         <td>${hQty.toLocaleString('es-AR')} u</td>
                         <td><strong>Herramentales</strong></td>
+                        <td class="remito-x-col" style="text-align: right;">$ ${hUnit.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
+                        <td class="remito-x-col" style="text-align: right;">$ ${hImp.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
                     `;
                     tbodyItems.appendChild(tr);
                 }
@@ -2738,8 +2752,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 tr.innerHTML = `
                     <td>1 u</td>
                     <td><strong>Servicio de Impresión Etiquetas (OT #${rem.otNumero})</strong></td>
-                    <td style="text-align: right;">$ ${rem.total.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
-                    <td style="text-align: right;">$ ${rem.total.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
+                    <td class="remito-x-col" style="text-align: right;">$ ${rem.total.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
+                    <td class="remito-x-col" style="text-align: right;">$ ${rem.total.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
                 `;
                 tbodyItems.appendChild(tr);
             }
@@ -2760,8 +2774,10 @@ document.addEventListener('DOMContentLoaded', () => {
             };
             
             // Generar número provisional
-            const nextNum = ultimoRemitoNumero + 1;
-            remitoNumStr = `R-0002-${String(nextNum).padStart(8, '0')}`;
+            const clientFactura = (clientObj && clientObj.factura === 'SI');
+            const nextNum = clientFactura ? (ultimoRemitoNumero + 1) : (ultimoRemitoXNumero + 1);
+            const prefixStr = clientFactura ? 'R-0002-' : 'X-0000-';
+            remitoNumStr = `${prefixStr}${String(nextNum).padStart(8, '0')}`;
             todayStr = new Date().toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
             
             ot.items.forEach(item => {
@@ -2774,6 +2790,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 tr.innerHTML = `
                     <td>${qty.toLocaleString('es-AR')} u</td>
                     <td><strong>${item.tipo ? item.tipo + ' - ' : ''}${item.marca ? item.marca + ' ' : ''}${item.varietal}${item.colores ? ' (' + item.colores + ' pasadas)' : ''}</strong></td>
+                    <td class="remito-x-col" style="text-align: right;">$ ${priceMillar.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
+                    <td class="remito-x-col" style="text-align: right;">$ ${subtotal.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
                 `;
                 tbodyItems.appendChild(tr);
             });
@@ -2787,6 +2805,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 tr.innerHTML = `
                     <td>${hQty.toLocaleString('es-AR')} u</td>
                     <td><strong>Herramentales</strong></td>
+                    <td class="remito-x-col" style="text-align: right;">$ ${hUnit.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
+                    <td class="remito-x-col" style="text-align: right;">$ ${hImp.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
                 `;
                 tbodyItems.appendChild(tr);
             }
@@ -2799,6 +2819,8 @@ document.addEventListener('DOMContentLoaded', () => {
             tr.innerHTML = `
                 <td>&nbsp;</td>
                 <td>&nbsp;</td>
+                <td class="remito-x-col">&nbsp;</td>
+                <td class="remito-x-col">&nbsp;</td>
             `;
             tbodyItems.appendChild(tr);
         }
@@ -2862,6 +2884,18 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         
+        const wrapper = document.querySelector('.remito-wrapper');
+        const isX = (esHistorial && rem.tipoRemito === 'X') || (!esHistorial && !necesitaFactura);
+        if (isX) {
+            wrapper.classList.add('remito-x');
+        } else {
+            wrapper.classList.remove('remito-x');
+        }
+        
+        document.getElementById('remito-val-subtotal').innerText = `$ ${subtotalNeto.toLocaleString('es-AR', {minimumFractionDigits: 2})}`;
+        document.getElementById('remito-val-iva').innerText = `$ ${iva.toLocaleString('es-AR', {minimumFractionDigits: 2})}`;
+        // remito-val-total is already set above
+        
         document.getElementById('modal-remito').style.display = 'flex';
     }
 
@@ -2894,9 +2928,21 @@ document.addEventListener('DOMContentLoaded', () => {
             const iva = necesitaFactura ? (subtotal * 0.21) : 0;
             const total = subtotal + iva;
 
-            ultimoRemitoNumero++;
+            let numParaRemito = 0;
+            let tipoRemito = 'R';
+            if (necesitaFactura) {
+                ultimoRemitoNumero++;
+                numParaRemito = ultimoRemitoNumero;
+                tipoRemito = 'R';
+            } else {
+                ultimoRemitoXNumero++;
+                numParaRemito = ultimoRemitoXNumero;
+                tipoRemito = 'X';
+            }
+
             REMITOS.push({
-                numero: ultimoRemitoNumero,
+                numero: numParaRemito,
+                tipoRemito: tipoRemito,
                 otNumero: ot.numero,
                 cliente: ot.cliente,
                 fecha: new Date().toLocaleDateString('es-AR'),
@@ -2913,7 +2959,7 @@ document.addEventListener('DOMContentLoaded', () => {
             recalcularSaldosClientes();
             renderClientes();
             
-            showEmailToast(clientObj ? clientObj.email : 'compras@bodega.com', ultimoRemitoNumero);
+            showEmailToast(clientObj ? clientObj.email : 'compras@bodega.com', numParaRemito);
             
             otsLogistica = otsLogistica.filter(o => o.numero !== ot.numero);
             saveOts();
@@ -2941,9 +2987,10 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const numText = document.getElementById('remito-val-numero').innerText || 'R-00000000';
             const numClean = numText.replace('Nro: ', '').trim();
+            const isX = document.querySelector('.remito-wrapper').classList.contains('remito-x');
             
             const opt = {
-                margin:       [28, 0, 20, 0],
+                margin:       isX ? [15, 0, 15, 0] : [28, 0, 20, 0],
                 filename:     `remito-${numClean}.pdf`,
                 image:        { type: 'jpeg', quality: 0.98 },
                 html2canvas:  { 
