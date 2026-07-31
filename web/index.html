@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FlexoERP - Gestión de Etiquetas de Vino</title>
-    <link rel="stylesheet" href="styles.css?v=19">
+    <link rel="stylesheet" href="styles.css?v=20">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css?v=2">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js?v=2"></script>
@@ -862,6 +862,7 @@
         <div class="modal-box remito-box">
             <!-- Remito Content (Printable Area) -->
             <div id="remito-printable-area" class="remito-wrapper">
+                <div class="remito-absolute-date" id="remito-cli-fecha-absoluta"></div>
                 <div class="remito-header-container" style="display: none !important;">
                     <div class="remito-type-badge">R</div>
                     <div class="remito-header">
@@ -891,7 +892,6 @@
                             <p><strong>Localidad:</strong> <span id="remito-cli-localidad">Mendoza</span></p>
                         </div>
                         <div>
-                            <p><strong>Fecha:</strong> <span id="remito-cli-fecha">19/05/2026</span></p>
                             <p><strong>Teléfono:</strong> <span id="remito-cli-telefono">261 000 0000</span></p>
                             <p><strong>C.P. / Prov.:</strong> <span id="remito-cli-cpprov">5500 / Mendoza</span></p>
                             <p><strong>CUIT:</strong> <span id="remito-cli-cuit">30-12345678-9</span></p>
@@ -1006,6 +1006,6 @@
         </div>
     </div>
 
-    <script src="app2.js?v=12"></script>
+    <script src="app2.js?v=14"></script>
 </body>
 </html>

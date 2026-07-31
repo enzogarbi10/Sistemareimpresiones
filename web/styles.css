@@ -772,6 +772,7 @@ label {
     max-width: none;
     min-height: 297mm;
     box-sizing: border-box;
+    position: relative;
     padding: 15mm 10mm;
     margin: 20px auto;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
@@ -1000,6 +1001,15 @@ label {
 @page {
     size: A4 portrait;
     margin: 8mm;
+}
+
+.remito-absolute-date {
+    position: absolute;
+    top: 7mm;
+    right: 75mm;
+    font-size: 13px;
+    font-weight: 600;
+    color: #000;
 }
 
 @media print {
