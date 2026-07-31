@@ -2835,6 +2835,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.getElementById('remito-val-numero').innerText = `Nro: ${remitoNumStr}`;
         document.getElementById('remito-val-fecha').innerText = `FECHA: ${todayStr}`;
+        document.getElementById('remito-cli-fecha').innerText = todayStr;
         
         document.getElementById('remito-cli-nombre').innerText = clientObj.nombre;
         document.getElementById('remito-cli-domicilio').innerText = clientObj.domicilio || 'Ruta provincial';
