@@ -2997,7 +2997,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 html2canvas:  { 
                     scale: 1.5, 
                     useCORS: true, 
-                    logging: false
+                    logging: false,
+                    onclone: (doc) => {
+                        const wrapper = doc.querySelector('.remito-wrapper');
+                        if (wrapper) {
+                            wrapper.style.minHeight = 'auto';
+                            wrapper.style.boxShadow = 'none';
+                            wrapper.style.margin = '0';
+                        }
+                    }
                 },
                 jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
