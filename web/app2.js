@@ -2687,6 +2687,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let todayStr = '';
         let clientObj = null;
         let totalAcumulado = 0;
+        let rem = null;
         
         const tbodyItems = document.getElementById('remito-tbody-items');
         if (!tbodyItems) return;
@@ -2696,7 +2697,7 @@ document.addEventListener('DOMContentLoaded', () => {
             modoVisualizacionRemito = true;
             currentOtParaRemito = null;
             
-            const rem = REMITOS.find(r => r.numero === num);
+            rem = REMITOS.find(r => r.numero === num);
             if (!rem) return;
             
             const prefixStr = rem.tipoRemito === 'X' ? 'X-0000-' : 'R-0002-';
@@ -2832,7 +2833,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let necesitaFactura = false;
 
         if (esHistorial) {
-            const rem = REMITOS.find(r => r.numero === num);
+            // Ya tenemos rem de más arriba
             if (rem) {
                 totalConIva = parseFloat(rem.total) || 0;
                 subtotalNeto = rem.subtotal !== undefined ? (parseFloat(rem.subtotal) || 0) : totalConIva;
@@ -2875,7 +2876,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const obsEl = document.getElementById('remito-observaciones-text');
         if (obsEl) {
             if (esHistorial) {
-                const rem = REMITOS.find(r => r.numero === num);
+                // Ya tenemos rem
                 obsEl.innerText = (rem && rem.observaciones) ? rem.observaciones : 'Sin observaciones.';
             } else if (ot && ot._observacionesDespacho) {
                 obsEl.innerText = ot._observacionesDespacho;
@@ -3045,7 +3046,8 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (remitosSearchQuery) {
             remitosOrdenados = remitosOrdenados.filter(rem => {
-                const numStr = `R-0002-${String(rem.numero).padStart(8, '0')}`;
+                const prefixStr = rem.tipoRemito === 'X' ? 'X-0000-' : 'R-0002-';
+                const numStr = `${prefixStr}${String(rem.numero).padStart(8, '0')}`;
                 const cli = (rem.cliente || '').toLowerCase();
                 const numRaw = String(rem.numero || '');
                 const otNum = String(rem.otNumero || '');
@@ -3062,7 +3064,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         remitosOrdenados.forEach(rem => {
-            const numStr = `R-0002-${String(rem.numero).padStart(8, '0')}`;
+            const prefixStr = rem.tipoRemito === 'X' ? 'X-0000-' : 'R-0002-';
+            const numStr = `${prefixStr}${String(rem.numero).padStart(8, '0')}`;
             const actionsHtml = isPriv ? `
                 <button class="btn btn-icon btn-ver-remito-historial" data-numero="${rem.numero}" style="color:var(--primary);" title="Ver Remito"><i class="fa-solid fa-eye"></i></button>
                 <button class="btn btn-icon btn-descargar-pdf-historial" data-numero="${rem.numero}" style="color:#ff4d6d;" title="Descargar PDF"><i class="fa-solid fa-file-pdf"></i></button>
@@ -3112,7 +3115,8 @@ document.addEventListener('DOMContentLoaded', () => {
         let remitosOrdenados = [...REMITOS_ELIMINADOS].reverse();
         
         remitosOrdenados.forEach(rem => {
-            const numStr = `R-0002-${String(rem.numero).padStart(8, '0')}`;
+            const prefixStr = rem.tipoRemito === 'X' ? 'X-0000-' : 'R-0002-';
+            const numStr = `${prefixStr}${String(rem.numero).padStart(8, '0')}`;
             const actionsHtml = isPriv ? `
                 <button class="btn btn-icon btn-restaurar-remito-papelera" data-numero="${rem.numero}" style="color:var(--success);" title="Restaurar Remito"><i class="fa-solid fa-trash-arrow-up"></i></button>
                 <button class="btn btn-icon btn-eliminar-definitivo-papelera" data-numero="${rem.numero}" style="color:var(--danger);" title="Eliminar Definitivamente"><i class="fa-solid fa-trash"></i></button>
@@ -3504,7 +3508,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const rem = REMITOS.find(r => r.numero === num);
             if (rem) {
                 document.getElementById('editar-remito-id').value = rem.numero;
-                document.getElementById('label-editar-remito-nro').innerText = `Remito Nro: R-0002-${String(rem.numero).padStart(8, '0')}`;
+                const prefixStr = rem.tipoRemito === 'X' ? 'X-0000-' : 'R-0002-';
+                document.getElementById('label-editar-remito-nro').innerText = `Remito Nro: ${prefixStr}${String(rem.numero).padStart(8, '0')}`;
                 document.getElementById('editar-remito-fecha').value = rem.fecha;
                 document.getElementById('editar-remito-total').value = rem.total;
                 document.getElementById('editar-remito-observaciones').value = rem.observaciones || '';
@@ -3517,34 +3522,36 @@ document.addEventListener('DOMContentLoaded', () => {
         const btnEliminarHistorial = e.target.closest('.btn-eliminar-remito-historial');
         if (btnEliminarHistorial) {
             const num = parseInt(btnEliminarHistorial.getAttribute('data-numero'));
-            if (confirm(`¿Está seguro de que desea mover a la Papelera el Remito R-0002-${String(num).padStart(8, '0')}?\nEsto anulará el cargo del cliente y pondrá la Orden de Trabajo nuevamente en Logística (lista para hacer el remito nuevamente).`)) {
-                const remIndex = REMITOS.findIndex(r => r.numero === num);
-                if (remIndex > -1) {
-                    const rem = REMITOS[remIndex];
-                    
-                    // Devolver OT a Logística para poder hacer el remito nuevamente
-                    const ot = todasLasOts[rem.otNumero];
-                    if (ot) {
-                        if (!otsLogistica.some(o => o.numero === ot.numero)) {
-                            otsLogistica.push({ ...ot });
-                            saveOts();
+            const rem = REMITOS.find(r => r.numero === num);
+            if (rem) {
+                const prefixStr = rem.tipoRemito === 'X' ? 'X-0000-' : 'R-0002-';
+                if (confirm(`¿Está seguro de que desea mover a la Papelera el Remito ${prefixStr}${String(num).padStart(8, '0')}?\nEsto anulará el cargo del cliente y pondrá la Orden de Trabajo nuevamente en Logística (lista para hacer el remito nuevamente).`)) {
+                    const remIndex = REMITOS.findIndex(r => r.numero === num);
+                    if (remIndex > -1) {
+                        // Devolver OT a Logística para poder hacer el remito nuevamente
+                        const ot = todasLasOts[rem.otNumero];
+                        if (ot) {
+                            if (!otsLogistica.some(o => o.numero === ot.numero)) {
+                                otsLogistica.push({ ...ot });
+                                saveOts();
+                            }
                         }
-                    }
-                    
-                    // Mover a papelera
-                    REMITOS_ELIMINADOS.push(rem);
-                    REMITOS.splice(remIndex, 1);
-                    saveRemitos();
-                    
-                    // Recalcular saldos de clientes y re-renderizar todo
-                    recalcularSaldosClientes();
-                    renderHistorialRemitos();
-                    renderDashboard();
-                    renderLogistica();
-                    renderClientes();
-                    const selCuentaCliente = document.getElementById('sel-cuenta-cliente');
-                    if (selCuentaCliente && selCuentaCliente.value) {
-                        renderCuentasCorrientes(selCuentaCliente.value);
+                        
+                        // Mover a papelera
+                        REMITOS_ELIMINADOS.push(rem);
+                        REMITOS.splice(remIndex, 1);
+                        saveRemitos();
+                        
+                        // Recalcular saldos de clientes y re-renderizar todo
+                        recalcularSaldosClientes();
+                        renderHistorialRemitos();
+                        renderDashboard();
+                        renderLogistica();
+                        renderClientes();
+                        const selCuentaCliente = document.getElementById('sel-cuenta-cliente');
+                        if (selCuentaCliente && selCuentaCliente.value) {
+                            renderCuentasCorrientes(selCuentaCliente.value);
+                        }
                     }
                 }
             }
@@ -3555,35 +3562,29 @@ document.addEventListener('DOMContentLoaded', () => {
         const btnRestaurarPapelera = e.target.closest('.btn-restaurar-remito-papelera');
         if (btnRestaurarPapelera) {
             const num = parseInt(btnRestaurarPapelera.getAttribute('data-numero'));
-            if (confirm(`¿Está seguro de que desea restaurar el Remito R-0002-${String(num).padStart(8, '0')}?\nEsto volverá a cargar el saldo al cliente y quitará la Orden de Trabajo de Logística si aún está allí.`)) {
-                const remIndex = REMITOS_ELIMINADOS.findIndex(r => r.numero === num);
-                if (remIndex > -1) {
-                    const rem = REMITOS_ELIMINADOS[remIndex];
-                    
-                    // Remover de papelera y volver a remitos
-                    REMITOS_ELIMINADOS.splice(remIndex, 1);
-                    REMITOS.push(rem);
-                    REMITOS.sort((a, b) => a.numero - b.numero); // sort ascending by numero
-                    
-                    // Quitar OT de Logística si está
-                    const logIndex = otsLogistica.findIndex(o => o.numero === rem.otNumero);
-                    if (logIndex > -1) {
-                        otsLogistica.splice(logIndex, 1);
+            const rem = REMITOS_ELIMINADOS.find(r => r.numero === num);
+            if (rem) {
+                const prefixStr = rem.tipoRemito === 'X' ? 'X-0000-' : 'R-0002-';
+                if (confirm(`¿Está seguro de que desea restaurar el Remito ${prefixStr}${String(num).padStart(8, '0')}?\nEsto volverá a cargar el saldo al cliente y quitará la Orden de Trabajo de Logística si aún está allí.`)) {
+                    const remIndex = REMITOS_ELIMINADOS.findIndex(r => r.numero === num);
+                    if (remIndex > -1) {
+                        // Remover de papelera y volver a remitos
+                        REMITOS_ELIMINADOS.splice(remIndex, 1);
+                        REMITOS.push(rem);
+                        REMITOS.sort((a, b) => a.numero - b.numero); // sort ascending by numero
+                        saveRemitos();
+                        
+                        // Quitar la OT de logística si está ahí
+                        otsLogistica = otsLogistica.filter(o => o.numero !== rem.otNumero);
                         saveOts();
-                    }
-                    
-                    saveRemitos();
-                    
-                    // Recalcular y renderizar
-                    recalcularSaldosClientes();
-                    renderHistorialRemitos();
-                    renderPapeleraRemitos();
-                    renderDashboard();
-                    renderLogistica();
-                    renderClientes();
-                    const selCuentaCliente = document.getElementById('sel-cuenta-cliente');
-                    if (selCuentaCliente && selCuentaCliente.value) {
-                        renderCuentasCorrientes(selCuentaCliente.value);
+                        
+                        // Recalcular saldos y UI
+                        recalcularSaldosClientes();
+                        renderPapeleraRemitos();
+                        renderHistorialRemitos();
+                        renderDashboard();
+                        renderLogistica();
+                        renderClientes();
                     }
                 }
             }
@@ -3594,12 +3595,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const btnEliminarDefinitivo = e.target.closest('.btn-eliminar-definitivo-papelera');
         if (btnEliminarDefinitivo) {
             const num = parseInt(btnEliminarDefinitivo.getAttribute('data-numero'));
-            if (confirm(`¡ATENCIÓN!\n¿Está absolutamente seguro de que desea ELIMINAR PARA SIEMPRE el Remito R-0002-${String(num).padStart(8, '0')}?\nEsta acción no se puede deshacer.`)) {
-                const remIndex = REMITOS_ELIMINADOS.findIndex(r => r.numero === num);
-                if (remIndex > -1) {
-                    REMITOS_ELIMINADOS.splice(remIndex, 1);
-                    saveRemitos();
-                    renderPapeleraRemitos();
+            const rem = REMITOS_ELIMINADOS.find(r => r.numero === num);
+            if (rem) {
+                const prefixStr = rem.tipoRemito === 'X' ? 'X-0000-' : 'R-0002-';
+                if (confirm(`¡ATENCIÓN!\n¿Está absolutamente seguro de que desea ELIMINAR PARA SIEMPRE el Remito ${prefixStr}${String(num).padStart(8, '0')}?\nEsta acción no se puede deshacer.`)) {
+                    const remIndex = REMITOS_ELIMINADOS.findIndex(r => r.numero === num);
+                    if (remIndex > -1) {
+                        REMITOS_ELIMINADOS.splice(remIndex, 1);
+                        saveRemitos();
+                        renderPapeleraRemitos();
+                    }
                 }
             }
             return;
