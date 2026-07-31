@@ -2714,7 +2714,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
                         <td>${qty.toLocaleString('es-AR')} u</td>
-                        <td><strong>${item.tipo ? item.tipo + ' - ' : ''}${item.marca ? item.marca + ' ' : ''}${item.varietal}</strong></td>
+                        <td><strong>${item.tipo ? item.tipo + ' - ' : ''}${item.marca ? item.marca + ' ' : ''}${item.varietal}${item.colores ? ' (' + item.colores + ' pasadas)' : ''}</strong></td>
                     `;
                     tbodyItems.appendChild(tr);
                 });
@@ -2773,7 +2773,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>${qty.toLocaleString('es-AR')} u</td>
-                    <td><strong>${item.tipo ? item.tipo + ' - ' : ''}${item.marca ? item.marca + ' ' : ''}${item.varietal}</strong></td>
+                    <td><strong>${item.tipo ? item.tipo + ' - ' : ''}${item.marca ? item.marca + ' ' : ''}${item.varietal}${item.colores ? ' (' + item.colores + ' pasadas)' : ''}</strong></td>
                 `;
                 tbodyItems.appendChild(tr);
             });
