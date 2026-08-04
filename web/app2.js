@@ -1517,12 +1517,14 @@ document.addEventListener('DOMContentLoaded', () => {
             tr.innerHTML = `
                 <td><strong>${item.tipo ? item.tipo + ' - ' : ''}${item.marca ? item.marca + ' ' : ''}${item.varietal}</strong></td>
                 <td>${Number(item.cantidad).toLocaleString()} u</td>
-                <td>$${item.precio}</td>
+                <td>
+                    $<input type="number" step="any" class="edit-precio-inline" data-index="${idx}" value="${item.precio}" style="width: 75px; border: 1px solid var(--border); border-radius: 4px; padding: 2px 5px; font-family: inherit; font-size: 13px;" title="Editar precio x Millar">
+                </td>
                 <td>${item.colores} col</td>
                 <td>${item.barniz === 'SI' ? 'Sí' : 'No'}</td>
                 <td>${item.fecha}</td>
                 <td>
-                    <button class="btn btn-icon-small btn-eliminar-item-form" data-index="${idx}" style="color:var(--danger); background:transparent; border:none; cursor:pointer;"><i class="fa-solid fa-trash"></i></button>
+                    <button class="btn btn-icon-small btn-eliminar-item-form" data-index="${idx}" style="color:var(--danger); background:transparent; border:none; cursor:pointer;" title="Eliminar Ítem"><i class="fa-solid fa-trash"></i></button>
                 </td>
             `;
             tbody.appendChild(tr);
@@ -1536,6 +1538,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderItemsOtForm();
             });
         });
+
+        tbody.querySelectorAll('.edit-precio-inline').forEach(inp => {
+            inp.addEventListener('input', (e) => {
+                const idx = parseInt(e.target.getAttribute('data-index'));
+                itemsActuales[idx].precio = e.target.value;
+            });
+        });
+
         recalcularHerramentalesAutomaticos();
     }
 
