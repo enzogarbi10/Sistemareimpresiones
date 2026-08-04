@@ -1873,6 +1873,8 @@ document.addEventListener('DOMContentLoaded', () => {
             saveOts();
             refreshTallerSelector();
             renderOts();
+            renderLogistica();
+            renderDashboard();
             formNuevaOt.style.display = 'none';
             itemsActuales = [];
         });
