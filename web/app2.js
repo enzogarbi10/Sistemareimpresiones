@@ -3533,16 +3533,19 @@ document.addEventListener('DOMContentLoaded', () => {
             const rem = REMITOS.find(r => r.numero === num);
             if (rem) {
                 const prefixStr = rem.tipoRemito === 'X' ? 'X-0000-' : 'R-0002-';
-                if (confirm(`¿Está seguro de que desea mover a la Papelera el Remito ${prefixStr}${String(num).padStart(8, '0')}?\nEsto anulará el cargo del cliente y pondrá la Orden de Trabajo nuevamente en Logística (lista para hacer el remito nuevamente).`)) {
+                if (confirm(`¿Está seguro de que desea mover a la Papelera el Remito ${prefixStr}${String(num).padStart(8, '0')}?\nEsto anulará el cargo del cliente y reactivará la Orden de Trabajo (pasará a Órdenes Activas para poder editarla).`)) {
                     const remIndex = REMITOS.findIndex(r => r.numero === num);
                     if (remIndex > -1) {
-                        // Devolver OT a Logística para poder hacer el remito nuevamente
+                        // Devolver OT a Pendientes (Activas) para poder editarla nuevamente
                         const ot = todasLasOts[rem.otNumero];
                         if (ot) {
-                            if (!otsLogistica.some(o => o.numero === ot.numero)) {
-                                otsLogistica.push({ ...ot });
-                                saveOts();
+                            if (!otsPendientes.some(o => o.numero === ot.numero)) {
+                                // Devolvemos la OT a estado pendiente (sin finalizado)
+                                otsPendientes.push({ ...ot });
                             }
+                            // Asegurarnos de que no quede estancada en logística
+                            otsLogistica = otsLogistica.filter(o => o.numero !== ot.numero);
+                            saveOts();
                         }
                         
                         // Mover a papelera
@@ -3582,8 +3585,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         REMITOS.sort((a, b) => a.numero - b.numero); // sort ascending by numero
                         saveRemitos();
                         
-                        // Quitar la OT de logística si está ahí
+                        // Quitar la OT de logística o pendientes si está ahí
                         otsLogistica = otsLogistica.filter(o => o.numero !== rem.otNumero);
+                        otsPendientes = otsPendientes.filter(o => o.numero !== rem.otNumero);
                         saveOts();
                         
                         // Recalcular saldos y UI
