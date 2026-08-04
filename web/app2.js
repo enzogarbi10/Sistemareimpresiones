@@ -3558,6 +3558,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         renderHistorialRemitos();
                         renderDashboard();
                         renderLogistica();
+                        renderOts();
+                        refreshTallerSelector();
                         renderClientes();
                         const selCuentaCliente = document.getElementById('sel-cuenta-cliente');
                         if (selCuentaCliente && selCuentaCliente.value) {
@@ -3596,6 +3598,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         renderHistorialRemitos();
                         renderDashboard();
                         renderLogistica();
+                        renderOts();
+                        refreshTallerSelector();
                         renderClientes();
                     }
                 }
