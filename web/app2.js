@@ -1847,6 +1847,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     todasLasOts[num].herramentales = herramentales;
                     todasLasOts[num].observaciones = observaciones;
                     todasLasOts[num].items = [...itemsActuales];
+                    
+                    // Si todos los items están finalizados (e.g. venía de un remito borrado), enviarla a Logística automáticamente
+                    const todosFinalizados = itemsActuales.length > 0 && itemsActuales.every(i => i.status === 'finalizado');
+                    if (todosFinalizados) {
+                        if (!otsLogistica.some(o => o.numero === num)) {
+                            otsLogistica.push({ ...todasLasOts[num] });
+                        }
+                        otsPendientes = otsPendientes.filter(o => o.numero !== num);
+                    }
                 }
                 
                 otEdicionNumero = null;
