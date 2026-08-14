@@ -3538,10 +3538,56 @@ document.addEventListener('DOMContentLoaded', () => {
             if (rem) {
                 document.getElementById('editar-remito-id').value = rem.numero;
                 const prefixStr = rem.tipoRemito === 'X' ? 'X-0000-' : 'R-0002-';
-                document.getElementById('label-editar-remito-nro').innerText = `Remito Nro: ${prefixStr}${String(rem.numero).padStart(8, '0')}`;
+                document.getElementById('label-editar-remito-nro').innerText = `Remito Nro: ${prefixStr}${String(rem.numero).padStart(8, '0')} (OT #${rem.otNumero})`;
                 document.getElementById('editar-remito-fecha').value = rem.fecha;
-                document.getElementById('editar-remito-total').value = rem.total;
                 document.getElementById('editar-remito-observaciones').value = rem.observaciones || '';
+                
+                const ot = todasLasOts[rem.otNumero];
+                if (ot) {
+                    const container = document.getElementById('editar-remito-items-container');
+                    container.innerHTML = '';
+                    
+                    ot.items.forEach((item, idx) => {
+                        const itemDiv = document.createElement('div');
+                        itemDiv.style.cssText = 'background: rgba(0,0,0,0.25); padding: 1.2rem; border-radius: 8px; margin-bottom: 0.8rem; border: 1px solid rgba(255,255,255,0.06);';
+                        
+                        const qtyStr = Number(item.cantidad).toLocaleString('es-AR');
+                        const priceStr = parseFloat(String(item.precio).replace(',', '.')).toFixed(2);
+                        
+                        itemDiv.innerHTML = `
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.6rem;">
+                                <strong style="color:var(--secondary); font-size:14px;">${item.tipo ? item.tipo + ' - ' : ''}${item.marca ? item.marca + ' ' : ''}${item.varietal}</strong>
+                            </div>
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                                <div class="form-group">
+                                    <label style="font-size:11px; color:#adb5bd; text-transform:uppercase;">Cantidad (u)</label>
+                                    <input type="number" class="medium-input editar-remito-item-cant" data-idx="${idx}" style="width:100%;" min="0" value="${item.cantidad}">
+                                </div>
+                                <div class="form-group">
+                                    <label style="font-size:11px; color:#adb5bd; text-transform:uppercase;">Precio x Millar ($)</label>
+                                    <input type="number" class="medium-input editar-remito-item-precio" data-idx="${idx}" style="width:100%;" min="0" step="0.01" value="${priceStr}">
+                                </div>
+                            </div>
+                        `;
+                        container.appendChild(itemDiv);
+                    });
+                    
+                    // Herramentales
+                    const tipoSel = document.getElementById('editar-remito-herr-tipo');
+                    const cantInp = document.getElementById('editar-remito-herr-cant');
+                    const impInp = document.getElementById('editar-remito-herr-imp');
+                    
+                    if (ot.herramentales) {
+                        tipoSel.value = ot.herramentales.tipo || (ot.herramentales.cantidad > 0 ? 'POLIMEROS' : 'PERSONALIZADO');
+                        cantInp.value = ot.herramentales.cantidad || 0;
+                        impInp.value = ot.herramentales.importe || 0;
+                    } else {
+                        tipoSel.value = 'NO';
+                        cantInp.value = '';
+                        impInp.value = '';
+                    }
+                }
+                
                 modalEditarRemito.style.display = 'flex';
             }
             return;
