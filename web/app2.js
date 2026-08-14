@@ -3415,47 +3415,86 @@ document.addEventListener('DOMContentLoaded', () => {
         btnGuardarEditarRemito.addEventListener('click', () => {
             const num = parseInt(document.getElementById('editar-remito-id').value);
             const nuevaFecha = document.getElementById('editar-remito-fecha').value.trim();
-            const nuevoTotal = parseFloat(document.getElementById('editar-remito-total').value);
             const nuevasObs = document.getElementById('editar-remito-observaciones').value.trim();
 
             if (!nuevaFecha) {
                 alert('Debe ingresar una fecha.');
                 return;
             }
-            if (isNaN(nuevoTotal) || nuevoTotal < 0) {
-                alert('Debe ingresar un importe válido mayor o igual a 0.');
-                return;
-            }
 
             const rem = REMITOS.find(r => r.numero === num);
-            if (rem) {
-                rem.fecha = nuevaFecha;
-                rem.total = nuevoTotal;
-                rem.observaciones = nuevasObs;
+            if (!rem) return;
+            
+            const ot = todasLasOts[rem.otNumero];
+            if (!ot) return;
+            
+            // 1) Actualizar items de la OT
+            const cantInputs = document.querySelectorAll('.editar-remito-item-cant');
+            const precioInputs = document.querySelectorAll('.editar-remito-item-precio');
+            
+            let totalItems = 0;
+            cantInputs.forEach((cantInput, idx) => {
+                const itemIdx = cantInput.getAttribute('data-idx');
+                const qty = parseInt(cantInput.value) || 0;
+                const priceMillar = parseFloat(precioInputs[idx].value) || 0;
                 
-                const clientObj = CLIENTS.find(c => c.nombre === rem.cliente);
-                const isFactura = (rem.factura === 'SI' || (!rem.factura && clientObj && clientObj.factura === 'SI'));
-                rem.factura = isFactura ? 'SI' : 'NO';
-                if (isFactura) {
-                    rem.subtotal = nuevoTotal / 1.21;
-                    rem.iva = nuevoTotal - rem.subtotal;
-                } else {
-                    rem.subtotal = nuevoTotal;
-                    rem.iva = 0;
+                if (ot.items[itemIdx]) {
+                    ot.items[itemIdx].cantidad = qty;
+                    ot.items[itemIdx].precio = priceMillar.toString().replace('.', ',');
+                    totalItems += calcularSubtotalItem(ot.cliente, qty, priceMillar);
                 }
-                
-                saveRemitos();
-                recalcularSaldosClientes();
-                
-                modalEditarRemito.style.display = 'none';
-                
-                renderHistorialRemitos();
-                renderDashboard();
-                renderClientes();
-                const selCuentaCliente = document.getElementById('sel-cuenta-cliente');
-                if (selCuentaCliente && selCuentaCliente.value) {
-                    renderCuentasCorrientes(selCuentaCliente.value);
-                }
+            });
+            
+            // 2) Actualizar herramentales de la OT
+            const tipoSel = document.getElementById('editar-remito-herr-tipo').value;
+            const cantInp = parseInt(document.getElementById('editar-remito-herr-cant').value) || 0;
+            const impInp = parseFloat(document.getElementById('editar-remito-herr-imp').value) || 0;
+            
+            if (tipoSel !== 'NO') {
+                ot.herramentales = {
+                    tipo: tipoSel,
+                    cantidad: cantInp,
+                    importe: impInp
+                };
+            } else {
+                ot.herramentales = null;
+            }
+            
+            const totalHerr = (tipoSel !== 'NO' && cantInp > 0) ? (cantInp * impInp) : 0;
+            const nuevoSubtotal = totalItems + totalHerr;
+            let nuevoTotal = nuevoSubtotal;
+            let nuevoIva = 0;
+            
+            const clientObj = CLIENTS.find(c => c.nombre === rem.cliente);
+            const isFactura = (rem.factura === 'SI' || (!rem.factura && clientObj && clientObj.factura === 'SI'));
+            rem.factura = isFactura ? 'SI' : 'NO';
+            if (isFactura) {
+                nuevoIva = nuevoSubtotal * 0.21;
+                nuevoTotal = nuevoSubtotal + nuevoIva;
+                rem.subtotal = nuevoSubtotal;
+                rem.iva = nuevoIva;
+            } else {
+                rem.subtotal = nuevoTotal;
+                rem.iva = 0;
+            }
+            
+            // 3) Actualizar el Remito
+            rem.fecha = nuevaFecha;
+            rem.total = nuevoTotal;
+            rem.observaciones = nuevasObs;
+            
+            saveOts();
+            saveRemitos();
+            recalcularSaldosClientes();
+            
+            modalEditarRemito.style.display = 'none';
+            
+            renderHistorialRemitos();
+            renderDashboard();
+            renderClientes();
+            const selCuentaCliente = document.getElementById('sel-cuenta-cliente');
+            if (selCuentaCliente && selCuentaCliente.value) {
+                renderCuentasCorrientes(selCuentaCliente.value);
             }
         });
     }
