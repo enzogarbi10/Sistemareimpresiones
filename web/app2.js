@@ -41,10 +41,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const modules  = document.querySelectorAll('.module');
     navItems.forEach(item => {
         item.addEventListener('click', () => {
+            const targetId = item.getAttribute('data-target');
+            if (targetId === 'dashboard') {
+                const pass = prompt('Por favor, ingrese la contraseña para acceder al Dashboard Financiero:');
+                if (pass !== 'admin123') {
+                    alert('Contraseña incorrecta. Acceso denegado.');
+                    return;
+                }
+            }
             navItems.forEach(n => n.classList.remove('active'));
             modules.forEach(m => m.classList.remove('active'));
             item.classList.add('active');
-            const t = document.getElementById(item.getAttribute('data-target'));
+            const t = document.getElementById(targetId);
             if (t) t.classList.add('active');
         });
     });
