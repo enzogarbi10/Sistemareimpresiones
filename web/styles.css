@@ -1305,4 +1305,64 @@ label {
     display: none !important;
 }
 
+/* ==========================================================================
+   MÓDULO: ESTADÍSTICAS & ANALÍTICA
+   ========================================================================== */
+.btn-stats-preset {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #adb5bd;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+.btn-stats-preset:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+}
+.btn-stats-preset.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+    box-shadow: 0 2px 10px rgba(157, 78, 221, 0.35);
+}
+
+@media (max-width: 900px) {
+    .stats-charts-row {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* Print stylesheet for Estadísticas */
+@media print {
+    body.printing-stats .sidebar,
+    body.printing-stats .top-bar,
+    body.printing-stats .stats-filter-bar,
+    body.printing-stats #btn-imprimir-estadisticas,
+    body.printing-stats .modal-overlay,
+    body.printing-stats .module:not(#estadisticas) {
+        display: none !important;
+    }
+    body.printing-stats .main-content {
+        padding: 0 !important;
+        margin: 0 !important;
+        width: 100% !important;
+    }
+    body.printing-stats #estadisticas {
+        display: block !important;
+        color: #000 !important;
+    }
+    body.printing-stats .card.glass,
+    body.printing-stats .stat-card.glass {
+        background: #fff !important;
+        color: #000 !important;
+        border: 1px solid #ccc !important;
+        box-shadow: none !important;
+    }
+    body.printing-stats .stat-data h2,
+    body.printing-stats .stat-data h3 {
+        color: #000 !important;
+    }
+}
+
+
 

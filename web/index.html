@@ -4,11 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FlexoERP - Gestión de Etiquetas de Vino</title>
-    <link rel="stylesheet" href="styles.css?v=21">
+    <link rel="stylesheet" href="styles.css?v=22">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css?v=2">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js?v=2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js?v=2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script>
         if (window['pdfjs-dist/build/pdf']) {
             window.pdfjsLib = window['pdfjs-dist/build/pdf'];
@@ -52,6 +53,7 @@
                 <li data-target="ots" class="nav-item"><i class="fa-solid fa-file-invoice"></i><span>Órdenes (OT)</span></li>
                 <li data-target="taller" class="nav-item active"><i class="fa-solid fa-industry"></i><span>Taller / Producción</span></li>
                 <li data-target="logistica" class="nav-item"><i class="fa-solid fa-truck-fast"></i><span>Logística</span></li>
+                <li data-target="estadisticas" class="nav-item"><i class="fa-solid fa-chart-column"></i><span>Estadísticas</span></li>
             </ul>
         </nav>
 
@@ -686,6 +688,268 @@
                     </div>
                 </section>
 
+                <!-- ====== MODULE: ESTADÍSTICAS & ANALÍTICA ====== -->
+                <section id="estadisticas" class="module">
+                    <div class="module-header" style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem;">
+                        <div>
+                            <h2><i class="fa-solid fa-chart-column" style="color:var(--primary); margin-right:8px;"></i> Estadísticas &amp; Analítica de Producción</h2>
+                            <p>Análisis en tiempo real de tiradas predominantes, pasadas, precios medios y volúmenes de etiquetas.</p>
+                        </div>
+                        <div>
+                            <button id="btn-imprimir-estadisticas" class="btn btn-secondary" style="border-radius:20px;">
+                                <i class="fa-solid fa-print"></i> Imprimir Informe
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- BARRA DE FILTROS DINÁMICOS -->
+                    <div class="card glass mt-1" style="padding: 1.2rem; border: 1px solid rgba(255,255,255,0.08);">
+                        <div style="display:flex; flex-wrap:wrap; align-items:flex-end; gap:1rem; justify-content:space-between;">
+                            <!-- Filtro Fechas -->
+                            <div style="display:flex; flex-wrap:wrap; align-items:center; gap:0.8rem;">
+                                <div>
+                                    <label style="font-size:11px; color:#adb5bd; text-transform:uppercase; font-weight:600; display:block; margin-bottom:4px;">
+                                        <i class="fa-regular fa-calendar"></i> Fecha Desde
+                                    </label>
+                                    <input type="date" id="stats-fecha-desde" class="medium-input" style="padding:6px 10px; font-size:13px;">
+                                </div>
+                                <div>
+                                    <label style="font-size:11px; color:#adb5bd; text-transform:uppercase; font-weight:600; display:block; margin-bottom:4px;">
+                                        <i class="fa-regular fa-calendar"></i> Fecha Hasta
+                                    </label>
+                                    <input type="date" id="stats-fecha-hasta" class="medium-input" style="padding:6px 10px; font-size:13px;">
+                                </div>
+                                <!-- Botones de Rango Rápido -->
+                                <div style="display:flex; gap:0.4rem; align-items:center; padding-top:16px;">
+                                    <button type="button" class="btn btn-sm btn-stats-preset active" data-preset="all" style="border-radius:15px; font-size:12px; padding:5px 12px;">Global</button>
+                                    <button type="button" class="btn btn-sm btn-stats-preset" data-preset="month" style="border-radius:15px; font-size:12px; padding:5px 12px;">Este Mes</button>
+                                    <button type="button" class="btn btn-sm btn-stats-preset" data-preset="quarter" style="border-radius:15px; font-size:12px; padding:5px 12px;">Últimos 3 Meses</button>
+                                    <button type="button" class="btn btn-sm btn-stats-preset" data-preset="year" style="border-radius:15px; font-size:12px; padding:5px 12px;">Este Año</button>
+                                </div>
+                            </div>
+
+                            <!-- Filtro Cliente -->
+                            <div style="display:flex; align-items:flex-end; gap:0.8rem;">
+                                <div>
+                                    <label style="font-size:11px; color:#adb5bd; text-transform:uppercase; font-weight:600; display:block; margin-bottom:4px;">
+                                        <i class="fa-solid fa-building"></i> Bodega / Cliente
+                                    </label>
+                                    <select id="stats-filtro-cliente" class="medium-input" style="min-width:210px; padding:6px 10px; font-size:13px;">
+                                        <option value="ALL">Todas las Bodegas (Global)</option>
+                                    </select>
+                                </div>
+                                <button id="btn-limpiar-filtros-stats" class="btn btn-secondary btn-sm" style="padding:7px 12px; border-radius:8px;" title="Restablecer filtros">
+                                    <i class="fa-solid fa-rotate-left"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TARJETAS PRINCIPALES (KPIs) -->
+                    <div class="stats-grid mt-2" style="grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap:1rem;">
+                        <!-- KPI 1: Cantidad Predominante -->
+                        <div class="stat-card glass" style="border-left: 4px solid var(--primary);">
+                            <div class="stat-icon" style="background: rgba(157, 78, 221, 0.15); color: var(--primary);">
+                                <i class="fa-solid fa-cubes-stacked"></i>
+                            </div>
+                            <div class="stat-data">
+                                <h3>Tirada Predominante</h3>
+                                <h2 id="kpi-cantidad-predominante" style="font-size:20px;">0 u</h2>
+                                <small id="kpi-rango-predominante" style="color:var(--secondary); font-weight:600;">Moda en pedidos</small>
+                            </div>
+                        </div>
+
+                        <!-- KPI 2: Pasadas Predominantes -->
+                        <div class="stat-card glass" style="border-left: 4px solid var(--secondary);">
+                            <div class="stat-icon" style="background: rgba(0, 245, 212, 0.15); color: var(--secondary);">
+                                <i class="fa-solid fa-layer-group"></i>
+                            </div>
+                            <div class="stat-data">
+                                <h3>Pasadas Más Comunes</h3>
+                                <h2 id="kpi-pasada-predominante" style="font-size:20px;">-</h2>
+                                <small id="kpi-pasadas-resumen" style="color:#adb5bd; font-size:11px;">1 pas: 0 | 2 pas: 0 | 3+ pas: 0</small>
+                            </div>
+                        </div>
+
+                        <!-- KPI 3: Precio Promedio x Millar -->
+                        <div class="stat-card glass" style="border-left: 4px solid #f4a261;">
+                            <div class="stat-icon" style="background: rgba(244, 162, 97, 0.15); color: #f4a261;">
+                                <i class="fa-solid fa-tags"></i>
+                            </div>
+                            <div class="stat-data">
+                                <h3>Precio Promedio / Millar</h3>
+                                <h2 id="kpi-precio-promedio" style="font-size:20px;">$ 0</h2>
+                                <small style="color:#adb5bd; font-size:11px;">Ponderado x volumen</small>
+                            </div>
+                        </div>
+
+                        <!-- KPI 4: Volumen Total de Etiquetas -->
+                        <div class="stat-card glass" style="border-left: 4px solid #06d6a0;">
+                            <div class="stat-icon" style="background: rgba(6, 214, 160, 0.15); color: #06d6a0;">
+                                <i class="fa-solid fa-boxes-stacked"></i>
+                            </div>
+                            <div class="stat-data">
+                                <h3>Volumen de Producción</h3>
+                                <h2 id="kpi-volumen-total" style="font-size:20px;">0 u</h2>
+                                <small id="kpi-millares-total" style="color:#adb5bd; font-size:11px;">0 millares</small>
+                            </div>
+                        </div>
+
+                        <!-- KPI 5: Total Órdenes & Ticket Promedio -->
+                        <div class="stat-card glass" style="border-left: 4px solid #118ab2;">
+                            <div class="stat-icon" style="background: rgba(17, 138, 178, 0.15); color: #118ab2;">
+                                <i class="fa-solid fa-file-invoice-dollar"></i>
+                            </div>
+                            <div class="stat-data">
+                                <h3>Total Trabajos</h3>
+                                <h2 id="kpi-total-pedidos" style="font-size:20px;">0 OTs</h2>
+                                <small id="kpi-ticket-promedio" style="color:#adb5bd; font-size:11px;">Prom. OT: $ 0</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- DESGLOSE COMPARATIVO DE PRECIOS Y VOLUMEN POR PASADAS -->
+                    <div class="card glass mt-2" style="padding:1.4rem;">
+                        <h3 style="margin:0 0 1rem; font-size:16px; color:var(--primary); display:flex; align-items:center; gap:8px;">
+                            <i class="fa-solid fa-palette"></i> Comparativa de Precios y Volúmenes por Número de Pasadas
+                        </h3>
+                        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:1rem;">
+                            <!-- 1 Pasada -->
+                            <div style="background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.06); border-radius:10px; padding:1rem;">
+                                <div style="display:flex; justify-content:space-between; align-items:center;">
+                                    <span class="badge" style="background:rgba(0,245,212,0.15); color:var(--secondary); font-weight:700; padding:4px 10px;">1 PASADA</span>
+                                    <strong id="card-pasada1-pedidos" style="font-size:12px; color:#adb5bd;">0 pedidos</strong>
+                                </div>
+                                <div style="margin-top:0.8rem;">
+                                    <div style="font-size:11px; color:#adb5bd; text-transform:uppercase;">Precio Promedio x Millar</div>
+                                    <div id="card-pasada1-precio" style="font-size:22px; font-weight:800; color:#fff; font-family:monospace;">$ 0.00</div>
+                                </div>
+                                <div style="margin-top:0.5rem; font-size:12px; color:#ced4da;">
+                                    Volumen Total: <strong id="card-pasada1-volumen" style="color:var(--secondary);">0 u</strong>
+                                </div>
+                            </div>
+
+                            <!-- 2 Pasadas -->
+                            <div style="background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.06); border-radius:10px; padding:1rem;">
+                                <div style="display:flex; justify-content:space-between; align-items:center;">
+                                    <span class="badge" style="background:rgba(157,78,221,0.2); color:var(--primary); font-weight:700; padding:4px 10px;">2 PASADAS</span>
+                                    <strong id="card-pasada2-pedidos" style="font-size:12px; color:#adb5bd;">0 pedidos</strong>
+                                </div>
+                                <div style="margin-top:0.8rem;">
+                                    <div style="font-size:11px; color:#adb5bd; text-transform:uppercase;">Precio Promedio x Millar</div>
+                                    <div id="card-pasada2-precio" style="font-size:22px; font-weight:800; color:#fff; font-family:monospace;">$ 0.00</div>
+                                </div>
+                                <div style="margin-top:0.5rem; font-size:12px; color:#ced4da;">
+                                    Volumen Total: <strong id="card-pasada2-volumen" style="color:var(--primary);">0 u</strong>
+                                </div>
+                            </div>
+
+                            <!-- 3 o más Pasadas -->
+                            <div style="background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.06); border-radius:10px; padding:1rem;">
+                                <div style="display:flex; justify-content:space-between; align-items:center;">
+                                    <span class="badge" style="background:rgba(244,162,97,0.2); color:#f4a261; font-weight:700; padding:4px 10px;">3 O MÁS PASADAS</span>
+                                    <strong id="card-pasada3-pedidos" style="font-size:12px; color:#adb5bd;">0 pedidos</strong>
+                                </div>
+                                <div style="margin-top:0.8rem;">
+                                    <div style="font-size:11px; color:#adb5bd; text-transform:uppercase;">Precio Promedio x Millar</div>
+                                    <div id="card-pasada3-precio" style="font-size:22px; font-weight:800; color:#fff; font-family:monospace;">$ 0.00</div>
+                                </div>
+                                <div style="margin-top:0.5rem; font-size:12px; color:#ced4da;">
+                                    Volumen Total: <strong id="card-pasada3-volumen" style="color:#f4a261;">0 u</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- FILA DE GRÁFICOS 1: TIRADAS Y PASADAS -->
+                    <div style="display:grid; grid-template-columns: 1.4fr 1fr; gap:1.2rem; margin-top:1.5rem;" class="stats-charts-row">
+                        <!-- Gráfico de Escalas de Tirada -->
+                        <div class="card glass" style="padding:1.4rem;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                                <h3 style="margin:0; font-size:15px; color:#fff;"><i class="fa-solid fa-chart-simple" style="color:var(--secondary); margin-right:6px;"></i> Distribución de Cantidades por Pedido (Escalas)</h3>
+                                <small style="color:#adb5bd; font-size:11px;">Frecuencia de pedidos</small>
+                            </div>
+                            <div style="position:relative; height:260px;">
+                                <canvas id="chart-cantidades-tiradas"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Gráfico de Pasadas -->
+                        <div class="card glass" style="padding:1.4rem;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                                <h3 style="margin:0; font-size:15px; color:#fff;"><i class="fa-solid fa-chart-pie" style="color:var(--primary); margin-right:6px;"></i> Proporción de Pasadas</h3>
+                                <small style="color:#adb5bd; font-size:11px;">% de trabajos</small>
+                            </div>
+                            <div style="position:relative; height:260px;">
+                                <canvas id="chart-pasadas-distribucion"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- FILA DE GRÁFICOS 2: TOP CLIENTES Y TOP VARIETALES -->
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1.2rem; margin-top:1.5rem;" class="stats-charts-row">
+                        <!-- Top Clientes -->
+                        <div class="card glass" style="padding:1.4rem;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                                <h3 style="margin:0; font-size:15px; color:#fff;"><i class="fa-solid fa-trophy" style="color:#f4a261; margin-right:6px;"></i> Top Bodegas por Volumen</h3>
+                                <small style="color:#adb5bd; font-size:11px;">Unidades solicitadas</small>
+                            </div>
+                            <div style="position:relative; height:260px;">
+                                <canvas id="chart-top-clientes"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Top Varietales -->
+                        <div class="card glass" style="padding:1.4rem;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                                <h3 style="margin:0; font-size:15px; color:#fff;"><i class="fa-solid fa-wine-glass" style="color:#e63946; margin-right:6px;"></i> Varietales / Diseños Más Pedidos</h3>
+                                <small style="color:#adb5bd; font-size:11px;">Tiradas acumuladas</small>
+                            </div>
+                            <div style="position:relative; height:260px;">
+                                <canvas id="chart-top-varietales"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- FILA DE GRÁFICOS 3: EVOLUCIÓN MENSUAL -->
+                    <div class="card glass mt-2" style="padding:1.4rem;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                            <h3 style="margin:0; font-size:15px; color:#fff;"><i class="fa-solid fa-chart-line" style="color:#06d6a0; margin-right:6px;"></i> Tendencia y Evolución Mensual de Producción</h3>
+                            <small style="color:#adb5bd; font-size:11px;">Volumen mensual en unidades</small>
+                        </div>
+                        <div style="position:relative; height:260px;">
+                            <canvas id="chart-evolucion-mensual"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- TABLA DETALLADA POR CLIENTE -->
+                    <div class="card glass mt-2" style="padding:1.4rem;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
+                            <h3 style="margin:0; font-size:15px; color:var(--primary);"><i class="fa-solid fa-table-list" style="margin-right:6px;"></i> Desglose Detallado por Bodega / Cliente</h3>
+                            <input type="text" id="input-busqueda-stats-tabla" class="medium-input" placeholder="Buscar bodega..." style="max-width:220px; font-size:12px;">
+                        </div>
+                        <div style="overflow-x:auto;">
+                            <table class="data-table" id="tabla-estadisticas-detalle">
+                                <thead>
+                                    <tr>
+                                        <th>Bodega / Cliente</th>
+                                        <th style="text-align:right;">Pedidos</th>
+                                        <th style="text-align:right;">1 Pasada</th>
+                                        <th style="text-align:right;">2 Pasadas</th>
+                                        <th style="text-align:right;">3+ Pasadas</th>
+                                        <th style="text-align:right;">Total Etiquetas</th>
+                                        <th style="text-align:right;">Precio Prom. / M</th>
+                                        <th style="text-align:right;">Total Estimado</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbody-estadisticas-detalle">
+                                    <!-- Render dinámico -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
                 <!-- ====== MODULE: USUARIOS ====== -->
                 <section id="usuarios" class="module">
                     <div class="module-header">
@@ -736,6 +1000,9 @@
                                 </label>
                                 <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;color:#fff;font-size:13px;">
                                     <input type="checkbox" value="logistica" class="permiso-checkbox" checked> Logística
+                                </label>
+                                <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;color:#fff;font-size:13px;">
+                                    <input type="checkbox" value="estadisticas" class="permiso-checkbox" checked> Estadísticas &amp; Analítica
                                 </label>
                                 <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;color:#fff;font-size:13px;">
                                     <input type="checkbox" value="usuarios" class="permiso-checkbox" id="permiso-checkbox-usuarios"> Gestión de Usuarios
@@ -1039,6 +1306,6 @@
         </div>
     </div>
 
-    <script src="app2.js?v=26"></script>
+    <script src="app2.js?v=27"></script>
 </body>
 </html>

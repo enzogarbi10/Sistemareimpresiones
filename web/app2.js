@@ -2,10 +2,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ── AUTH ──────────────────────────────────────────────────
     let USERS = JSON.parse(localStorage.getItem('flexoERP_users')) || [
-        { username: 'superadmin', password: 'superadmin123', name: 'Super Admin',    role: 'superadmin', allowedModules: ['dashboard','clientes','ots','taller','logistica','usuarios'] },
-        { username: 'admin',      password: '123',           name: 'Administrador',  role: 'admin',      allowedModules: ['dashboard','clientes','ots','taller','logistica'] },
+        { username: 'superadmin', password: 'superadmin123', name: 'Super Admin',    role: 'superadmin', allowedModules: ['dashboard','clientes','ots','taller','logistica','estadisticas','usuarios'] },
+        { username: 'admin',      password: '123',           name: 'Administrador',  role: 'admin',      allowedModules: ['dashboard','clientes','ots','taller','logistica','estadisticas'] },
         { username: 'operador',   password: '123',           name: 'Juan Perez',     role: 'operador',   allowedModules: ['taller'] }
     ];
+    // Asegurar que los administradores tengan el módulo de estadísticas habilitado
+    USERS.forEach(u => {
+        if ((u.role === 'admin' || u.role === 'superadmin' || (u.allowedModules && u.allowedModules.includes('dashboard'))) && !u.allowedModules.includes('estadisticas')) {
+            u.allowedModules.push('estadisticas');
+        }
+    });
     localStorage.setItem('flexoERP_users', JSON.stringify(USERS));
 
     const loginScreen  = document.getElementById('login-screen');
@@ -14,6 +20,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const loginError   = document.getElementById('login-error');
     const btnLogout    = document.getElementById('btn-logout');
     let currentUser    = JSON.parse(localStorage.getItem('flexoERP_user'));
+
+    if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin' || (currentUser.allowedModules && currentUser.allowedModules.includes('dashboard'))) && !currentUser.allowedModules.includes('estadisticas')) {
+        currentUser.allowedModules.push('estadisticas');
+        localStorage.setItem('flexoERP_user', JSON.stringify(currentUser));
+    }
 
     if (loginForm) {
         loginForm.addEventListener('submit', e => {
@@ -54,6 +65,9 @@ document.addEventListener('DOMContentLoaded', () => {
             item.classList.add('active');
             const t = document.getElementById(targetId);
             if (t) t.classList.add('active');
+            if (targetId === 'estadisticas') {
+                renderEstadisticas();
+            }
         });
     });
 
@@ -143,12 +157,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function saveClients() {
         saveToServer();
+        if (typeof populateEstadisticasClientesDropdown === 'function') {
+            populateEstadisticasClientesDropdown();
+        }
     }
 
     function saveRemitos() {
         saveToServer();
         if (typeof actualizarAlertasVencimientos === 'function') {
             actualizarAlertasVencimientos();
+        }
+        if (typeof renderEstadisticas === 'function') {
+            renderEstadisticas();
+        }
+    }
+
+    function saveOts() {
+        saveToServer();
+        if (typeof renderEstadisticas === 'function') {
+            renderEstadisticas();
         }
     }
 
@@ -419,6 +446,9 @@ document.addEventListener('DOMContentLoaded', () => {
         renderOts();
         renderUsuarios();
         actualizarAlertasVencimientos();
+        populateEstadisticasClientesDropdown();
+        initEstadisticasEvents();
+        renderEstadisticas();
         
         if (currentUser) {
             loginScreen.style.display  = 'none';
@@ -1220,6 +1250,688 @@ document.addEventListener('DOMContentLoaded', () => {
             html2canvas: { scale: 2, useCORS: true },
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
         }).from(div).save();
+    }
+
+    // =========================================================================
+    // ── ESTADÍSTICAS & ANALÍTICA DE PRODUCCIÓN ──────────────────────────────
+    // =========================================================================
+    let chartCantidades = null;
+    let chartPasadas = null;
+    let chartTopClientes = null;
+    let chartTopVarietales = null;
+    let chartEvolucion = null;
+
+    let statsFilterDesde = '';
+    let statsFilterHasta = '';
+    let statsFilterCliente = 'ALL';
+    let statsSearchTabla = '';
+    let statsEventsInitialized = false;
+
+    function parseDateFlexible(dateStr) {
+        if (!dateStr) return null;
+        if (dateStr instanceof Date) return isNaN(dateStr.getTime()) ? null : dateStr;
+        if (typeof dateStr !== 'string') return null;
+        dateStr = dateStr.trim();
+        const dmy = dateStr.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+        if (dmy) {
+            return new Date(parseInt(dmy[3], 10), parseInt(dmy[2], 10) - 1, parseInt(dmy[1], 10));
+        }
+        const ymd = dateStr.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+        if (ymd) {
+            return new Date(parseInt(ymd[1], 10), parseInt(ymd[2], 10) - 1, parseInt(ymd[3], 10));
+        }
+        const p = new Date(dateStr);
+        return isNaN(p.getTime()) ? null : p;
+    }
+
+    function populateEstadisticasClientesDropdown() {
+        const select = document.getElementById('stats-filtro-cliente');
+        if (!select) return;
+        const prev = select.value || 'ALL';
+        select.innerHTML = '<option value="ALL">Todas las Bodegas (Global)</option>';
+
+        const clientNames = new Set();
+        (CLIENTS || []).forEach(c => { if (c.nombre) clientNames.add(c.nombre.trim()); });
+        Object.values(todasLasOts || {}).forEach(ot => {
+            if (ot.cliente) clientNames.add(ot.cliente.trim());
+        });
+
+        Array.from(clientNames).sort((a, b) => a.localeCompare(b, 'es')).forEach(name => {
+            const opt = document.createElement('option');
+            opt.value = name;
+            opt.textContent = name;
+            select.appendChild(opt);
+        });
+
+        if (Array.from(select.options).some(o => o.value === prev)) {
+            select.value = prev;
+        } else {
+            select.value = 'ALL';
+        }
+    }
+
+    function renderEstadisticas() {
+        const allOts = Object.values(todasLasOts || {});
+        
+        let dDesde = null;
+        let dHasta = null;
+        if (statsFilterDesde) {
+            dDesde = parseDateFlexible(statsFilterDesde);
+            if (dDesde) dDesde.setHours(0, 0, 0, 0);
+        }
+        if (statsFilterHasta) {
+            dHasta = parseDateFlexible(statsFilterHasta);
+            if (dHasta) dHasta.setHours(23, 59, 59, 999);
+        }
+
+        // Filtramos las OTs
+        const filteredOts = allOts.filter(ot => {
+            if (statsFilterCliente !== 'ALL' && ot.cliente !== statsFilterCliente) {
+                return false;
+            }
+            if (dDesde || dHasta) {
+                const otDate = parseDateFlexible(ot.fechaAlta) || parseDateFlexible(ot.fecha) || (ot.items && ot.items[0] && parseDateFlexible(ot.items[0].fecha));
+                if (!otDate) return false;
+                if (dDesde && otDate < dDesde) return false;
+                if (dHasta && otDate > dHasta) return false;
+            }
+            return true;
+        });
+
+        let totalUnidadesGlobal = 0;
+        let totalRevenueItems = 0;
+        let totalRevenueOtsConHerr = 0;
+        let totalPedidosCount = filteredOts.length;
+
+        // Frecuencia exacta de tiradas (para moda)
+        const exactQtyFreq = {};
+
+        // Escalas de tirada
+        const escalasTirada = {
+            micro: { label: '< 5.000 u', pedidos: 0, unidades: 0 },
+            chica: { label: '5k - 15k u', pedidos: 0, unidades: 0 },
+            mediana: { label: '15k - 30k u', pedidos: 0, unidades: 0 },
+            grande: { label: '30k - 60k u', pedidos: 0, unidades: 0 },
+            masiva: { label: '> 60.000 u', pedidos: 0, unidades: 0 }
+        };
+
+        // Pasadas (1 pasada, 2 pasadas, 3+ pasadas)
+        const pasadasStats = {
+            p1: { label: '1 Pasada', pedidos: 0, unidades: 0, revenue: 0 },
+            p2: { label: '2 Pasadas', pedidos: 0, unidades: 0, revenue: 0 },
+            p3: { label: '3+ Pasadas', pedidos: 0, unidades: 0, revenue: 0 }
+        };
+
+        // Agregación por Cliente
+        const clientAgg = {};
+
+        // Agregación por Varietal
+        const varietalAgg = {};
+
+        // Agregación Mensual (YYYY-MM)
+        const monthlyAgg = {};
+
+        filteredOts.forEach(ot => {
+            let otRevenue = 0;
+            const cliName = (ot.cliente || 'Desconocido').trim();
+            if (!clientAgg[cliName]) {
+                clientAgg[cliName] = { pedidos: 0, p1Units: 0, p2Units: 0, p3Units: 0, totalUnits: 0, revenue: 0 };
+            }
+            clientAgg[cliName].pedidos++;
+
+            const otDate = parseDateFlexible(ot.fechaAlta) || parseDateFlexible(ot.fecha) || (ot.items && ot.items[0] && parseDateFlexible(ot.items[0].fecha)) || new Date();
+            const ymKey = `${otDate.getFullYear()}-${String(otDate.getMonth() + 1).padStart(2, '0')}`;
+            if (!monthlyAgg[ymKey]) {
+                monthlyAgg[ymKey] = { units: 0, pedidos: 0, ym: ymKey, date: new Date(otDate.getFullYear(), otDate.getMonth(), 1) };
+            }
+            monthlyAgg[ymKey].pedidos++;
+
+            (ot.items || []).forEach(item => {
+                const qty = parseInt(item.cantidad) || 0;
+                const price = parseFloat(String(item.precio).replace(',', '.')) || 0;
+                const itemSubtotal = typeof calcularSubtotalItem === 'function' ? calcularSubtotalItem(ot.cliente, qty, price) : (Math.max(1000, qty) / 1000) * price;
+
+                totalUnidadesGlobal += qty;
+                totalRevenueItems += itemSubtotal;
+                otRevenue += itemSubtotal;
+
+                // Frecuencia exacta para moda
+                if (qty > 0) {
+                    exactQtyFreq[qty] = (exactQtyFreq[qty] || 0) + 1;
+                }
+
+                // Escalas de tirada
+                if (qty < 5000) {
+                    escalasTirada.micro.pedidos++;
+                    escalasTirada.micro.unidades += qty;
+                } else if (qty <= 15000) {
+                    escalasTirada.chica.pedidos++;
+                    escalasTirada.chica.unidades += qty;
+                } else if (qty <= 30000) {
+                    escalasTirada.mediana.pedidos++;
+                    escalasTirada.mediana.unidades += qty;
+                } else if (qty <= 60000) {
+                    escalasTirada.grande.pedidos++;
+                    escalasTirada.grande.unidades += qty;
+                } else {
+                    escalasTirada.masiva.pedidos++;
+                    escalasTirada.masiva.unidades += qty;
+                }
+
+                // Pasadas / Colores
+                const col = parseInt(item.colores) || 1;
+                if (col <= 1) {
+                    pasadasStats.p1.pedidos++;
+                    pasadasStats.p1.unidades += qty;
+                    pasadasStats.p1.revenue += itemSubtotal;
+                    clientAgg[cliName].p1Units += qty;
+                } else if (col === 2) {
+                    pasadasStats.p2.pedidos++;
+                    pasadasStats.p2.unidades += qty;
+                    pasadasStats.p2.revenue += itemSubtotal;
+                    clientAgg[cliName].p2Units += qty;
+                } else {
+                    pasadasStats.p3.pedidos++;
+                    pasadasStats.p3.unidades += qty;
+                    pasadasStats.p3.revenue += itemSubtotal;
+                    clientAgg[cliName].p3Units += qty;
+                }
+
+                // Varietales
+                const varName = (item.varietal ? (item.marca ? item.marca + ' ' : '') + item.varietal : 'Sin Varietal').trim();
+                if (!varietalAgg[varName]) {
+                    varietalAgg[varName] = { units: 0, pedidos: 0 };
+                }
+                varietalAgg[varName].units += qty;
+                varietalAgg[varName].pedidos++;
+
+                // Cliente
+                clientAgg[cliName].totalUnits += qty;
+                monthlyAgg[ymKey].units += qty;
+            });
+
+            // Herramentales de la OT
+            if (ot.herramentales && ot.herramentales.tipo !== 'NO') {
+                const herrCant = parseInt(ot.herramentales.cantidad) || 1;
+                const herrImp = parseFloat(ot.herramentales.importe) || 0;
+                const herrTotal = herrCant * herrImp;
+                otRevenue += herrTotal;
+            }
+            clientAgg[cliName].revenue += otRevenue;
+            totalRevenueOtsConHerr += otRevenue;
+        });
+
+        // 1. Moda y rango predominante
+        let modaQty = 0;
+        let modaMaxCount = 0;
+        for (const [qStr, count] of Object.entries(exactQtyFreq)) {
+            if (count > modaMaxCount) {
+                modaMaxCount = count;
+                modaQty = parseInt(qStr, 10);
+            }
+        }
+
+        let rangoPredominante = '-';
+        let maxEscalaPedidos = -1;
+        for (const [key, data] of Object.entries(escalasTirada)) {
+            if (data.pedidos > maxEscalaPedidos) {
+                maxEscalaPedidos = data.pedidos;
+                rangoPredominante = data.label + ' (' + data.pedidos + ' ped.)';
+            }
+        }
+
+        // 2. Pasada predominante
+        let pasadaPredom = '-';
+        if (pasadasStats.p1.pedidos >= pasadasStats.p2.pedidos && pasadasStats.p1.pedidos >= pasadasStats.p3.pedidos && pasadasStats.p1.pedidos > 0) {
+            pasadaPredom = '1 Pasada';
+        } else if (pasadasStats.p2.pedidos >= pasadasStats.p1.pedidos && pasadasStats.p2.pedidos >= pasadasStats.p3.pedidos && pasadasStats.p2.pedidos > 0) {
+            pasadaPredom = '2 Pasadas';
+        } else if (pasadasStats.p3.pedidos > 0) {
+            pasadaPredom = '3+ Pasadas';
+        }
+
+        // 3. Precios promedio x Millar
+        const precioPromedioGlobal = totalUnidadesGlobal > 0 ? (totalRevenueItems / totalUnidadesGlobal) * 1000 : 0;
+        const precioProm1p = pasadasStats.p1.unidades > 0 ? (pasadasStats.p1.revenue / pasadasStats.p1.unidades) * 1000 : 0;
+        const precioProm2p = pasadasStats.p2.unidades > 0 ? (pasadasStats.p2.revenue / pasadasStats.p2.unidades) * 1000 : 0;
+        const precioProm3p = pasadasStats.p3.unidades > 0 ? (pasadasStats.p3.revenue / pasadasStats.p3.unidades) * 1000 : 0;
+
+        // 4. Ticket promedio por OT
+        const ticketPromedioOt = totalPedidosCount > 0 ? totalRevenueOtsConHerr / totalPedidosCount : 0;
+
+        // Actualizar elementos KPI en DOM
+        const elKpiCant = document.getElementById('kpi-cantidad-predominante');
+        if (elKpiCant) elKpiCant.textContent = modaQty > 0 ? `${modaQty.toLocaleString('es-AR')} u` : 'Sin datos';
+        const elKpiRango = document.getElementById('kpi-rango-predominante');
+        if (elKpiRango) elKpiRango.textContent = maxEscalaPedidos > 0 ? `Rango: ${rangoPredominante}` : 'Moda en pedidos';
+
+        const elKpiPasada = document.getElementById('kpi-pasada-predominante');
+        if (elKpiPasada) elKpiPasada.textContent = pasadaPredom;
+        const elKpiPasadasRes = document.getElementById('kpi-pasadas-resumen');
+        if (elKpiPasadasRes) elKpiPasadasRes.textContent = `1 pas: ${pasadasStats.p1.pedidos} | 2 pas: ${pasadasStats.p2.pedidos} | 3+ pas: ${pasadasStats.p3.pedidos}`;
+
+        const elKpiPrecio = document.getElementById('kpi-precio-promedio');
+        if (elKpiPrecio) elKpiPrecio.textContent = `$ ${precioPromedioGlobal.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+
+        const elKpiVol = document.getElementById('kpi-volumen-total');
+        if (elKpiVol) elKpiVol.textContent = `${totalUnidadesGlobal.toLocaleString('es-AR')} u`;
+        const elKpiMillares = document.getElementById('kpi-millares-total');
+        if (elKpiMillares) elKpiMillares.textContent = `${(totalUnidadesGlobal / 1000).toLocaleString('es-AR', {minimumFractionDigits: 1, maximumFractionDigits: 1})} millares`;
+
+        const elKpiOts = document.getElementById('kpi-total-pedidos');
+        if (elKpiOts) elKpiOts.textContent = `${totalPedidosCount} OTs`;
+        const elKpiTicket = document.getElementById('kpi-ticket-promedio');
+        if (elKpiTicket) elKpiTicket.textContent = `Prom. OT: $ ${ticketPromedioOt.toLocaleString('es-AR', {maximumFractionDigits: 0})}`;
+
+        // Comparativa de Pasadas (Tarjetas)
+        const elP1Pedidos = document.getElementById('card-pasada1-pedidos');
+        const elP1Precio = document.getElementById('card-pasada1-precio');
+        const elP1Volumen = document.getElementById('card-pasada1-volumen');
+        if (elP1Pedidos) elP1Pedidos.textContent = `${pasadasStats.p1.pedidos} pedidos`;
+        if (elP1Precio) elP1Precio.textContent = `$ ${precioProm1p.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        if (elP1Volumen) elP1Volumen.textContent = `${pasadasStats.p1.unidades.toLocaleString('es-AR')} u`;
+
+        const elP2Pedidos = document.getElementById('card-pasada2-pedidos');
+        const elP2Precio = document.getElementById('card-pasada2-precio');
+        const elP2Volumen = document.getElementById('card-pasada2-volumen');
+        if (elP2Pedidos) elP2Pedidos.textContent = `${pasadasStats.p2.pedidos} pedidos`;
+        if (elP2Precio) elP2Precio.textContent = `$ ${precioProm2p.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        if (elP2Volumen) elP2Volumen.textContent = `${pasadasStats.p2.unidades.toLocaleString('es-AR')} u`;
+
+        const elP3Pedidos = document.getElementById('card-pasada3-pedidos');
+        const elP3Precio = document.getElementById('card-pasada3-precio');
+        const elP3Volumen = document.getElementById('card-pasada3-volumen');
+        if (elP3Pedidos) elP3Pedidos.textContent = `${pasadasStats.p3.pedidos} pedidos`;
+        if (elP3Precio) elP3Precio.textContent = `$ ${precioProm3p.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        if (elP3Volumen) elP3Volumen.textContent = `${pasadasStats.p3.unidades.toLocaleString('es-AR')} u`;
+
+        // Renderizar Tabla Detallada por Cliente
+        renderTablaDetalleEstadisticas(clientAgg);
+
+        // Renderizar Gráficos Chart.js
+        renderChartsEstadisticas(escalasTirada, pasadasStats, clientAgg, varietalAgg, monthlyAgg);
+    }
+
+    function renderChartsEstadisticas(escalas, pasadas, clients, varietals, monthly) {
+        if (!window.Chart) return;
+
+        const gridColor = 'rgba(255, 255, 255, 0.06)';
+        const tickColor = '#adb5bd';
+
+        // 1. Gráfico de Escalas de Tirada (Bar Chart)
+        const ctxCantidades = document.getElementById('chart-cantidades-tiradas');
+        if (ctxCantidades) {
+            if (chartCantidades) chartCantidades.destroy();
+            chartCantidades = new Chart(ctxCantidades, {
+                type: 'bar',
+                data: {
+                    labels: ['< 5.000 u', '5k - 15k u', '15k - 30k u', '30k - 60k u', '> 60.000 u'],
+                    datasets: [{
+                        label: 'Cantidad de Pedidos',
+                        data: [
+                            escalas.micro.pedidos,
+                            escalas.chica.pedidos,
+                            escalas.mediana.pedidos,
+                            escalas.grande.pedidos,
+                            escalas.masiva.pedidos
+                        ],
+                        backgroundColor: 'rgba(157, 78, 221, 0.75)',
+                        borderColor: '#9d4edd',
+                        borderWidth: 1.5,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                afterLabel: function(ctx) {
+                                    const keys = ['micro', 'chica', 'mediana', 'grande', 'masiva'];
+                                    const key = keys[ctx.dataIndex];
+                                    return 'Volumen: ' + (escalas[key].unidades || 0).toLocaleString('es-AR') + ' u';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 11 } } },
+                        y: { grid: { color: gridColor }, ticks: { color: tickColor, stepSize: 1, precision: 0 }, beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        // 2. Gráfico de Pasadas (Doughnut Chart)
+        const ctxPasadas = document.getElementById('chart-pasadas-distribucion');
+        if (ctxPasadas) {
+            if (chartPasadas) chartPasadas.destroy();
+            chartPasadas = new Chart(ctxPasadas, {
+                type: 'doughnut',
+                data: {
+                    labels: ['1 Pasada', '2 Pasadas', '3+ Pasadas'],
+                    datasets: [{
+                        data: [pasadas.p1.pedidos, pasadas.p2.pedidos, pasadas.p3.pedidos],
+                        backgroundColor: ['#00f5d4', '#9d4edd', '#f4a261'],
+                        borderColor: 'rgba(20, 15, 45, 0.9)',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: tickColor, padding: 15, font: { size: 12 } }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(ctx) {
+                                    const val = ctx.raw || 0;
+                                    const total = (pasadas.p1.pedidos + pasadas.p2.pedidos + pasadas.p3.pedidos) || 1;
+                                    const pct = ((val / total) * 100).toFixed(1);
+                                    return ` ${ctx.label}: ${val} pedidos (${pct}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 3. Top Clientes por Volumen (Horizontal Bar)
+        const ctxTopCli = document.getElementById('chart-top-clientes');
+        if (ctxTopCli) {
+            if (chartTopClientes) chartTopClientes.destroy();
+            const topCliList = Object.entries(clients)
+                .map(([name, d]) => ({ name, units: d.totalUnits, revenue: d.revenue }))
+                .filter(x => x.units > 0)
+                .sort((a, b) => b.units - a.units)
+                .slice(0, 5);
+
+            chartTopClientes = new Chart(ctxTopCli, {
+                type: 'bar',
+                data: {
+                    labels: topCliList.map(c => c.name),
+                    datasets: [{
+                        label: 'Etiquetas Solicitadas',
+                        data: topCliList.map(c => c.units),
+                        backgroundColor: 'rgba(244, 162, 97, 0.75)',
+                        borderColor: '#f4a261',
+                        borderWidth: 1.5,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: { grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 11 } }, beginAtZero: true },
+                        y: { grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 11 } } }
+                    }
+                }
+            });
+        }
+
+        // 4. Top Varietales (Horizontal Bar)
+        const ctxTopVar = document.getElementById('chart-top-varietales');
+        if (ctxTopVar) {
+            if (chartTopVarietales) chartTopVarietales.destroy();
+            const topVarList = Object.entries(varietals)
+                .map(([name, d]) => ({ name, units: d.units, pedidos: d.pedidos }))
+                .filter(x => x.units > 0)
+                .sort((a, b) => b.units - a.units)
+                .slice(0, 5);
+
+            chartTopVarietales = new Chart(ctxTopVar, {
+                type: 'bar',
+                data: {
+                    labels: topVarList.map(v => v.name),
+                    datasets: [{
+                        label: 'Unidades Producidas',
+                        data: topVarList.map(v => v.units),
+                        backgroundColor: 'rgba(230, 57, 70, 0.75)',
+                        borderColor: '#e63946',
+                        borderWidth: 1.5,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: { grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 11 } }, beginAtZero: true },
+                        y: { grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 11 } } }
+                    }
+                }
+            });
+        }
+
+        // 5. Evolución Mensual
+        const ctxEvolucion = document.getElementById('chart-evolucion-mensual');
+        if (ctxEvolucion) {
+            if (chartEvolucion) chartEvolucion.destroy();
+            const sortedMonths = Object.values(monthly).sort((a, b) => a.date - b.date);
+            const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+            const labels = sortedMonths.map(m => {
+                const ymParts = m.ym.split('-');
+                const y = ymParts[0];
+                const mo = parseInt(ymParts[1], 10) - 1;
+                return `${monthNames[mo] || m.ym} ${y}`;
+            });
+
+            chartEvolucion = new Chart(ctxEvolucion, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Volumen Etiquetas (u)',
+                            data: sortedMonths.map(m => m.units),
+                            backgroundColor: 'rgba(6, 214, 160, 0.15)',
+                            borderColor: '#06d6a0',
+                            borderWidth: 2.5,
+                            pointBackgroundColor: '#06d6a0',
+                            pointRadius: 4,
+                            fill: true,
+                            tension: 0.35,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Cantidad Pedidos (OTs)',
+                            data: sortedMonths.map(m => m.pedidos),
+                            borderColor: '#118ab2',
+                            backgroundColor: 'rgba(17, 138, 178, 0.8)',
+                            borderWidth: 2,
+                            type: 'bar',
+                            borderRadius: 5,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: { color: tickColor, font: { size: 12 } }
+                        }
+                    },
+                    scales: {
+                        x: { grid: { color: gridColor }, ticks: { color: tickColor } },
+                        y: {
+                            type: 'linear',
+                            position: 'left',
+                            grid: { color: gridColor },
+                            ticks: { color: tickColor },
+                            title: { display: true, text: 'Etiquetas (unidades)', color: '#06d6a0', font: { size: 11 } }
+                        },
+                        y1: {
+                            type: 'linear',
+                            position: 'right',
+                            grid: { drawOnChartArea: false },
+                            ticks: { color: tickColor, stepSize: 1 },
+                            title: { display: true, text: 'Pedidos (OTs)', color: '#118ab2', font: { size: 11 } }
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    function renderTablaDetalleEstadisticas(clientAgg) {
+        const tbody = document.getElementById('tbody-estadisticas-detalle');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+
+        let list = Object.entries(clientAgg).map(([name, d]) => ({
+            name,
+            pedidos: d.pedidos,
+            p1Units: d.p1Units,
+            p2Units: d.p2Units,
+            p3Units: d.p3Units,
+            totalUnits: d.totalUnits,
+            revenue: d.revenue,
+            avgPrice: d.totalUnits > 0 ? (d.revenue / d.totalUnits) * 1000 : 0
+        }));
+
+        if (statsSearchTabla) {
+            const q = statsSearchTabla.toLowerCase();
+            list = list.filter(c => c.name.toLowerCase().includes(q));
+        }
+
+        list.sort((a, b) => b.totalUnits - a.totalUnits);
+
+        if (list.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:#adb5bd; padding:2rem;">No se encontraron registros con los filtros seleccionados.</td></tr>`;
+            return;
+        }
+
+        list.forEach(c => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong>${c.name}</strong></td>
+                <td style="text-align:right;">${c.pedidos}</td>
+                <td style="text-align:right; color:var(--secondary);">${c.p1Units.toLocaleString('es-AR')} u</td>
+                <td style="text-align:right; color:var(--primary);">${c.p2Units.toLocaleString('es-AR')} u</td>
+                <td style="text-align:right; color:#f4a261;">${c.p3Units.toLocaleString('es-AR')} u</td>
+                <td style="text-align:right; font-weight:700;">${c.totalUnits.toLocaleString('es-AR')} u</td>
+                <td style="text-align:right; font-family:monospace; color:#00f5d4;">$ ${c.avgPrice.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                <td style="text-align:right; font-family:monospace; font-weight:700;">$ ${c.revenue.toLocaleString('es-AR', {minimumFractionDigits: 0, maximumFractionDigits: 0})}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function initEstadisticasEvents() {
+        if (statsEventsInitialized) return;
+        statsEventsInitialized = true;
+
+        const inputDesde = document.getElementById('stats-fecha-desde');
+        const inputHasta = document.getElementById('stats-fecha-hasta');
+        const selectCliente = document.getElementById('stats-filtro-cliente');
+        const btnReset = document.getElementById('btn-limpiar-filtros-stats');
+        const btnPrint = document.getElementById('btn-imprimir-estadisticas');
+        const inputSearch = document.getElementById('input-busqueda-stats-tabla');
+        const presetBtns = document.querySelectorAll('.btn-stats-preset');
+
+        if (inputDesde) {
+            inputDesde.addEventListener('change', () => {
+                statsFilterDesde = inputDesde.value;
+                presetBtns.forEach(b => b.classList.remove('active'));
+                renderEstadisticas();
+            });
+        }
+        if (inputHasta) {
+            inputHasta.addEventListener('change', () => {
+                statsFilterHasta = inputHasta.value;
+                presetBtns.forEach(b => b.classList.remove('active'));
+                renderEstadisticas();
+            });
+        }
+        if (selectCliente) {
+            selectCliente.addEventListener('change', () => {
+                statsFilterCliente = selectCliente.value;
+                renderEstadisticas();
+            });
+        }
+        if (inputSearch) {
+            inputSearch.addEventListener('input', () => {
+                statsSearchTabla = inputSearch.value.trim();
+                renderEstadisticas();
+            });
+        }
+
+        presetBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                presetBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const preset = btn.getAttribute('data-preset');
+                const now = new Date();
+
+                if (preset === 'all') {
+                    statsFilterDesde = '';
+                    statsFilterHasta = '';
+                } else if (preset === 'month') {
+                    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+                    statsFilterDesde = firstDay.toISOString().split('T')[0];
+                    statsFilterHasta = now.toISOString().split('T')[0];
+                } else if (preset === 'quarter') {
+                    const d3m = new Date();
+                    d3m.setDate(d3m.getDate() - 90);
+                    statsFilterDesde = d3m.toISOString().split('T')[0];
+                    statsFilterHasta = now.toISOString().split('T')[0];
+                } else if (preset === 'year') {
+                    const firstDayYear = new Date(now.getFullYear(), 0, 1);
+                    statsFilterDesde = firstDayYear.toISOString().split('T')[0];
+                    statsFilterHasta = now.toISOString().split('T')[0];
+                }
+
+                if (inputDesde) inputDesde.value = statsFilterDesde;
+                if (inputHasta) inputHasta.value = statsFilterHasta;
+                renderEstadisticas();
+            });
+        });
+
+        if (btnReset) {
+            btnReset.addEventListener('click', () => {
+                statsFilterDesde = '';
+                statsFilterHasta = '';
+                statsFilterCliente = 'ALL';
+                statsSearchTabla = '';
+                if (inputDesde) inputDesde.value = '';
+                if (inputHasta) inputHasta.value = '';
+                if (selectCliente) selectCliente.value = 'ALL';
+                if (inputSearch) inputSearch.value = '';
+                presetBtns.forEach(b => {
+                    if (b.getAttribute('data-preset') === 'all') b.classList.add('active');
+                    else b.classList.remove('active');
+                });
+                renderEstadisticas();
+            });
+        }
+
+        if (btnPrint) {
+            btnPrint.addEventListener('click', () => {
+                document.body.classList.add('printing-stats');
+                window.print();
+                setTimeout(() => {
+                    document.body.classList.remove('printing-stats');
+                }, 1000);
+            });
+        }
     }
 
     function refreshTallerSelector() {
@@ -2480,6 +3192,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 ots: 'Órdenes (OT)',
                 taller: 'Taller',
                 logistica: 'Logística',
+                estadisticas: 'Estadísticas',
                 usuarios: 'Usuarios'
             };
             const listMods = usr.allowedModules.map(m => modNames[m] || m).join(', ');
