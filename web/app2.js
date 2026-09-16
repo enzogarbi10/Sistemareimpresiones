@@ -229,6 +229,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             vencimientos.push({
                 numero: r.numero,
+                tipoRemito: r.tipoRemito || 'R',
                 otNumero: r.otNumero,
                 fecha: r.fecha,
                 fechaVencimiento: `${dueDate.getDate()}/${dueDate.getMonth() + 1}/${dueDate.getFullYear()}`,
@@ -1007,7 +1008,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const vencimientos = obtenerVencimientosCliente(clienteNombre);
 
         const remitosCli = REMITOS.filter(r => r.cliente === clienteNombre).map(r => {
-            const vInfo = vencimientos.find(v => v.numero === r.numero);
+            const vInfo = vencimientos.find(v => v.numero === r.numero && (v.tipoRemito || 'R') === (r.tipoRemito || 'R'));
             let detalleExtra = '';
             if (vInfo) {
                 if (vInfo.saldo <= 0.01) {
@@ -1029,9 +1030,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 ivaDetalle = `<br><small style="color:#f4a261; font-size:11px;">Neto: $ ${sub.toLocaleString('es-AR', {minimumFractionDigits: 2})} + IVA: $ ${iva.toLocaleString('es-AR', {minimumFractionDigits: 2})}</small>`;
             }
 
+            const prefixStr = r.tipoRemito === 'X' ? 'X-0000-' : 'R-0002-';
+            const numStr = `${prefixStr}${String(r.numero).padStart(8, '0')}`;
+
             return {
                 id: r.numero, fecha: r.fecha, tipo: 'Cargo',
-                detalle: 'Remito #' + r.numero + ivaDetalle + detalleExtra,
+                detalle: 'Remito ' + numStr + ivaDetalle + detalleExtra,
                 importe: parseFloat(r.total) || 0,
                 subtotal: sub,
                 iva: iva,
@@ -1185,10 +1189,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function generarEstadoCuentaPDF(clienteNombre) {
         const cliObj = CLIENTS.find(c => c.nombre === clienteNombre) || {};
-        const remitosCli = REMITOS.filter(r => r.cliente === clienteNombre).map(r => ({
-            fecha: r.fecha, tipo: 'Cargo', detalle: 'Remito #' + r.numero,
-            importe: parseFloat(r.total) || 0, sortDate: parseFechaArg(r.fecha)
-        }));
+        const remitosCli = REMITOS.filter(r => r.cliente === clienteNombre).map(r => {
+            const prefixStr = r.tipoRemito === 'X' ? 'X-0000-' : 'R-0002-';
+            const numStr = `${prefixStr}${String(r.numero).padStart(8, '0')}`;
+            return {
+                fecha: r.fecha, tipo: 'Cargo', detalle: 'Remito ' + numStr,
+                importe: parseFloat(r.total) || 0, sortDate: parseFechaArg(r.fecha)
+            };
+        });
         const pagosCli = PAGOS.filter(p => p.cliente === clienteNombre).map(p => ({
             fecha: p.fecha, tipo: 'Abono', detalle: p.notas ? 'Pago (' + p.notas + ')' : 'Pago',
             importe: parseFloat(p.importe) || 0, sortDate: parseFechaArg(p.fecha)
@@ -2525,6 +2533,25 @@ document.addEventListener('DOMContentLoaded', () => {
         btnGuardarOt.addEventListener('click', () => {
             const cliente = document.getElementById('new-ot-cliente').value;
             if (!cliente) { alert('Seleccione un cliente'); return; }
+
+            // Si el usuario llenó los campos de un ítem pero olvidó hacer clic en "Añadir Ítem", agregarlo automáticamente
+            const vPend = document.getElementById('new-item-varietal') ? document.getElementById('new-item-varietal').value.trim() : '';
+            const cPend = document.getElementById('new-item-cantidad') ? document.getElementById('new-item-cantidad').value.trim() : '';
+            const fPend = document.getElementById('new-item-fecha') ? document.getElementById('new-item-fecha').value.trim() : '';
+            if (vPend && cPend && fPend) {
+                const tipo      = document.getElementById('new-item-tipo') ? document.getElementById('new-item-tipo').value : 'Etiqueta';
+                const marca     = document.getElementById('new-item-marca') ? document.getElementById('new-item-marca').value : '';
+                const precio    = document.getElementById('new-item-precio').value || '0';
+                const colores   = document.getElementById('new-item-colores').value;
+                const barniz    = document.getElementById('new-item-barniz').value;
+                itemsActuales.push({ tipo, marca, varietal: vPend, cantidad: cPend, precio, colores, barniz, fecha: fPend, imagenB64: null, status: 'pendiente' });
+                ['new-item-marca','new-item-varietal','new-item-cantidad','new-item-precio','new-item-fecha'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.value = '';
+                });
+                renderItemsOtForm();
+            }
+
             if (!itemsActuales.length) { alert('Agregue al menos un ítem'); return; }
 
             const observaciones = document.getElementById('new-ot-observaciones') ? document.getElementById('new-ot-observaciones').value.trim() : '';
@@ -2589,6 +2616,22 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (document.getElementById('new-ot-observaciones')) document.getElementById('new-ot-observaciones').value = '';
+
+            // Asegurar que la pestaña activa sea 'activas' para que la nueva OT se vea inmediatamente
+            otActiveTab = 'activas';
+            otSearchQuery = '';
+            const inputSearchOt = document.getElementById('search-ot-input');
+            if (inputSearchOt) inputSearchOt.value = '';
+            const tabActivasEl = document.getElementById('tab-ot-activas');
+            const tabFinalizadasEl = document.getElementById('tab-ot-finalizadas');
+            if (tabActivasEl) {
+                tabActivasEl.classList.add('btn-primary');
+                tabActivasEl.style.background = '';
+            }
+            if (tabFinalizadasEl) {
+                tabFinalizadasEl.classList.remove('btn-primary');
+                tabFinalizadasEl.style.background = 'transparent';
+            }
 
             saveOts();
             refreshTallerSelector();
@@ -2977,12 +3020,12 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('modal-finalizar').style.display = 'none';
         itemActivo.status = 'finalizado';
         addEvento('FIN COMPLETO ÍTEM', `${itemActivo.marca ? itemActivo.marca + ' ' : ''}${itemActivo.varietal} (P:${fmt(segsProd)})`);
-        addToLogistica(otActual, 'completo', fmt(segsProd), fmt(segsImprod));
 
         // Verificar si TODOS los items de la OT actual están finalizados
         const todosTerminados = otActual.items.every(i => i.status === 'finalizado');
         if (todosTerminados) {
             addEvento('FIN COMPLETO OT', `#${otActual.numero} finalizada completa`);
+            addToLogistica(otActual, 'completo', fmt(segsProd), fmt(segsImprod));
             otsPendientes = otsPendientes.filter(o => o.numero !== otActual.numero);
             saveOts();
             refreshTallerSelector();
@@ -2991,6 +3034,7 @@ document.addEventListener('DOMContentLoaded', () => {
             otSelectorTaller.value = '';
         } else {
             // Aún quedan varietales por imprimir en esta OT
+            saveOts();
             stopAllTimers();
             estadoTerminal = 'idle';
             setSemaforo('red');
@@ -3005,7 +3049,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const artContainer = document.getElementById('arte-item-container');
             if (artContainer) {
                 artContainer.innerHTML = `<i class="fa-solid fa-check-circle" style="font-size:2.2rem; color:#00f5d4; margin-bottom:0.5rem;"></i>
-                <p style="color:#adb5bd;font-size:13px;margin:0;max-width:280px;font-weight:600;">Ítem Finalizado Completamente.<br><span style="color:#ced4da;font-weight:normal;font-size:12px;">La OT sigue abierta. Seleccione otro varietal pendiente a la izquierda para continuar.</span></p>`;
+                <p style="color:#adb5bd;font-size:13px;margin:0;max-width:280px;font-weight:600;">Ítem Finalizado Completamente.<br><span style="color:#ced4da;font-weight:normal;font-size:12px;">La OT sigue activa (${otActual.items.filter(i => i.status === 'finalizado').length}/${otActual.items.length} ítems listos). Seleccione otro ítem a la izquierda para continuar.</span></p>`;
             }
         }
     });
@@ -3021,7 +3065,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btnImproductiva.disabled = true;
         btnIniciar.innerHTML  = '<i class="fa-solid fa-play"></i> Retomar';
         addEvento('PAUSA PARCIAL ÍTEM', `${itemActivo.marca ? itemActivo.marca + ' ' : ''}${itemActivo.varietal} (Acum:${fmt(segsProd)})`);
-        addToLogistica(otActual, 'parcial', fmt(segsProd), fmt(segsImprod));
+        saveOts();
         renderDetalleOt();
         renderOts();
     });
@@ -3423,7 +3467,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentOtParaRemito = null;
     let modoVisualizacionRemito = false; // true = visualización histórica (inmutable), false = despacho de nueva OT
     
-    function abrirRemitoModal(num, esHistorial = false) {
+    function abrirRemitoModal(num, esHistorial = false, tipoRemito = null) {
         let ot = null;
         let remitoNumStr = '';
         let todayStr = '';
@@ -3439,7 +3483,11 @@ document.addEventListener('DOMContentLoaded', () => {
             modoVisualizacionRemito = true;
             currentOtParaRemito = null;
             
-            rem = REMITOS.find(r => r.numero === num);
+            if (tipoRemito) {
+                rem = REMITOS.find(r => r.numero === num && (r.tipoRemito || 'R') === tipoRemito);
+            } else {
+                rem = REMITOS.find(r => r.numero === num);
+            }
             if (!rem) return;
             
             const prefixStr = rem.tipoRemito === 'X' ? 'X-0000-' : 'R-0002-';
@@ -3816,14 +3864,15 @@ document.addEventListener('DOMContentLoaded', () => {
         remitosOrdenados.forEach(rem => {
             const prefixStr = rem.tipoRemito === 'X' ? 'X-0000-' : 'R-0002-';
             const numStr = `${prefixStr}${String(rem.numero).padStart(8, '0')}`;
+            const tipo = rem.tipoRemito || 'R';
             const actionsHtml = isPriv ? `
-                <button class="btn btn-icon btn-ver-remito-historial" data-numero="${rem.numero}" style="color:var(--primary);" title="Ver Remito"><i class="fa-solid fa-eye"></i></button>
-                <button class="btn btn-icon btn-descargar-pdf-historial" data-numero="${rem.numero}" style="color:#ff4d6d;" title="Descargar PDF"><i class="fa-solid fa-file-pdf"></i></button>
-                <button class="btn btn-icon btn-editar-remito-historial" data-numero="${rem.numero}" style="color:var(--warning);" title="Editar Remito"><i class="fa-solid fa-pen-to-square"></i></button>
-                <button class="btn btn-icon btn-eliminar-remito-historial" data-numero="${rem.numero}" style="color:var(--danger);" title="Eliminar Remito"><i class="fa-solid fa-trash-can"></i></button>
+                <button class="btn btn-icon btn-ver-remito-historial" data-numero="${rem.numero}" data-tipo="${tipo}" style="color:var(--primary);" title="Ver Remito"><i class="fa-solid fa-eye"></i></button>
+                <button class="btn btn-icon btn-descargar-pdf-historial" data-numero="${rem.numero}" data-tipo="${tipo}" style="color:#ff4d6d;" title="Descargar PDF"><i class="fa-solid fa-file-pdf"></i></button>
+                <button class="btn btn-icon btn-editar-remito-historial" data-numero="${rem.numero}" data-tipo="${tipo}" style="color:var(--warning);" title="Editar Remito"><i class="fa-solid fa-pen-to-square"></i></button>
+                <button class="btn btn-icon btn-eliminar-remito-historial" data-numero="${rem.numero}" data-tipo="${tipo}" style="color:var(--danger);" title="Eliminar Remito"><i class="fa-solid fa-trash-can"></i></button>
             ` : `
-                <button class="btn btn-icon btn-ver-remito-historial" data-numero="${rem.numero}" style="color:var(--primary);" title="Ver Remito"><i class="fa-solid fa-eye"></i></button>
-                <button class="btn btn-icon btn-descargar-pdf-historial" data-numero="${rem.numero}" style="color:#ff4d6d;" title="Descargar PDF"><i class="fa-solid fa-file-pdf"></i></button>
+                <button class="btn btn-icon btn-ver-remito-historial" data-numero="${rem.numero}" data-tipo="${tipo}" style="color:var(--primary);" title="Ver Remito"><i class="fa-solid fa-eye"></i></button>
+                <button class="btn btn-icon btn-descargar-pdf-historial" data-numero="${rem.numero}" data-tipo="${tipo}" style="color:#ff4d6d;" title="Descargar PDF"><i class="fa-solid fa-file-pdf"></i></button>
             `;
 
             const sub = rem.subtotal !== undefined ? (parseFloat(rem.subtotal) || 0) : Number(rem.total);
@@ -3867,9 +3916,10 @@ document.addEventListener('DOMContentLoaded', () => {
         remitosOrdenados.forEach(rem => {
             const prefixStr = rem.tipoRemito === 'X' ? 'X-0000-' : 'R-0002-';
             const numStr = `${prefixStr}${String(rem.numero).padStart(8, '0')}`;
+            const tipo = rem.tipoRemito || 'R';
             const actionsHtml = isPriv ? `
-                <button class="btn btn-icon btn-restaurar-remito-papelera" data-numero="${rem.numero}" style="color:var(--success);" title="Restaurar Remito"><i class="fa-solid fa-trash-arrow-up"></i></button>
-                <button class="btn btn-icon btn-eliminar-definitivo-papelera" data-numero="${rem.numero}" style="color:var(--danger);" title="Eliminar Definitivamente"><i class="fa-solid fa-trash"></i></button>
+                <button class="btn btn-icon btn-restaurar-remito-papelera" data-numero="${rem.numero}" data-tipo="${tipo}" style="color:var(--success);" title="Restaurar Remito"><i class="fa-solid fa-trash-arrow-up"></i></button>
+                <button class="btn btn-icon btn-eliminar-definitivo-papelera" data-numero="${rem.numero}" data-tipo="${tipo}" style="color:var(--danger);" title="Eliminar Definitivamente"><i class="fa-solid fa-trash"></i></button>
             ` : `
                 <span style="font-size:12px;color:#adb5bd;">Sin permisos</span>
             `;
@@ -4135,6 +4185,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnGuardarEditarRemito) {
         btnGuardarEditarRemito.addEventListener('click', () => {
             const num = parseInt(document.getElementById('editar-remito-id').value);
+            const tipoEl = document.getElementById('editar-remito-tipo');
+            const tipo = tipoEl ? tipoEl.value : 'R';
             const nuevaFecha = document.getElementById('editar-remito-fecha').value.trim();
             const nuevasObs = document.getElementById('editar-remito-observaciones').value.trim();
 
@@ -4143,7 +4195,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            const rem = REMITOS.find(r => r.numero === num);
+            const rem = REMITOS.find(r => r.numero === num && (r.tipoRemito || 'R') === tipo);
             if (!rem) return;
             
             const ot = todasLasOts[rem.otNumero];
@@ -4273,7 +4325,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const btnVerHistorial = e.target.closest('.btn-ver-remito-historial');
         if (btnVerHistorial) {
             const num = parseInt(btnVerHistorial.getAttribute('data-numero'));
-            abrirRemitoModal(num, true);
+            const tipo = btnVerHistorial.getAttribute('data-tipo') || 'R';
+            abrirRemitoModal(num, true, tipo);
             return;
         }
         
@@ -4281,8 +4334,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const btnPdfHistorial = e.target.closest('.btn-descargar-pdf-historial');
         if (btnPdfHistorial) {
             const num = parseInt(btnPdfHistorial.getAttribute('data-numero'));
+            const tipo = btnPdfHistorial.getAttribute('data-tipo') || 'R';
             // Programmatically open, download, and close
-            abrirRemitoModal(num, true);
+            abrirRemitoModal(num, true, tipo);
             const btnPdf = document.getElementById('btn-remito-pdf');
             if (btnPdf) btnPdf.click();
             document.getElementById('modal-remito').style.display = 'none';
@@ -4294,9 +4348,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const btnEditarHistorial = e.target.closest('.btn-editar-remito-historial');
         if (btnEditarHistorial) {
             const num = parseInt(btnEditarHistorial.getAttribute('data-numero'));
-            const rem = REMITOS.find(r => r.numero === num);
+            const tipo = btnEditarHistorial.getAttribute('data-tipo') || 'R';
+            const rem = REMITOS.find(r => r.numero === num && (r.tipoRemito || 'R') === tipo);
             if (rem) {
                 document.getElementById('editar-remito-id').value = rem.numero;
+                const editarTipoEl = document.getElementById('editar-remito-tipo');
+                if (editarTipoEl) editarTipoEl.value = rem.tipoRemito || 'R';
                 const prefixStr = rem.tipoRemito === 'X' ? 'X-0000-' : 'R-0002-';
                 document.getElementById('label-editar-remito-nro').innerText = `Remito Nro: ${prefixStr}${String(rem.numero).padStart(8, '0')} (OT #${rem.otNumero})`;
                 document.getElementById('editar-remito-fecha').value = rem.fecha;
@@ -4357,11 +4414,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const btnEliminarHistorial = e.target.closest('.btn-eliminar-remito-historial');
         if (btnEliminarHistorial) {
             const num = parseInt(btnEliminarHistorial.getAttribute('data-numero'));
-            const rem = REMITOS.find(r => r.numero === num);
+            const tipo = btnEliminarHistorial.getAttribute('data-tipo') || 'R';
+            const rem = REMITOS.find(r => r.numero === num && (r.tipoRemito || 'R') === tipo);
             if (rem) {
                 const prefixStr = rem.tipoRemito === 'X' ? 'X-0000-' : 'R-0002-';
                 if (confirm(`¿Está seguro de que desea mover a la Papelera el Remito ${prefixStr}${String(num).padStart(8, '0')}?\nEsto anulará el cargo del cliente y reactivará la Orden de Trabajo (pasará a Órdenes Activas para poder editarla).`)) {
-                    const remIndex = REMITOS.findIndex(r => r.numero === num);
+                    const remIndex = REMITOS.findIndex(r => r.numero === num && (r.tipoRemito || 'R') === tipo);
                     if (remIndex > -1) {
                         // Devolver OT a Pendientes (Activas) para poder editarla nuevamente
                         const ot = todasLasOts[rem.otNumero];
@@ -4402,11 +4460,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const btnRestaurarPapelera = e.target.closest('.btn-restaurar-remito-papelera');
         if (btnRestaurarPapelera) {
             const num = parseInt(btnRestaurarPapelera.getAttribute('data-numero'));
-            const rem = REMITOS_ELIMINADOS.find(r => r.numero === num);
+            const tipo = btnRestaurarPapelera.getAttribute('data-tipo') || 'R';
+            const rem = REMITOS_ELIMINADOS.find(r => r.numero === num && (r.tipoRemito || 'R') === tipo);
             if (rem) {
                 const prefixStr = rem.tipoRemito === 'X' ? 'X-0000-' : 'R-0002-';
                 if (confirm(`¿Está seguro de que desea restaurar el Remito ${prefixStr}${String(num).padStart(8, '0')}?\nEsto volverá a cargar el saldo al cliente y quitará la Orden de Trabajo de Logística si aún está allí.`)) {
-                    const remIndex = REMITOS_ELIMINADOS.findIndex(r => r.numero === num);
+                    const remIndex = REMITOS_ELIMINADOS.findIndex(r => r.numero === num && (r.tipoRemito || 'R') === tipo);
                     if (remIndex > -1) {
                         // Remover de papelera y volver a remitos
                         REMITOS_ELIMINADOS.splice(remIndex, 1);
@@ -4438,11 +4497,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const btnEliminarDefinitivo = e.target.closest('.btn-eliminar-definitivo-papelera');
         if (btnEliminarDefinitivo) {
             const num = parseInt(btnEliminarDefinitivo.getAttribute('data-numero'));
-            const rem = REMITOS_ELIMINADOS.find(r => r.numero === num);
+            const tipo = btnEliminarDefinitivo.getAttribute('data-tipo') || 'R';
+            const rem = REMITOS_ELIMINADOS.find(r => r.numero === num && (r.tipoRemito || 'R') === tipo);
             if (rem) {
                 const prefixStr = rem.tipoRemito === 'X' ? 'X-0000-' : 'R-0002-';
                 if (confirm(`¡ATENCIÓN!\n¿Está absolutamente seguro de que desea ELIMINAR PARA SIEMPRE el Remito ${prefixStr}${String(num).padStart(8, '0')}?\nEsta acción no se puede deshacer.`)) {
-                    const remIndex = REMITOS_ELIMINADOS.findIndex(r => r.numero === num);
+                    const remIndex = REMITOS_ELIMINADOS.findIndex(r => r.numero === num && (r.tipoRemito || 'R') === tipo);
                     if (remIndex > -1) {
                         REMITOS_ELIMINADOS.splice(remIndex, 1);
                         saveRemitos();
