@@ -56,8 +56,8 @@ web_dir = os.path.join(base_dir, "web")
 DEFAULT_DATA = {
     "db_id": "reset_20260601",
     "users": [
-        { "username": "superadmin", "password": "superadmin123", "name": "Super Admin", "role": "superadmin", "allowedModules": ["dashboard","clientes","ots","taller","logistica","usuarios"] },
-        { "username": "admin",      "password": "123",           "name": "Administrador", "role": "admin",      "allowedModules": ["dashboard","clientes","ots","taller","logistica"] },
+        { "username": "superadmin", "password": "superadmin123", "name": "Super Admin", "role": "superadmin", "allowedModules": ["dashboard","clientes","ots","taller","logistica","proveedores","usuarios"] },
+        { "username": "admin",      "password": "123",           "name": "Administrador", "role": "admin",      "allowedModules": ["dashboard","clientes","ots","taller","logistica","proveedores"] },
         { "username": "operador",   "password": "123",           "name": "Juan Perez",     "role": "operador",   "allowedModules": ["taller"] }
     ],
     "clients": [],
@@ -68,6 +68,9 @@ DEFAULT_DATA = {
     "ultimo_numero_ot": 0,
     "todas_las_ots": {},
     "pagos": [],
+    "proveedores": [],
+    "facturas_proveedores": [],
+    "pagos_proveedores": [],
     "price_lists": [
         {
             "id": "list-reimpresiones-bobina",

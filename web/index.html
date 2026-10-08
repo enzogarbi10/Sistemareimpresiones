@@ -53,6 +53,7 @@
                 <li data-target="ots" class="nav-item"><i class="fa-solid fa-file-invoice"></i><span>Órdenes (OT)</span></li>
                 <li data-target="taller" class="nav-item active"><i class="fa-solid fa-industry"></i><span>Taller / Producción</span></li>
                 <li data-target="logistica" class="nav-item"><i class="fa-solid fa-truck-fast"></i><span>Logística</span></li>
+                <li data-target="proveedores" class="nav-item"><i class="fa-solid fa-boxes-packing"></i><span>Proveedores</span></li>
                 <li data-target="estadisticas" class="nav-item"><i class="fa-solid fa-chart-column"></i><span>Estadísticas</span></li>
             </ul>
         </nav>
@@ -252,6 +253,14 @@
                                 <div class="stat-icon danger" style="color:var(--danger); background:rgba(230,57,70,0.1);"><i class="fa-solid fa-calendar-times"></i></div>
                                 <div class="stat-data"><h3>Remitos Vencidos</h3><h2 id="dash-vencidos-count" style="color:var(--danger);">0</h2></div>
                             </div>
+                            <div class="stat-card glass">
+                                <div class="stat-icon danger" style="color:#ff9f1c; background:rgba(255,159,28,0.12);"><i class="fa-solid fa-boxes-packing"></i></div>
+                                <div class="stat-data"><h3>Deuda a Proveedores</h3><h2 id="dash-deuda-proveedores" style="color:#ff9f1c;">$ 0</h2></div>
+                            </div>
+                            <div class="stat-card glass">
+                                <div class="stat-icon success"><i class="fa-solid fa-scale-balanced"></i></div>
+                                <div class="stat-data"><h3>Ganancia Neta Estimada</h3><h2 id="dash-ganancia-neta">$ 0</h2></div>
+                            </div>
                         </div>
                         
                         <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1.5rem;">
@@ -271,6 +280,15 @@
                                     </tbody>
                                 </table>
                             </div>
+                        </div>
+
+                        <div class="card glass" style="margin-top: 1.5rem;">
+                            <h3><i class="fa-solid fa-boxes-packing" style="color:#ff9f1c;"></i> Deuda con Proveedores</h3>
+                            <table class="data-table">
+                                <thead><tr><th>Proveedor</th><th>Rubro</th><th>Total Compras</th><th>Total Pagado</th><th>Saldo Adeudado</th></tr></thead>
+                                <tbody id="tbody-dash-proveedores">
+                                </tbody>
+                            </table>
                         </div>
                     </div>
 
@@ -466,6 +484,85 @@
                                 </tr>
                             </tbody>
                         </table>
+                    </div>
+                </section>
+
+                <!-- ====== MODULE: PROVEEDORES ====== -->
+                <section id="proveedores" class="module">
+                    <div class="module-header">
+                        <h2>Proveedores y Cuentas a Pagar</h2>
+                        <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                            <button class="btn btn-primary" id="btn-nuevo-proveedor"><i class="fa-solid fa-plus"></i> Nuevo Proveedor</button>
+                            <button class="btn btn-secondary" id="btn-nueva-factura-prov"><i class="fa-solid fa-file-invoice-dollar"></i> Cargar Factura / Compra</button>
+                            <button class="btn btn-success" id="btn-nuevo-pago-prov"><i class="fa-solid fa-money-bill-wave"></i> Registrar Pago</button>
+                        </div>
+                    </div>
+
+                    <div class="stats-grid mt-2" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+                        <div class="stat-card glass">
+                            <div class="stat-icon"><i class="fa-solid fa-cart-shopping"></i></div>
+                            <div class="stat-data"><h3>Total Compras</h3><h2 id="prov-kpi-compras">$ 0</h2></div>
+                        </div>
+                        <div class="stat-card glass">
+                            <div class="stat-icon success"><i class="fa-solid fa-money-bill-wave"></i></div>
+                            <div class="stat-data"><h3>Total Pagado</h3><h2 id="prov-kpi-pagado">$ 0</h2></div>
+                        </div>
+                        <div class="stat-card glass">
+                            <div class="stat-icon warning"><i class="fa-solid fa-hand-holding-dollar"></i></div>
+                            <div class="stat-data"><h3>Deuda Pendiente</h3><h2 id="prov-kpi-deuda" style="color:#ff9f1c;">$ 0</h2></div>
+                        </div>
+                        <div class="stat-card glass">
+                            <div class="stat-icon"><i class="fa-solid fa-boxes-packing"></i></div>
+                            <div class="stat-data"><h3>Proveedores</h3><h2 id="prov-kpi-count">0</h2></div>
+                        </div>
+                    </div>
+
+                    <div class="sub-tabs-container mt-2">
+                        <button class="sub-tab-btn active" data-subtab="prov-lista"><i class="fa-solid fa-boxes-packing"></i> Proveedores &amp; Saldos</button>
+                        <button class="sub-tab-btn" data-subtab="prov-facturas"><i class="fa-solid fa-file-invoice-dollar"></i> Facturas &amp; Pagos</button>
+                        <button class="sub-tab-btn" data-subtab="prov-cuenta"><i class="fa-solid fa-book"></i> Cuenta Corriente</button>
+                    </div>
+
+                    <div id="subtab-prov-lista" class="sub-tab-content active">
+                        <div class="card glass mt-2">
+                            <table class="data-table">
+                                <thead><tr><th>Proveedor</th><th>Rubro</th><th>CUIT</th><th>Contacto</th><th>Total Compras</th><th>Pagado</th><th>Saldo Adeudado</th><th>Acciones</th></tr></thead>
+                                <tbody id="tbody-proveedores"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div id="subtab-prov-facturas" class="sub-tab-content">
+                        <div class="card glass mt-2">
+                            <h3>Facturas / Compras</h3>
+                            <table class="data-table">
+                                <thead><tr><th>Fecha</th><th>Proveedor</th><th>Comprobante</th><th>Concepto</th><th>Importe</th><th>Acciones</th></tr></thead>
+                                <tbody id="tbody-facturas-prov"></tbody>
+                            </table>
+                        </div>
+                        <div class="card glass mt-2">
+                            <h3>Pagos Realizados</h3>
+                            <table class="data-table">
+                                <thead><tr><th>Fecha</th><th>Proveedor</th><th>Método</th><th>Referencia</th><th>Importe</th><th>Acciones</th></tr></thead>
+                                <tbody id="tbody-pagos-prov"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div id="subtab-prov-cuenta" class="sub-tab-content">
+                        <div class="card glass mt-2">
+                            <label style="display:block; margin-bottom:0.5rem; font-weight:600; color:var(--primary);">Seleccionar Proveedor</label>
+                            <select id="sel-cuenta-proveedor" class="form-control" style="max-width:400px;">
+                                <option value="">-- Seleccione --</option>
+                            </select>
+                        </div>
+                        <div class="card glass mt-2" id="cuenta-prov-container" style="display:none;">
+                            <h3>Movimientos <span id="cuenta-prov-saldo" style="float:right; color:#ff9f1c;"></span></h3>
+                            <table class="data-table">
+                                <thead><tr><th>Fecha</th><th>Tipo</th><th>Detalle</th><th>Cargo</th><th>Abono</th><th>Saldo</th></tr></thead>
+                                <tbody id="tbody-cuenta-prov"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </section>
 
@@ -1002,6 +1099,9 @@
                                     <input type="checkbox" value="logistica" class="permiso-checkbox" checked> Logística
                                 </label>
                                 <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;color:#fff;font-size:13px;">
+                                    <input type="checkbox" value="proveedores" class="permiso-checkbox"> Proveedores
+                                </label>
+                                <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;color:#fff;font-size:13px;">
                                     <input type="checkbox" value="estadisticas" class="permiso-checkbox" checked> Estadísticas &amp; Analítica
                                 </label>
                                 <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;color:#fff;font-size:13px;">
@@ -1205,6 +1305,72 @@
                 <button class="btn btn-primary" id="btn-remito-print"><i class="fa-solid fa-print"></i> Imprimir</button>
                 <button class="btn btn-secondary" id="btn-remito-pdf"><i class="fa-solid fa-file-pdf"></i> Descargar PDF</button>
                 <button class="btn btn-danger" id="btn-remito-cerrar">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== MODAL: PROVEEDOR ====== -->
+    <div id="modal-proveedor" class="modal-overlay" style="display:none;">
+        <div class="modal-box glass" style="max-width:560px; padding:2rem;">
+            <h3 id="modal-proveedor-title"><i class="fa-solid fa-boxes-packing" style="color:#ff9f1c;"></i> Nuevo Proveedor</h3>
+            <div class="form-group mt-1"><label>Nombre / Razón Social *</label><input type="text" id="prov-nombre" class="large-input" style="width:100%;"></div>
+            <div class="form-row mt-1">
+                <div class="form-group half"><label>Rubro</label><input type="text" id="prov-rubro" class="large-input" placeholder="Ej. Papeles, Tintas, Polímeros"></div>
+                <div class="form-group half"><label>CUIT</label><input type="text" id="prov-cuit" class="large-input"></div>
+            </div>
+            <div class="form-row mt-1">
+                <div class="form-group half"><label>Contacto</label><input type="text" id="prov-contacto" class="large-input"></div>
+                <div class="form-group half"><label>Teléfono</label><input type="text" id="prov-telefono" class="large-input"></div>
+            </div>
+            <div class="form-group mt-1"><label>Email</label><input type="text" id="prov-email" class="large-input" style="width:100%;"></div>
+            <input type="hidden" id="prov-edit-id" value="">
+            <div class="action-buttons mt-2">
+                <button class="btn btn-success" id="btn-guardar-proveedor"><i class="fa-solid fa-save"></i> Guardar</button>
+                <button class="btn btn-danger" id="btn-cancelar-proveedor">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== MODAL: FACTURA PROVEEDOR ====== -->
+    <div id="modal-factura-prov" class="modal-overlay" style="display:none;">
+        <div class="modal-box glass" style="max-width:560px; padding:2rem;">
+            <h3><i class="fa-solid fa-file-invoice-dollar" style="color:var(--secondary);"></i> Cargar Factura / Compra</h3>
+            <div class="form-group mt-1"><label>Proveedor *</label><select id="fprov-proveedor" class="large-input" style="width:100%;"></select></div>
+            <div class="form-row mt-1">
+                <div class="form-group half"><label>Fecha *</label><input type="date" id="fprov-fecha" class="large-input"></div>
+                <div class="form-group half"><label>N° Comprobante</label><input type="text" id="fprov-comprobante" class="large-input" placeholder="Ej. A-0001-00001234"></div>
+            </div>
+            <div class="form-group mt-1"><label>Concepto</label><input type="text" id="fprov-concepto" class="large-input" style="width:100%;" placeholder="Ej. Bobinas de papel ilustración"></div>
+            <div class="form-group mt-1"><label>Importe Total ($) *</label><input type="number" id="fprov-importe" class="large-input" min="0" step="0.01" style="width:100%;"></div>
+            <div class="action-buttons mt-2">
+                <button class="btn btn-success" id="btn-guardar-factura-prov"><i class="fa-solid fa-save"></i> Guardar</button>
+                <button class="btn btn-danger" id="btn-cancelar-factura-prov">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== MODAL: PAGO PROVEEDOR ====== -->
+    <div id="modal-pago-prov" class="modal-overlay" style="display:none;">
+        <div class="modal-box glass" style="max-width:560px; padding:2rem;">
+            <h3><i class="fa-solid fa-money-bill-wave" style="color:var(--success);"></i> Registrar Pago a Proveedor</h3>
+            <div class="form-group mt-1"><label>Proveedor *</label><select id="pprov-proveedor" class="large-input" style="width:100%;"></select></div>
+            <p id="pprov-saldo-info" style="color:#ff9f1c; font-size:13px; margin:6px 0 0;"></p>
+            <div class="form-row mt-1">
+                <div class="form-group half"><label>Fecha *</label><input type="date" id="pprov-fecha" class="large-input"></div>
+                <div class="form-group half"><label>Importe ($) *</label><input type="number" id="pprov-importe" class="large-input" min="0" step="0.01"></div>
+            </div>
+            <div class="form-row mt-1">
+                <div class="form-group half">
+                    <label>Método</label>
+                    <select id="pprov-metodo" class="large-input">
+                        <option>Transferencia</option><option>Efectivo</option><option>Cheque</option><option>E-Cheq</option><option>Otro</option>
+                    </select>
+                </div>
+                <div class="form-group half"><label>Referencia / N° Recibo</label><input type="text" id="pprov-referencia" class="large-input"></div>
+            </div>
+            <div class="action-buttons mt-2">
+                <button class="btn btn-success" id="btn-guardar-pago-prov"><i class="fa-solid fa-save"></i> Guardar</button>
+                <button class="btn btn-danger" id="btn-cancelar-pago-prov">Cancelar</button>
             </div>
         </div>
     </div>

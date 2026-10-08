@@ -111,6 +111,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let priceLists = JSON.parse(localStorage.getItem('flexoERP_price_lists')) || [];
 
+    // Proveedores / Cuentas a pagar
+    let PROVEEDORES          = JSON.parse(localStorage.getItem('flexoERP_proveedores')) || [];
+    let FACTURAS_PROVEEDORES = JSON.parse(localStorage.getItem('flexoERP_facturas_proveedores')) || [];
+    let PAGOS_PROVEEDORES    = JSON.parse(localStorage.getItem('flexoERP_pagos_proveedores')) || [];
+
     async function saveToServer() {
         const currentDbId = localStorage.getItem('flexoERP_db_id') || "reset_20260601";
         const payload = {
@@ -126,7 +131,10 @@ document.addEventListener('DOMContentLoaded', () => {
             ots_logistica: otsLogistica,
             ultimo_numero_ot: ultimoNumeroOt,
             todas_las_ots: todasLasOts,
-            price_lists: priceLists
+            price_lists: priceLists,
+            proveedores: PROVEEDORES,
+            facturas_proveedores: FACTURAS_PROVEEDORES,
+            pagos_proveedores: PAGOS_PROVEEDORES
         };
         
         // Always mirror to localStorage as local fallback
@@ -143,6 +151,9 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('flexoERP_todas_las_ots', JSON.stringify(todasLasOts));
         localStorage.setItem('flexoERP_ultimo_numero_ot', ultimoNumeroOt);
         localStorage.setItem('flexoERP_price_lists', JSON.stringify(priceLists));
+        localStorage.setItem('flexoERP_proveedores', JSON.stringify(PROVEEDORES));
+        localStorage.setItem('flexoERP_facturas_proveedores', JSON.stringify(FACTURAS_PROVEEDORES));
+        localStorage.setItem('flexoERP_pagos_proveedores', JSON.stringify(PAGOS_PROVEEDORES));
 
         try {
             await fetch('/api/save', {
@@ -393,6 +404,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 ultimoNumeroOt = data.ultimo_numero_ot !== undefined ? data.ultimo_numero_ot : ultimoNumeroOt;
                 todasLasOts = data.todas_las_ots || todasLasOts;
                 priceLists = data.price_lists || priceLists;
+                PROVEEDORES = data.proveedores || PROVEEDORES;
+                FACTURAS_PROVEEDORES = data.facturas_proveedores || FACTURAS_PROVEEDORES;
+                PAGOS_PROVEEDORES = data.pagos_proveedores || PAGOS_PROVEEDORES;
                 
                 // Sync to localStorage
                 localStorage.setItem('flexoERP_users', JSON.stringify(USERS));
@@ -443,6 +457,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderPriceLists();
         renderDashboard();
         renderLogistica();
+        renderProveedoresModule();
         renderHistorialRemitos();
         renderOts();
         renderUsuarios();
@@ -910,6 +925,384 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
         }
+
+        // ── Proveedores: deuda y ganancia neta ──
+        const provTot = calcularTotalesProveedores();
+        const fmtARS = n => `$ ${n.toLocaleString('es-AR', {minimumFractionDigits: 0, maximumFractionDigits: 0})}`;
+
+        const dashDeudaProv = document.getElementById('dash-deuda-proveedores');
+        if (dashDeudaProv) {
+            dashDeudaProv.innerHTML = `
+                ${fmtARS(provTot.deuda)}
+                <div style="font-size: 11px; color: #ced4da; margin-top: 4px; font-weight: normal; line-height:1.2;">
+                    Compras: ${fmtARS(provTot.compras)}<br>
+                    Pagado: ${fmtARS(provTot.pagado)}
+                </div>`;
+        }
+
+        const dashGanancia = document.getElementById('dash-ganancia-neta');
+        if (dashGanancia) {
+            const ganancia = totalIngresos - provTot.compras;
+            const cajaReal = totalPagado - provTot.pagado;
+            dashGanancia.style.color = ganancia >= 0 ? 'var(--success)' : 'var(--danger)';
+            dashGanancia.innerHTML = `
+                ${fmtARS(ganancia)}
+                <div style="font-size: 11px; color: #ced4da; margin-top: 4px; font-weight: normal; line-height:1.2;">
+                    Facturado − Compras<br>
+                    Caja real (cobrado − pagado): ${fmtARS(cajaReal)}
+                </div>`;
+        }
+
+        const tbodyDashProv = document.getElementById('tbody-dash-proveedores');
+        if (tbodyDashProv) {
+            const filas = provTot.porProveedor
+                .filter(p => p.compras > 0 || p.pagado > 0)
+                .sort((a, b) => b.saldo - a.saldo);
+            if (!filas.length) {
+                tbodyDashProv.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">No hay compras a proveedores registradas.</td></tr>`;
+            } else {
+                tbodyDashProv.innerHTML = filas.map(p => `
+                    <tr>
+                        <td><strong>${p.nombre}</strong></td>
+                        <td>${p.rubro || '-'}</td>
+                        <td style="font-family:monospace;">${fmtARS(p.compras)}</td>
+                        <td style="font-family:monospace; color:var(--success);">${fmtARS(p.pagado)}</td>
+                        <td style="font-family:monospace; font-weight:700; color:${p.saldo > 0.01 ? '#ff9f1c' : 'var(--success)'};">${fmtARS(p.saldo)}</td>
+                    </tr>`).join('');
+            }
+        }
+    }
+
+    // ── PROVEEDORES / CUENTAS A PAGAR ─────────────────────────
+    function calcularTotalesProveedores() {
+        const porProveedor = PROVEEDORES.map(p => {
+            const compras = FACTURAS_PROVEEDORES.filter(f => f.proveedorId === p.id).reduce((a, f) => a + (parseFloat(f.importe) || 0), 0);
+            const pagado  = PAGOS_PROVEEDORES.filter(x => x.proveedorId === p.id).reduce((a, x) => a + (parseFloat(x.importe) || 0), 0);
+            return { ...p, compras, pagado, saldo: compras - pagado };
+        });
+        const compras = porProveedor.reduce((a, p) => a + p.compras, 0);
+        const pagado  = porProveedor.reduce((a, p) => a + p.pagado, 0);
+        return { porProveedor, compras, pagado, deuda: compras - pagado };
+    }
+
+    function fmtFechaIso(iso) {
+        if (!iso) return '-';
+        const [y, m, d] = String(iso).split('-');
+        return d && m && y ? `${d}/${m}/${y}` : iso;
+    }
+
+    function hoyIso() {
+        const d = new Date();
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+
+    function nombreProveedor(id) {
+        const p = PROVEEDORES.find(x => x.id === id);
+        return p ? p.nombre : '(eliminado)';
+    }
+
+    function guardarProveedores() {
+        saveToServer();
+        renderProveedoresModule();
+        renderDashboard();
+    }
+
+    function poblarSelectsProveedores() {
+        const opts = PROVEEDORES
+            .slice()
+            .sort((a, b) => a.nombre.localeCompare(b.nombre))
+            .map(p => `<option value="${p.id}">${p.nombre}</option>`).join('');
+        ['fprov-proveedor', 'pprov-proveedor'].forEach(id => {
+            const sel = document.getElementById(id);
+            if (sel) sel.innerHTML = '<option value="">-- Seleccione --</option>' + opts;
+        });
+        const selCta = document.getElementById('sel-cuenta-proveedor');
+        if (selCta) {
+            const prev = selCta.value;
+            selCta.innerHTML = '<option value="">-- Seleccione --</option>' + opts;
+            if (prev && PROVEEDORES.some(p => p.id === prev)) selCta.value = prev;
+        }
+    }
+
+    function renderProveedoresModule() {
+        const tot = calcularTotalesProveedores();
+        const fmtARS = n => `$ ${n.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+
+        const setTxt = (id, txt) => { const el = document.getElementById(id); if (el) el.innerText = txt; };
+        setTxt('prov-kpi-compras', fmtARS(tot.compras));
+        setTxt('prov-kpi-pagado', fmtARS(tot.pagado));
+        setTxt('prov-kpi-deuda', fmtARS(tot.deuda));
+        setTxt('prov-kpi-count', String(PROVEEDORES.length));
+
+        // Lista de proveedores
+        const tbody = document.getElementById('tbody-proveedores');
+        if (tbody) {
+            if (!tot.porProveedor.length) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#adb5bd;padding:2rem;">No hay proveedores registrados. Use "Nuevo Proveedor".</td></tr>';
+            } else {
+                tbody.innerHTML = tot.porProveedor
+                    .slice()
+                    .sort((a, b) => b.saldo - a.saldo)
+                    .map(p => `
+                    <tr>
+                        <td><strong>${p.nombre}</strong></td>
+                        <td>${p.rubro || '-'}</td>
+                        <td>${p.cuit || '-'}</td>
+                        <td><small>${[p.contacto, p.telefono].filter(Boolean).join(' · ') || '-'}</small></td>
+                        <td style="font-family:monospace;">${fmtARS(p.compras)}</td>
+                        <td style="font-family:monospace; color:var(--success);">${fmtARS(p.pagado)}</td>
+                        <td style="font-family:monospace; font-weight:700; color:${p.saldo > 0.01 ? '#ff9f1c' : 'var(--success)'};">${fmtARS(p.saldo)}</td>
+                        <td>
+                            <div style="display:flex; gap:0.4rem;">
+                                <button class="btn btn-icon btn-prov-cuenta" data-id="${p.id}" style="color:var(--primary);" title="Ver Cuenta Corriente"><i class="fa-solid fa-book"></i></button>
+                                <button class="btn btn-icon btn-prov-pagar" data-id="${p.id}" style="color:var(--success);" title="Registrar Pago"><i class="fa-solid fa-money-bill-wave"></i></button>
+                                <button class="btn btn-icon btn-prov-editar" data-id="${p.id}" style="color:var(--warning);" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>
+                                <button class="btn btn-icon btn-prov-eliminar" data-id="${p.id}" style="color:var(--danger);" title="Eliminar"><i class="fa-solid fa-trash-can"></i></button>
+                            </div>
+                        </td>
+                    </tr>`).join('');
+            }
+        }
+
+        // Facturas
+        const tbodyF = document.getElementById('tbody-facturas-prov');
+        if (tbodyF) {
+            const facturas = FACTURAS_PROVEEDORES.slice().sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)));
+            tbodyF.innerHTML = facturas.length ? facturas.map(f => `
+                <tr>
+                    <td>${fmtFechaIso(f.fecha)}</td>
+                    <td><strong>${nombreProveedor(f.proveedorId)}</strong></td>
+                    <td>${f.comprobante || '-'}</td>
+                    <td>${f.concepto || '-'}</td>
+                    <td style="font-family:monospace; color:#ff9f1c;">${fmtARS(parseFloat(f.importe) || 0)}</td>
+                    <td><button class="btn btn-icon btn-fprov-eliminar" data-id="${f.id}" style="color:var(--danger);" title="Eliminar"><i class="fa-solid fa-trash-can"></i></button></td>
+                </tr>`).join('')
+                : '<tr><td colspan="6" style="text-align:center;color:#adb5bd;padding:1.5rem;">No hay facturas cargadas.</td></tr>';
+        }
+
+        // Pagos
+        const tbodyP = document.getElementById('tbody-pagos-prov');
+        if (tbodyP) {
+            const pagos = PAGOS_PROVEEDORES.slice().sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)));
+            tbodyP.innerHTML = pagos.length ? pagos.map(x => `
+                <tr>
+                    <td>${fmtFechaIso(x.fecha)}</td>
+                    <td><strong>${nombreProveedor(x.proveedorId)}</strong></td>
+                    <td>${x.metodo || '-'}</td>
+                    <td>${x.referencia || '-'}</td>
+                    <td style="font-family:monospace; color:var(--success);">${fmtARS(parseFloat(x.importe) || 0)}</td>
+                    <td><button class="btn btn-icon btn-pprov-eliminar" data-id="${x.id}" style="color:var(--danger);" title="Eliminar"><i class="fa-solid fa-trash-can"></i></button></td>
+                </tr>`).join('')
+                : '<tr><td colspan="6" style="text-align:center;color:#adb5bd;padding:1.5rem;">No hay pagos registrados.</td></tr>';
+        }
+
+        poblarSelectsProveedores();
+        const selCta = document.getElementById('sel-cuenta-proveedor');
+        renderCuentaProveedor(selCta ? selCta.value : '');
+    }
+
+    function renderCuentaProveedor(provId) {
+        const cont = document.getElementById('cuenta-prov-container');
+        const tbody = document.getElementById('tbody-cuenta-prov');
+        const saldoEl = document.getElementById('cuenta-prov-saldo');
+        if (!cont || !tbody) return;
+        if (!provId) { cont.style.display = 'none'; return; }
+        cont.style.display = 'block';
+
+        const fmtARS = n => `$ ${n.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        const movs = [
+            ...FACTURAS_PROVEEDORES.filter(f => f.proveedorId === provId).map(f => ({
+                fecha: f.fecha, tipo: 'Factura', detalle: [f.comprobante, f.concepto].filter(Boolean).join(' - ') || 'Compra',
+                cargo: parseFloat(f.importe) || 0, abono: 0, orden: 0
+            })),
+            ...PAGOS_PROVEEDORES.filter(x => x.proveedorId === provId).map(x => ({
+                fecha: x.fecha, tipo: 'Pago', detalle: [x.metodo, x.referencia].filter(Boolean).join(' - ') || 'Pago',
+                cargo: 0, abono: parseFloat(x.importe) || 0, orden: 1
+            }))
+        ].sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)) || a.orden - b.orden);
+
+        let saldo = 0;
+        tbody.innerHTML = movs.length ? movs.map(m => {
+            saldo += m.cargo - m.abono;
+            return `<tr>
+                <td>${fmtFechaIso(m.fecha)}</td>
+                <td><span class="badge ${m.tipo === 'Pago' ? 'success' : 'warning'}">${m.tipo}</span></td>
+                <td>${m.detalle}</td>
+                <td style="font-family:monospace; color:#ff9f1c;">${m.cargo ? fmtARS(m.cargo) : ''}</td>
+                <td style="font-family:monospace; color:var(--success);">${m.abono ? fmtARS(m.abono) : ''}</td>
+                <td style="font-family:monospace; font-weight:700;">${fmtARS(saldo)}</td>
+            </tr>`;
+        }).join('') : '<tr><td colspan="6" style="text-align:center;color:#adb5bd;padding:1.5rem;">Sin movimientos.</td></tr>';
+
+        if (saldoEl) saldoEl.innerText = `Saldo adeudado: ${fmtARS(saldo)}`;
+    }
+
+    function mostrarSubtabProveedores(subtab) {
+        document.querySelectorAll('#proveedores .sub-tab-btn').forEach(b => b.classList.toggle('active', b.getAttribute('data-subtab') === subtab));
+        document.querySelectorAll('#proveedores .sub-tab-content').forEach(c => c.classList.toggle('active', c.id === `subtab-${subtab}`));
+    }
+
+    document.querySelectorAll('#proveedores .sub-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => mostrarSubtabProveedores(btn.getAttribute('data-subtab')));
+    });
+
+    const selCuentaProv = document.getElementById('sel-cuenta-proveedor');
+    if (selCuentaProv) selCuentaProv.addEventListener('change', () => renderCuentaProveedor(selCuentaProv.value));
+
+    // Modal proveedor (alta / edición)
+    const modalProveedor = document.getElementById('modal-proveedor');
+    const camposProv = ['nombre', 'rubro', 'cuit', 'contacto', 'telefono', 'email'];
+
+    function abrirModalProveedor(prov) {
+        document.getElementById('modal-proveedor-title').innerHTML =
+            `<i class="fa-solid fa-boxes-packing" style="color:#ff9f1c;"></i> ${prov ? 'Editar Proveedor' : 'Nuevo Proveedor'}`;
+        camposProv.forEach(c => { document.getElementById(`prov-${c}`).value = prov ? (prov[c] || '') : ''; });
+        document.getElementById('prov-edit-id').value = prov ? prov.id : '';
+        modalProveedor.style.display = 'flex';
+    }
+
+    const btnNuevoProveedor = document.getElementById('btn-nuevo-proveedor');
+    if (btnNuevoProveedor) btnNuevoProveedor.addEventListener('click', () => abrirModalProveedor(null));
+
+    const btnCancelarProveedor = document.getElementById('btn-cancelar-proveedor');
+    if (btnCancelarProveedor) btnCancelarProveedor.addEventListener('click', () => { modalProveedor.style.display = 'none'; });
+
+    const btnGuardarProveedor = document.getElementById('btn-guardar-proveedor');
+    if (btnGuardarProveedor) {
+        btnGuardarProveedor.addEventListener('click', () => {
+            const datos = {};
+            camposProv.forEach(c => { datos[c] = document.getElementById(`prov-${c}`).value.trim(); });
+            if (!datos.nombre) { alert('El nombre del proveedor es obligatorio.'); return; }
+
+            const editId = document.getElementById('prov-edit-id').value;
+            const duplicado = PROVEEDORES.some(p => p.id !== editId && p.nombre.toLowerCase() === datos.nombre.toLowerCase());
+            if (duplicado) { alert('Ya existe un proveedor con ese nombre.'); return; }
+
+            if (editId) {
+                const prov = PROVEEDORES.find(p => p.id === editId);
+                if (prov) Object.assign(prov, datos);
+            } else {
+                PROVEEDORES.push({ id: 'prov-' + Date.now(), ...datos });
+            }
+            modalProveedor.style.display = 'none';
+            guardarProveedores();
+        });
+    }
+
+    // Modal factura
+    const modalFacturaProv = document.getElementById('modal-factura-prov');
+    function abrirModalFacturaProv(provId) {
+        if (!PROVEEDORES.length) { alert('Primero registre al menos un proveedor.'); return; }
+        poblarSelectsProveedores();
+        document.getElementById('fprov-proveedor').value = provId || '';
+        document.getElementById('fprov-fecha').value = hoyIso();
+        ['fprov-comprobante', 'fprov-concepto', 'fprov-importe'].forEach(id => { document.getElementById(id).value = ''; });
+        modalFacturaProv.style.display = 'flex';
+    }
+
+    const btnNuevaFacturaProv = document.getElementById('btn-nueva-factura-prov');
+    if (btnNuevaFacturaProv) btnNuevaFacturaProv.addEventListener('click', () => abrirModalFacturaProv(''));
+
+    const btnCancelarFacturaProv = document.getElementById('btn-cancelar-factura-prov');
+    if (btnCancelarFacturaProv) btnCancelarFacturaProv.addEventListener('click', () => { modalFacturaProv.style.display = 'none'; });
+
+    const btnGuardarFacturaProv = document.getElementById('btn-guardar-factura-prov');
+    if (btnGuardarFacturaProv) {
+        btnGuardarFacturaProv.addEventListener('click', () => {
+            const proveedorId = document.getElementById('fprov-proveedor').value;
+            const fecha = document.getElementById('fprov-fecha').value;
+            const importe = parseFloat(document.getElementById('fprov-importe').value);
+            if (!proveedorId || !fecha || !(importe > 0)) { alert('Proveedor, fecha e importe (mayor a 0) son obligatorios.'); return; }
+            FACTURAS_PROVEEDORES.push({
+                id: 'fprov-' + Date.now(),
+                proveedorId, fecha, importe,
+                comprobante: document.getElementById('fprov-comprobante').value.trim(),
+                concepto: document.getElementById('fprov-concepto').value.trim()
+            });
+            modalFacturaProv.style.display = 'none';
+            guardarProveedores();
+        });
+    }
+
+    // Modal pago
+    const modalPagoProv = document.getElementById('modal-pago-prov');
+    const selPagoProv = document.getElementById('pprov-proveedor');
+
+    function actualizarInfoSaldoPago() {
+        const info = document.getElementById('pprov-saldo-info');
+        if (!info) return;
+        const p = calcularTotalesProveedores().porProveedor.find(x => x.id === selPagoProv.value);
+        info.innerText = p ? `Saldo adeudado actual: $ ${p.saldo.toLocaleString('es-AR', {minimumFractionDigits: 2})}` : '';
+    }
+    if (selPagoProv) selPagoProv.addEventListener('change', actualizarInfoSaldoPago);
+
+    function abrirModalPagoProv(provId) {
+        if (!PROVEEDORES.length) { alert('Primero registre al menos un proveedor.'); return; }
+        poblarSelectsProveedores();
+        selPagoProv.value = provId || '';
+        document.getElementById('pprov-fecha').value = hoyIso();
+        document.getElementById('pprov-importe').value = '';
+        document.getElementById('pprov-referencia').value = '';
+        actualizarInfoSaldoPago();
+        modalPagoProv.style.display = 'flex';
+    }
+
+    const btnNuevoPagoProv = document.getElementById('btn-nuevo-pago-prov');
+    if (btnNuevoPagoProv) btnNuevoPagoProv.addEventListener('click', () => abrirModalPagoProv(''));
+
+    const btnCancelarPagoProv = document.getElementById('btn-cancelar-pago-prov');
+    if (btnCancelarPagoProv) btnCancelarPagoProv.addEventListener('click', () => { modalPagoProv.style.display = 'none'; });
+
+    const btnGuardarPagoProv = document.getElementById('btn-guardar-pago-prov');
+    if (btnGuardarPagoProv) {
+        btnGuardarPagoProv.addEventListener('click', () => {
+            const proveedorId = selPagoProv.value;
+            const fecha = document.getElementById('pprov-fecha').value;
+            const importe = parseFloat(document.getElementById('pprov-importe').value);
+            if (!proveedorId || !fecha || !(importe > 0)) { alert('Proveedor, fecha e importe (mayor a 0) son obligatorios.'); return; }
+            PAGOS_PROVEEDORES.push({
+                id: 'pprov-' + Date.now(),
+                proveedorId, fecha, importe,
+                metodo: document.getElementById('pprov-metodo').value,
+                referencia: document.getElementById('pprov-referencia').value.trim()
+            });
+            modalPagoProv.style.display = 'none';
+            guardarProveedores();
+        });
+    }
+
+    // Acciones en tablas del módulo (delegación)
+    const seccionProveedores = document.getElementById('proveedores');
+    if (seccionProveedores) {
+        seccionProveedores.addEventListener('click', (e) => {
+            const btn = e.target.closest('button[data-id]');
+            if (!btn) return;
+            const id = btn.getAttribute('data-id');
+
+            if (btn.classList.contains('btn-prov-editar')) {
+                abrirModalProveedor(PROVEEDORES.find(p => p.id === id));
+            } else if (btn.classList.contains('btn-prov-pagar')) {
+                abrirModalPagoProv(id);
+            } else if (btn.classList.contains('btn-prov-cuenta')) {
+                mostrarSubtabProveedores('prov-cuenta');
+                if (selCuentaProv) selCuentaProv.value = id;
+                renderCuentaProveedor(id);
+            } else if (btn.classList.contains('btn-prov-eliminar')) {
+                const tieneMovs = FACTURAS_PROVEEDORES.some(f => f.proveedorId === id) || PAGOS_PROVEEDORES.some(x => x.proveedorId === id);
+                if (tieneMovs) { alert('No se puede eliminar: el proveedor tiene facturas o pagos registrados. Elimine primero esos movimientos.'); return; }
+                if (!confirm(`¿Eliminar el proveedor "${nombreProveedor(id)}"?`)) return;
+                PROVEEDORES = PROVEEDORES.filter(p => p.id !== id);
+                guardarProveedores();
+            } else if (btn.classList.contains('btn-fprov-eliminar')) {
+                if (!confirm('¿Eliminar esta factura/compra? El saldo del proveedor se recalculará.')) return;
+                FACTURAS_PROVEEDORES = FACTURAS_PROVEEDORES.filter(f => f.id !== id);
+                guardarProveedores();
+            } else if (btn.classList.contains('btn-pprov-eliminar')) {
+                if (!confirm('¿Eliminar este pago? El saldo del proveedor se recalculará.')) return;
+                PAGOS_PROVEEDORES = PAGOS_PROVEEDORES.filter(x => x.id !== id);
+                guardarProveedores();
+            }
+        });
     }
 
 
