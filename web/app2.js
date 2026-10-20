@@ -4909,6 +4909,211 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Se eliminó la generación masiva automática de remitos para favorecer la emisión y el control individual item por item
 
+    // ==========================================
+    // SISTEMA DE SEGURIDAD Y RESPALDOS
+    // ==========================================
+    let stagedBackupData = null;
+
+    const modalBackup = document.getElementById('modal-backup');
+    const btnTopBackup = document.getElementById('btn-top-backup');
+    const btnCerrarModalBackup = document.getElementById('btn-cerrar-modal-backup');
+    const btnCerrarModalBackupX = document.getElementById('btn-cerrar-modal-backup-x');
+    const btnDescargarBackup = document.getElementById('btn-descargar-backup-modal');
+    const btnSeleccionarBackup = document.getElementById('btn-seleccionar-backup-modal');
+    const inputBackupManual = document.getElementById('input-backup-manual');
+    const backupPreviewContainer = document.getElementById('backup-preview-container');
+    const btnConfirmarSubidaBackup = document.getElementById('btn-confirmar-subida-backup');
+    const btnCancelarSubidaBackup = document.getElementById('btn-cancelar-subida-backup');
+    const labelArchivoBackup = document.getElementById('label-archivo-backup');
+
+    if (btnTopBackup && modalBackup) {
+        btnTopBackup.addEventListener('click', () => {
+            modalBackup.style.display = 'flex';
+            resetBackupUploadUI();
+            cargarEstadoBackups();
+        });
+    }
+
+    const cerrarModalBackup = () => {
+        if (modalBackup) modalBackup.style.display = 'none';
+        resetBackupUploadUI();
+    };
+
+    if (btnCerrarModalBackup) btnCerrarModalBackup.addEventListener('click', cerrarModalBackup);
+    if (btnCerrarModalBackupX) btnCerrarModalBackupX.addEventListener('click', cerrarModalBackup);
+    if (modalBackup) {
+        modalBackup.addEventListener('click', (e) => {
+            if (e.target === modalBackup) cerrarModalBackup();
+        });
+    }
+
+    function resetBackupUploadUI() {
+        stagedBackupData = null;
+        if (inputBackupManual) inputBackupManual.value = '';
+        if (backupPreviewContainer) backupPreviewContainer.style.display = 'none';
+        if (labelArchivoBackup) labelArchivoBackup.textContent = 'Ningún archivo seleccionado';
+        if (btnConfirmarSubidaBackup) {
+            btnConfirmarSubidaBackup.disabled = false;
+            btnConfirmarSubidaBackup.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Confirmar Carga y Restaurar';
+        }
+    }
+
+    // Descarga de Base de Datos (.json)
+    if (btnDescargarBackup) {
+        btnDescargarBackup.addEventListener('click', () => {
+            const link = document.createElement('a');
+            link.href = '/api/backup/download';
+            link.setAttribute('download', '');
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        });
+    }
+
+    // Selección de archivo para subida manual
+    if (btnSeleccionarBackup && inputBackupManual) {
+        btnSeleccionarBackup.addEventListener('click', () => {
+            inputBackupManual.click();
+        });
+
+        inputBackupManual.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            if (labelArchivoBackup) labelArchivoBackup.textContent = `${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                try {
+                    const parsed = JSON.parse(evt.target.result);
+                    if (!parsed || typeof parsed !== 'object') {
+                        throw new Error("El archivo no contiene un objeto JSON válido.");
+                    }
+                    const hasValidKeys = parsed.clients || parsed.remitos || parsed.todas_las_ots || parsed.users || parsed.ots_pendientes;
+                    if (!hasValidKeys) {
+                        throw new Error("El archivo no parece ser una base de datos válida de FlexoERP.");
+                    }
+
+                    const clientsCount = Array.isArray(parsed.clients) ? parsed.clients.length : 0;
+                    const otsCount = parsed.todas_las_ots ? (Array.isArray(parsed.todas_las_ots) ? parsed.todas_las_ots.length : Object.keys(parsed.todas_las_ots).length) : 0;
+                    const remitosCount = Array.isArray(parsed.remitos) ? parsed.remitos.length : 0;
+                    const provCount = Array.isArray(parsed.proveedores) ? parsed.proveedores.length : 0;
+
+                    const elClients = document.getElementById('preview-count-clients');
+                    const elOts = document.getElementById('preview-count-ots');
+                    const elRemitos = document.getElementById('preview-count-remitos');
+                    const elProv = document.getElementById('preview-count-proveedores');
+                    if (elClients) elClients.textContent = clientsCount;
+                    if (elOts) elOts.textContent = otsCount;
+                    if (elRemitos) elRemitos.textContent = remitosCount;
+                    if (elProv) elProv.textContent = provCount;
+
+                    stagedBackupData = parsed;
+                    if (backupPreviewContainer) backupPreviewContainer.style.display = 'block';
+                } catch (err) {
+                    alert('Error al leer el archivo de respaldo:\n' + err.message);
+                    resetBackupUploadUI();
+                    if (labelArchivoBackup) labelArchivoBackup.textContent = 'Archivo no válido';
+                }
+            };
+            reader.readAsText(file);
+        });
+    }
+
+    if (btnCancelarSubidaBackup) {
+        btnCancelarSubidaBackup.addEventListener('click', resetBackupUploadUI);
+    }
+
+    if (btnConfirmarSubidaBackup) {
+        btnConfirmarSubidaBackup.addEventListener('click', async () => {
+            if (!stagedBackupData) {
+                alert("Primero debes seleccionar un archivo de base de datos válido.");
+                return;
+            }
+
+            if (!confirm("¿Está seguro de que desea restaurar esta base de datos?\n\nEl sistema creará una copia de seguridad automática de los datos actuales antes de aplicar la restauración.")) {
+                return;
+            }
+
+            btnConfirmarSubidaBackup.disabled = true;
+            btnConfirmarSubidaBackup.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Restaurando datos...';
+
+            try {
+                const resp = await fetch('/api/backup/upload', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(stagedBackupData)
+                });
+                const result = await resp.json();
+                if (result.status === 'success') {
+                    alert(`¡Base de datos restaurada con éxito!\n\nSe importaron:\n• ${result.counts.clients} Clientes\n• ${result.counts.ots} Órdenes (OTs)\n• ${result.counts.remitos} Remitos\n• ${result.counts.proveedores} Proveedores\n\nEl sistema se recargará automáticamente.`);
+                    localStorage.clear();
+                    window.location.reload();
+                } else {
+                    alert("No se pudo restaurar la base de datos:\n" + (result.message || "Error desconocido en el servidor"));
+                    btnConfirmarSubidaBackup.disabled = false;
+                    btnConfirmarSubidaBackup.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Confirmar Carga y Restaurar';
+                }
+            } catch (err) {
+                alert("Error de red al conectar con el servidor:\n" + err.message);
+                btnConfirmarSubidaBackup.disabled = false;
+                btnConfirmarSubidaBackup.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Confirmar Carga y Restaurar';
+            }
+        });
+    }
+
+    async function cargarEstadoBackups() {
+        const destContainer = document.getElementById('backup-status-destinations');
+        if (!destContainer) return;
+        destContainer.innerHTML = '<div style="font-size:12px; color:#adb5bd; text-align:center; padding:10px;"><i class="fa-solid fa-spinner fa-spin"></i> Verificando ubicaciones de respaldo...</div>';
+
+        try {
+            const res = await fetch('/api/backup/status');
+            const data = await res.json();
+            if (data.status !== 'success') throw new Error("Error al obtener estado");
+
+            let html = '';
+            data.destinations.forEach(dest => {
+                const iconClass = dest.type === 'google_drive' ? 'fa-brands fa-google-drive' :
+                                  (dest.type === 'onedrive' ? 'fa-brands fa-microsoft' :
+                                  (dest.type === 'secondary_drive' ? 'fa-solid fa-hard-drive' : 'fa-solid fa-folder-tree'));
+                const iconColor = dest.type === 'google_drive' ? '#4285F4' :
+                                  (dest.type === 'onedrive' ? '#0078D4' :
+                                  (dest.type === 'secondary_drive' ? '#f4a261' : 'var(--primary)'));
+                const statusBadge = dest.active ? 
+                    `<span style="color:var(--success); font-weight:600;"><i class="fa-solid fa-circle-check"></i> Activo (${dest.file_count} copias)</span>` :
+                    `<span style="color:#adb5bd;"><i class="fa-solid fa-circle-xmark"></i> No detectado</span>`;
+
+                html += `
+                    <div class="backup-dest-item ${dest.active ? 'active' : 'inactive'}">
+                        <div style="display:flex; align-items:center; gap:10px; overflow:hidden;">
+                            <i class="${iconClass}" style="font-size:16px; color:${iconColor}; flex-shrink:0;"></i>
+                            <div style="overflow:hidden;">
+                                <strong>${dest.name}</strong>
+                                <div style="font-size:11px; color:#8e9aaf; word-break:break-all;">${dest.path}</div>
+                            </div>
+                        </div>
+                        <div style="font-size:11px; text-align:right; flex-shrink:0; margin-left:10px;">
+                            ${statusBadge}
+                        </div>
+                    </div>
+                `;
+            });
+
+            if (!data.google_drive_detected) {
+                html += `
+                    <div style="background:rgba(66,133,244,0.08); border:1px solid rgba(66,133,244,0.25); border-radius:6px; padding:10px; margin-top:6px; font-size:11.5px; color:#c5d8fc;">
+                        <i class="fa-brands fa-google-drive" style="color:#4285F4; margin-right:5px;"></i>
+                        <strong>Sugerencia Google Drive:</strong> Puedes descargar tu base de datos con el botón superior y guardarla directamente en tu Google Drive. Además, si instalas la aplicación de escritorio oficial de Google Drive, FlexoERP respaldará allí tus datos de forma 100% automática a diario.
+                    </div>
+                `;
+            }
+
+            destContainer.innerHTML = html;
+        } catch (e) {
+            destContainer.innerHTML = '<div style="font-size:12px; color:var(--danger); text-align:center; padding:10px;">No se pudo verificar el estado de los respaldos.</div>';
+        }
+    }
+
     // Iniciar la aplicación cargando datos desde el servidor o localStorage
     initApp();
 });

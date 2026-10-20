@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+backups/
+database_backup_*.json
+crash_log.txt

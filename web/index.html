@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FlexoERP - Gestión de Etiquetas de Vino</title>
-    <link rel="stylesheet" href="styles.css?v=22">
+    <link rel="stylesheet" href="styles.css?v=23">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css?v=2">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js?v=2"></script>
@@ -66,6 +66,7 @@
                     <input type="text" placeholder="Buscar OT, Cliente o Remito...">
                 </div>
                 <div class="user-profile">
+                    <button class="btn-icon-small" id="btn-top-backup" style="margin-right:15px;color:var(--primary);background:transparent;border:none;font-size:1.15rem;cursor:pointer;transition:transform 0.2s ease;" title="Copias de Seguridad y Respaldo"><i class="fa-solid fa-cloud-arrow-down"></i></button>
                     <button class="btn-icon-small" id="btn-top-usuarios" style="display:none;margin-right:15px;color:var(--secondary);background:transparent;border:none;font-size:1.15rem;cursor:pointer;transition:transform 0.2s ease;" title="Gestión de Usuarios"><i class="fa-solid fa-users-gear"></i></button>
                     <!-- Notification Bell -->
                     <div style="position:relative; margin-right:15px; display:inline-block;">
@@ -1473,6 +1474,123 @@
         </div>
     </div>
 
-    <script src="app2.js?v=27"></script>
+    <!-- ====== MODAL: CENTRO DE SEGURIDAD Y RESPALDOS ====== -->
+    <div id="modal-backup" class="modal-overlay" style="display:none;">
+        <div class="modal-box glass" style="max-width: 680px; max-height: 90vh; overflow-y: auto; padding: 2rem;">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:12px; margin-bottom:18px;">
+                <div>
+                    <h3 style="margin:0; color:var(--primary); font-size:1.35rem; display:flex; align-items:center; gap:10px;">
+                        <i class="fa-solid fa-shield-halved"></i> Centro de Seguridad y Respaldo
+                    </h3>
+                    <p style="margin:4px 0 0; color:#adb5bd; font-size:12.5px;">Respaldo integral de FlexoERP: Base de datos y Código fuente</p>
+                </div>
+                <button class="btn-icon-small" id="btn-cerrar-modal-backup-x" style="background:transparent; border:none; color:#adb5bd; font-size:1.3rem; cursor:pointer;" title="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <!-- Card 1: Descargar Copia de Seguridad Actual -->
+            <div class="backup-card glass" style="padding:15px; border-radius:8px; margin-bottom:16px; border:1px solid rgba(255,255,255,0.08);">
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:15px; flex-wrap:wrap;">
+                    <div style="flex:1; min-width:260px;">
+                        <h4 style="margin:0 0 5px; color:#fff; font-size:14.5px;"><i class="fa-solid fa-download" style="color:var(--success); margin-right:8px;"></i>Descargar Base de Datos (.json)</h4>
+                        <p style="margin:0; color:#adb5bd; font-size:12px;">
+                            Descarga una copia exacta e instantánea de toda la base de datos (clientes, OTs, remitos, pagos y proveedores) en un archivo JSON en tu PC.
+                        </p>
+                    </div>
+                    <button class="btn btn-primary" id="btn-descargar-backup-modal" style="white-space:nowrap; padding:8px 16px; font-size:13px;">
+                        <i class="fa-solid fa-file-arrow-down"></i> Descargar
+                    </button>
+                </div>
+            </div>
+
+            <!-- Card 2: Subida Manual de Base de Datos -->
+            <div class="backup-card glass" style="padding:15px; border-radius:8px; margin-bottom:16px; border:1px solid rgba(255,255,255,0.08);">
+                <h4 style="margin:0 0 5px; color:#fff; font-size:14.5px;"><i class="fa-solid fa-file-arrow-up" style="color:var(--warning); margin-right:8px;"></i>Cargar Base de Datos Manualmente</h4>
+                <p style="margin:0 0 12px; color:#adb5bd; font-size:12px;">
+                    ¿Cambiando de PC o necesitas restaurar un respaldo anterior? Selecciona el archivo .json guardado. El sistema verificará los datos y te mostrará una vista previa con los totales antes de aplicar cualquier cambio.
+                </p>
+                
+                <input type="file" id="input-backup-manual" accept=".json" style="display:none;">
+                <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                    <button class="btn btn-secondary" id="btn-seleccionar-backup-modal" style="font-size:13px; padding:8px 16px;">
+                        <i class="fa-solid fa-folder-open"></i> Seleccionar archivo .json
+                    </button>
+                    <span id="label-archivo-backup" style="color:#adb5bd; font-size:12px; font-style:italic;">Ningún archivo seleccionado</span>
+                </div>
+
+                <!-- Preview container (hidden initially) -->
+                <div id="backup-preview-container" style="display:none; margin-top:15px; background:rgba(0,0,0,0.35); border:1px dashed var(--warning); border-radius:6px; padding:12px;">
+                    <h5 style="margin:0 0 8px; color:var(--warning); font-size:13px; display:flex; align-items:center; gap:6px;">
+                        <i class="fa-solid fa-eye"></i> Vista Previa del Archivo Seleccionado:
+                    </h5>
+                    <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; text-align:center; margin-bottom:12px;">
+                        <div style="background:rgba(255,255,255,0.05); padding:8px; border-radius:4px;">
+                            <span style="font-size:11px; color:#adb5bd; display:block;">Clientes</span>
+                            <strong id="preview-count-clients" style="font-size:16px; color:var(--primary);">0</strong>
+                        </div>
+                        <div style="background:rgba(255,255,255,0.05); padding:8px; border-radius:4px;">
+                            <span style="font-size:11px; color:#adb5bd; display:block;">Órdenes (OTs)</span>
+                            <strong id="preview-count-ots" style="font-size:16px; color:var(--secondary);">0</strong>
+                        </div>
+                        <div style="background:rgba(255,255,255,0.05); padding:8px; border-radius:4px;">
+                            <span style="font-size:11px; color:#adb5bd; display:block;">Remitos</span>
+                            <strong id="preview-count-remitos" style="font-size:16px; color:var(--success);">0</strong>
+                        </div>
+                        <div style="background:rgba(255,255,255,0.05); padding:8px; border-radius:4px;">
+                            <span style="font-size:11px; color:#adb5bd; display:block;">Proveedores</span>
+                            <strong id="preview-count-proveedores" style="font-size:16px; color:#f4a261;">0</strong>
+                        </div>
+                    </div>
+                    <p style="margin:0 0 10px; font-size:11.5px; color:#adb5bd;">
+                        <i class="fa-solid fa-shield" style="color:var(--success);"></i> <strong>Seguridad garantizada:</strong> El sistema creará un respaldo de seguridad del estado actual antes de sustituir la base de datos.
+                    </p>
+                    <div style="display:flex; gap:10px;">
+                        <button class="btn btn-danger" id="btn-confirmar-subida-backup" style="font-size:12px; padding:7px 14px;">
+                            <i class="fa-solid fa-cloud-arrow-up"></i> Confirmar Carga y Restaurar
+                        </button>
+                        <button class="btn btn-secondary" id="btn-cancelar-subida-backup" style="font-size:12px; padding:7px 14px;">
+                            Cancelar
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 3: Estado de Respaldos Automáticos y Google Drive -->
+            <div class="backup-card glass" style="padding:15px; border-radius:8px; margin-bottom:16px; border:1px solid rgba(255,255,255,0.08);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:10px;">
+                    <h4 style="margin:0; color:#fff; font-size:14.5px;"><i class="fa-brands fa-google-drive" style="color:#4285F4; margin-right:8px;"></i>Respaldo en la Nube y Discos Locales</h4>
+                    <a href="https://drive.google.com" target="_blank" class="btn btn-secondary" style="font-size:11px; padding:4px 10px; text-decoration:none; display:inline-flex; align-items:center; gap:5px;">
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i> Abrir Google Drive Web
+                    </a>
+                </div>
+                <div id="backup-status-destinations" style="display:flex; flex-direction:column; gap:8px;">
+                    <div style="font-size:12px; color:#adb5bd; text-align:center; padding:10px;">Cargando estado de destinos...</div>
+                </div>
+                <p style="margin:10px 0 0; color:#8e9aaf; font-size:11px;">
+                    <i class="fa-solid fa-clock-rotate-left"></i> Los respaldos automáticos se generan diariamente y se conservan con rotación permanente de 30 copias.
+                </p>
+            </div>
+
+            <!-- Card 4: Código del Sistema en GitHub -->
+            <div class="backup-card glass" style="padding:15px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                    <div>
+                        <h4 style="margin:0 0 5px; color:#fff; font-size:14.5px;"><i class="fa-brands fa-github" style="color:#fff; margin-right:8px;"></i>Código del Programa en GitHub</h4>
+                        <p style="margin:0; color:#adb5bd; font-size:12px;">
+                            Repositorio sincronizado: <a href="https://github.com/enzogarbi10/Sistemareimpresiones" target="_blank" style="color:var(--primary); text-decoration:underline;">enzogarbi10/Sistemareimpresiones</a>
+                        </p>
+                    </div>
+                    <span class="badge" style="background:rgba(46,204,113,0.15); color:var(--success); border:1px solid var(--success); font-size:11px; padding:4px 8px; border-radius:4px;">
+                        <i class="fa-solid fa-check"></i> Sincronizado
+                    </span>
+                </div>
+            </div>
+
+            <div style="margin-top:20px; text-align:right;">
+                <button class="btn btn-secondary" id="btn-cerrar-modal-backup" style="padding:8px 24px; font-size:13px;">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app2.js?v=28"></script>
 </body>
 </html>

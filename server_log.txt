@@ -4,3 +4,408 @@ Database path: E:\FlexoERP\database.json
 127.0.0.1 - - [01/Jun/2026 17:03:45] "GET /api/data HTTP/1.1" 200 -
 127.0.0.1 - - [01/Jun/2026 17:03:45] code 404, message File not found
 127.0.0.1 - - [01/Jun/2026 17:03:45] "GET /favicon.ico HTTP/1.1" 404 -
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-07-29.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-07-30.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-07-31.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-08-03.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-08-04.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-08-05.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-08-06.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-08-07.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-08-08.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-08-10.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-08-11.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-08-12.jsonFlexoERP local server started on http://localhost:8081
+
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-08-13.jsonFlexoERP local server started on http://localhost:8081
+
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-08-14.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-08-18.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-08-19.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-08-20.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-08-21.json
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-08-22.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-08-24.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-08-25.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-08-26.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-08-27.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-08-28.jsonFlexoERP local server started on http://localhost:8081
+
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-08-31.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-09-01.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-09-02.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-09-03.json
+Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-09-04.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-09-07.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-09-08.json
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-09-09.jsonFlexoERP local server started on http://localhost:8081
+
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-09-10.json
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-09-11.json
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-09-12.json
+
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-09-14.jsonFlexoERP local server started on http://localhost:8081
+
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-09-15.json
+Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-09-16.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-09-17.json
+
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-09-18.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-09-21.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-09-22.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-09-23.json
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-09-24.json
+Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-09-25.jsonFlexoERP local server started on http://localhost:8081
+
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081s\database_backup_2026-09-26.json
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-09-27.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-09-28.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-09-29.json
+
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-09-30.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-10-01.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-10-02.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-10-03.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-10-04.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-10-05.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-10-06.json
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.jsonlexoERP\backups\database_backup_2026-10-07.json
+Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-10-08.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-10-09.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-10-10.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-10-12.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-10-13.json
+FlexoERP local server started on http://localhost:8081s\database_backup_2026-10-14.json
+
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-10-15.jsonFlexoERP local server started on http://localhost:8081
+
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-10-16.json
+
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-10-19.json
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081Backup permanente diario creado en: E:\FlexoERP\backups\database_backup_2026-10-20.json
+
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+[Disco Secundario (D:)] Backup permanente diario creado: D:\FlexoERP_Backups\database_backup_2026-10-20.json
+[Microsoft OneDrive] Backup permanente diario creado: C:\Users\ENZO\OneDrive\Documentos\FlexoERP_Backups\database_backup_2026-10-20.json
+Respaldo de seguridad previo creado en: E:\FlexoERP\backups\rollback_before_upload_20261020_130650.json
