@@ -1,6 +1,8 @@
 import os
 import sys
 import json
+import socket
+import subprocess
 import webbrowser
 import threading
 import datetime
@@ -394,16 +396,64 @@ class ERPRequestHandler(SimpleHTTPRequestHandler):
         self.send_header('Access-Control-Allow-Headers', 'Content-Type')
         self.end_headers()
 
+def is_server_running(port=PORT):
+    import urllib.request
+    try:
+        req = urllib.request.Request(f'http://127.0.0.1:{port}/api/data', headers={'User-Agent': 'FlexoERP-Launcher'})
+        with urllib.request.urlopen(req, timeout=0.6) as resp:
+            return resp.status == 200
+    except Exception:
+        return False
+
 def open_browser():
-    webbrowser.open(f'http://localhost:{PORT}')
+    url = f'http://localhost:{PORT}'
+    # 1. Intentar abrir con Google Chrome directamente (para garantizar foco y ventana activa)
+    chrome_paths = [
+        r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+        r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+        os.path.expandvars(r"%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe")
+    ]
+    for cp in chrome_paths:
+        if os.path.exists(cp):
+            try:
+                subprocess.Popen([cp, url])
+                return
+            except Exception:
+                pass
+
+    # 2. Intentar con Microsoft Edge
+    edge_paths = [
+        r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
+        r"C:\Program Files\Microsoft\Edge\Application\msedge.exe"
+    ]
+    for ep in edge_paths:
+        if os.path.exists(ep):
+            try:
+                subprocess.Popen([ep, url])
+                return
+            except Exception:
+                pass
+
+    # 3. Fallback al navegador por defecto del sistema
+    try:
+        webbrowser.open(url)
+    except Exception:
+        pass
 
 import traceback
 
 def main():
     try:
+        # Si el servidor ya está activo, abrir el navegador y salir inmediatamente
+        if is_server_running(PORT):
+            print(f"FlexoERP ya está en ejecución en http://localhost:{PORT}. Abriendo navegador...")
+            open_browser()
+            return
+
         os.makedirs(web_dir, exist_ok=True)
         load_db()
         
+        HTTPServer.allow_reuse_address = False
         server_address = ('', PORT)
         try:
             httpd = HTTPServer(server_address, ERPRequestHandler)
@@ -419,7 +469,7 @@ def main():
         print(f"Database path: {db_path}")
         
         # Start browser automatically
-        threading.Timer(1.0, open_browser).start()
+        threading.Timer(0.8, open_browser).start()
         
         try:
             httpd.serve_forever()

@@ -409,3 +409,38 @@ Database path: E:\FlexoERP\database.json
 [Disco Secundario (D:)] Backup permanente diario creado: D:\FlexoERP_Backups\database_backup_2026-10-20.json
 [Microsoft OneDrive] Backup permanente diario creado: C:\Users\ENZO\OneDrive\Documentos\FlexoERP_Backups\database_backup_2026-10-20.json
 Respaldo de seguridad previo creado en: E:\FlexoERP\backups\rollback_before_upload_20261020_130650.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP local server started on http://localhost:8081
+Web folder: E:\FlexoERP\web
+Database path: E:\FlexoERP\database.json
+FlexoERP ya está en ejecución en http://localhost:8081. Abriendo navegador...
+FlexoERP ya está en ejecución en http://localhost:8081. Abriendo navegador...
