@@ -62,7 +62,7 @@
             "localidad": "Luján de Cuyo",
             "provincia": "Mendoza",
             "moneda": "Pesos",
-            "saldo": 4811511.365240004,
+            "saldo": 4903443.4,
             "priceListId": "list-1781775320912",
             "condicionPago": "90"
         },
@@ -76,7 +76,7 @@
             "localidad": "Luján de Cuyo",
             "provincia": "Mendoza",
             "moneda": "Pesos",
-            "saldo": 3618355.0785316,
+            "saldo": 3618355.08,
             "priceListId": "list-1782323419456",
             "condicionPago": "0"
         },
@@ -90,7 +90,7 @@
             "localidad": "Luján de Cuyo",
             "provincia": "Mendoza",
             "moneda": "Pesos",
-            "saldo": 0,
+            "saldo": 0.0,
             "priceListId": "list-1782323419456",
             "condicionPago": "0"
         },
@@ -104,7 +104,7 @@
             "localidad": "Luján de Cuyo",
             "provincia": "Mendoza",
             "moneda": "Pesos",
-            "saldo": 1124494.5905999998,
+            "saldo": 1124494.59,
             "priceListId": "list-1782318189218",
             "condicionPago": "60"
         },
@@ -118,7 +118,7 @@
             "localidad": "Luján de Cuyo",
             "provincia": "Mendoza",
             "moneda": "Pesos",
-            "saldo": 2167101.3143,
+            "saldo": 2167101.31,
             "priceListId": "list-1782323419456",
             "condicionPago": "30"
         },
@@ -132,7 +132,7 @@
             "localidad": "Luján de Cuyo",
             "provincia": "Mendoza",
             "moneda": "Pesos",
-            "saldo": 375583.83799999993,
+            "saldo": 375583.84,
             "priceListId": "list-1782318189218",
             "condicionPago": "30"
         },
@@ -146,7 +146,7 @@
             "localidad": "Luján de Cuyo",
             "provincia": "Mendoza",
             "moneda": "Pesos",
-            "saldo": 1.4551915228366852e-11,
+            "saldo": 0.0,
             "priceListId": "list-1782318189218",
             "condicionPago": "60"
         },
@@ -160,7 +160,7 @@
             "localidad": "Luján de Cuyo",
             "provincia": "Mendoza",
             "moneda": "Pesos",
-            "saldo": 0,
+            "saldo": 0.0,
             "priceListId": "list-1782323419456",
             "condicionPago": "0"
         },
@@ -174,7 +174,7 @@
             "localidad": "Luján de Cuyo",
             "provincia": "Mendoza",
             "moneda": "Pesos",
-            "saldo": -0.0002440000098431483,
+            "saldo": -0.0,
             "priceListId": "list-1782323419456",
             "condicionPago": "0"
         },
@@ -188,7 +188,7 @@
             "localidad": "Luján de Cuyo",
             "provincia": "Mendoza",
             "moneda": "Pesos",
-            "saldo": 23400,
+            "saldo": 23400.0,
             "priceListId": "list-1782323419456",
             "condicionPago": "0"
         },
@@ -202,7 +202,7 @@
             "localidad": "Luján de Cuyo",
             "provincia": "Mendoza",
             "moneda": "Pesos",
-            "saldo": 82058.32800000001,
+            "saldo": 82058.33,
             "priceListId": "list-1782323419456",
             "condicionPago": "30"
         }
@@ -1565,6 +1565,19 @@
             "factura": "SI",
             "observaciones": "",
             "emailEnviado": ""
+        },
+        {
+            "numero": 113,
+            "tipoRemito": "R",
+            "otNumero": 112,
+            "cliente": "Domaine Bousquet s.a",
+            "fecha": "20/10/2026",
+            "subtotal": 75976.89,
+            "iva": 15955.1469,
+            "total": 91932.0369,
+            "factura": "SI",
+            "observaciones": "",
+            "emailEnviado": ""
         }
     ],
     "remitos_eliminados": [
@@ -1790,11 +1803,11 @@
             "notas": "ORDEN DE PAGO 5140"
         }
     ],
-    "ultimo_remito": 112,
+    "ultimo_remito": 113,
     "ultimo_remito_x": 10,
     "ots_pendientes": [],
     "ots_logistica": [],
-    "ultimo_numero_ot": 111,
+    "ultimo_numero_ot": 112,
     "todas_las_ots": {
         "1": {
             "numero": 1,
@@ -8263,6 +8276,67 @@
                     "colores": "1",
                     "barniz": "NO",
                     "fecha": "2026-10-19",
+                    "imagenB64": null,
+                    "status": "finalizado"
+                }
+            ]
+        },
+        "112": {
+            "numero": 112,
+            "cliente": "Domaine Bousquet s.a",
+            "fechaAlta": "20/10/2026",
+            "herramentales": {
+                "tipo": "PERSONALIZADO",
+                "cantidad": 2,
+                "importe": 24000
+            },
+            "observaciones": "",
+            "items": [
+                {
+                    "tipo": "Etiqueta",
+                    "marca": "CHARMAT",
+                    "varietal": "WHITE MI",
+                    "cantidad": 2520,
+                    "precio": "9167",
+                    "colores": "1",
+                    "barniz": "NO",
+                    "fecha": "2026-10-20",
+                    "imagenB64": null,
+                    "status": "finalizado"
+                },
+                {
+                    "tipo": "Etiqueta",
+                    "marca": "GAIA",
+                    "varietal": "CAB FRANC EEUU 2024",
+                    "cantidad": 630,
+                    "precio": "9167",
+                    "colores": "1",
+                    "barniz": "NO",
+                    "fecha": "2026-10-20",
+                    "imagenB64": null,
+                    "status": "finalizado"
+                },
+                {
+                    "tipo": "Etiqueta",
+                    "marca": "RESERVA",
+                    "varietal": "PINOT NOIR MI",
+                    "cantidad": 1060,
+                    "precio": "9167",
+                    "colores": "1",
+                    "barniz": "NO",
+                    "fecha": "2026-10-20",
+                    "imagenB64": null,
+                    "status": "finalizado"
+                },
+                {
+                    "tipo": "Contraetiqueta",
+                    "marca": "RESERVA",
+                    "varietal": "PINOT NOIR MI",
+                    "cantidad": 1090,
+                    "precio": "9167",
+                    "colores": "1",
+                    "barniz": "NO",
+                    "fecha": "2026-10-20",
                     "imagenB64": null,
                     "status": "finalizado"
                 }

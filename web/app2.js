@@ -4455,11 +4455,65 @@ document.addEventListener('DOMContentLoaded', () => {
             const obsTextarea = document.getElementById('input-despacho-observaciones');
             ot._observacionesDespacho = obsTextarea ? obsTextarea.value.trim() : '';
             
+            // Crear y guardar el remito inmediatamente al confirmar el despacho
+            const clientObj = CLIENTS.find(c => c.nombre === ot.cliente);
+            let totalAcumulado = 0;
+            ot.items.forEach(item => {
+                const qty = parseInt(item.cantidad) || 0;
+                const priceMillar = parseFloat(String(item.precio).replace(',', '.')) || 0;
+                totalAcumulado += calcularSubtotalItem(ot.cliente, qty, priceMillar);
+            });
+            if (ot.herramentales) {
+                const hImp = parseFloat(ot.herramentales.importe) || 0;
+                totalAcumulado += hImp;
+            }
+            const necesitaFactura = (clientObj && clientObj.factura === 'SI');
+            const subtotal = totalAcumulado;
+            const iva = necesitaFactura ? (subtotal * 0.21) : 0;
+            const total = subtotal + iva;
+
+            let numParaRemito = 0;
+            let tipoRemito = 'R';
+            if (necesitaFactura) {
+                ultimoRemitoNumero++;
+                numParaRemito = ultimoRemitoNumero;
+                tipoRemito = 'R';
+            } else {
+                ultimoRemitoXNumero++;
+                numParaRemito = ultimoRemitoXNumero;
+                tipoRemito = 'X';
+            }
+
+            REMITOS.push({
+                numero: numParaRemito,
+                tipoRemito: tipoRemito,
+                otNumero: ot.numero,
+                cliente: ot.cliente,
+                fecha: new Date().toLocaleDateString('es-AR'),
+                subtotal: subtotal,
+                iva: iva,
+                total: total,
+                factura: necesitaFactura ? 'SI' : 'NO',
+                observaciones: ot._observacionesDespacho || '',
+                emailEnviado: clientObj ? clientObj.email : 'compras@bodega.com'
+            });
+            saveRemitos();
+
+            otsLogistica = otsLogistica.filter(o => o.numero !== ot.numero);
             saveOts();
-            
-            // Cerrar modal de ajuste y abrir el remito con los nuevos valores reales
+
+            recalcularSaldosClientes();
+            renderClientes();
+            renderLogistica();
+            renderHistorialRemitos();
+            renderDashboard();
+
+            showEmailToast(clientObj ? clientObj.email : 'compras@bodega.com', numParaRemito);
+            currentOtParaRemito = null;
+
+            // Cerrar modal de ajuste y abrir la vista previa del remito ya guardado
             document.getElementById('modal-despacho-cantidades').style.display = 'none';
-            abrirRemitoModal(ot.numero, false);
+            abrirRemitoModal(numParaRemito, true, tipoRemito);
         });
     }
 
