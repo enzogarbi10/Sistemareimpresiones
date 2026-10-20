@@ -6,10 +6,11 @@ document.addEventListener('DOMContentLoaded', () => {
         { username: 'admin',      password: '123',           name: 'Administrador',  role: 'admin',      allowedModules: ['dashboard','clientes','ots','taller','logistica','estadisticas'] },
         { username: 'operador',   password: '123',           name: 'Juan Perez',     role: 'operador',   allowedModules: ['taller'] }
     ];
-    // Asegurar que los administradores tengan el módulo de estadísticas habilitado
+    // Asegurar que los administradores tengan los módulos de estadísticas y proveedores habilitados
     USERS.forEach(u => {
-        if ((u.role === 'admin' || u.role === 'superadmin' || (u.allowedModules && u.allowedModules.includes('dashboard'))) && !u.allowedModules.includes('estadisticas')) {
-            u.allowedModules.push('estadisticas');
+        if (u.role === 'admin' || u.role === 'superadmin' || (u.allowedModules && u.allowedModules.includes('dashboard'))) {
+            if (!u.allowedModules.includes('estadisticas')) u.allowedModules.push('estadisticas');
+            if (!u.allowedModules.includes('proveedores')) u.allowedModules.push('proveedores');
         }
     });
     localStorage.setItem('flexoERP_users', JSON.stringify(USERS));
@@ -21,8 +22,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnLogout    = document.getElementById('btn-logout');
     let currentUser    = JSON.parse(localStorage.getItem('flexoERP_user'));
 
-    if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin' || (currentUser.allowedModules && currentUser.allowedModules.includes('dashboard'))) && !currentUser.allowedModules.includes('estadisticas')) {
-        currentUser.allowedModules.push('estadisticas');
+    if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin' || (currentUser.allowedModules && currentUser.allowedModules.includes('dashboard')))) {
+        if (!currentUser.allowedModules.includes('estadisticas')) currentUser.allowedModules.push('estadisticas');
+        if (!currentUser.allowedModules.includes('proveedores')) currentUser.allowedModules.push('proveedores');
         localStorage.setItem('flexoERP_user', JSON.stringify(currentUser));
     }
 
@@ -53,13 +55,6 @@ document.addEventListener('DOMContentLoaded', () => {
     navItems.forEach(item => {
         item.addEventListener('click', () => {
             const targetId = item.getAttribute('data-target');
-            if (targetId === 'dashboard') {
-                const pass = prompt('Por favor, ingrese la contraseña para acceder al Dashboard Financiero:');
-                if (pass !== 'admin123') {
-                    alert('Contraseña incorrecta. Acceso denegado.');
-                    return;
-                }
-            }
             navItems.forEach(n => n.classList.remove('active'));
             modules.forEach(m => m.classList.remove('active'));
             item.classList.add('active');
@@ -368,6 +363,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 localStorage.setItem('flexoERP_db_id', serverDbId);
                 
                 USERS = data.users || USERS;
+                USERS.forEach(u => {
+                    if (u.role === 'admin' || u.role === 'superadmin' || (u.allowedModules && u.allowedModules.includes('dashboard'))) {
+                        if (!u.allowedModules.includes('estadisticas')) u.allowedModules.push('estadisticas');
+                        if (!u.allowedModules.includes('proveedores')) u.allowedModules.push('proveedores');
+                    }
+                });
                 CLIENTS = [];
                 REMITOS = [];
                 REMITOS_ELIMINADOS = [];
@@ -393,6 +394,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 localStorage.setItem('flexoERP_price_lists', JSON.stringify(priceLists));
             } else {
                 USERS = data.users || USERS;
+                USERS.forEach(u => {
+                    if (u.role === 'admin' || u.role === 'superadmin' || (u.allowedModules && u.allowedModules.includes('dashboard'))) {
+                        if (!u.allowedModules.includes('estadisticas')) u.allowedModules.push('estadisticas');
+                        if (!u.allowedModules.includes('proveedores')) u.allowedModules.push('proveedores');
+                    }
+                });
                 CLIENTS = data.clients || CLIENTS;
                 REMITOS = data.remitos || REMITOS;
                 REMITOS_ELIMINADOS = data.remitos_eliminados || REMITOS_ELIMINADOS;
