@@ -6,7 +6,7 @@ import subprocess
 import webbrowser
 import threading
 import datetime
-from http.server import SimpleHTTPRequestHandler, HTTPServer
+from http.server import SimpleHTTPRequestHandler, HTTPServer, ThreadingHTTPServer
 
 PORT = 8081
 
@@ -225,9 +225,13 @@ class ERPRequestHandler(SimpleHTTPRequestHandler):
         return res_path
 
     def end_headers(self):
-        self.send_header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
-        self.send_header('Pragma', 'no-cache')
-        self.send_header('Expires', '0')
+        req_path = getattr(self, 'path', '')
+        if req_path.startswith('/api/'):
+            self.send_header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            self.send_header('Pragma', 'no-cache')
+            self.send_header('Expires', '0')
+        else:
+            self.send_header('Cache-Control', 'no-cache')
         super().end_headers()
 
     def log_message(self, format, *args):
@@ -468,10 +472,16 @@ def main():
         os.makedirs(web_dir, exist_ok=True)
         load_db()
         
-        HTTPServer.allow_reuse_address = False
+        class QuietThreadingHTTPServer(ThreadingHTTPServer):
+            allow_reuse_address = False
+            daemon_threads = True
+            def handle_error(self, request, client_address):
+                # Ignore harmless socket disconnects when browser/iframe closes connection early
+                pass
+
         server_address = ('', PORT)
         try:
-            httpd = HTTPServer(server_address, ERPRequestHandler)
+            httpd = QuietThreadingHTTPServer(server_address, ERPRequestHandler)
         except OSError as e:
             # Port already in use: server is already running. Just open browser and exit.
             if getattr(e, 'winerror', None) == 10048 or "already in use" in str(e).lower():

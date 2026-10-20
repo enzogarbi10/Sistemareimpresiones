@@ -4052,7 +4052,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const valTotalEl = document.getElementById('remito-val-total');
         if (valTotalEl) {
-            valTotalEl.innerText = `$ ${totalConIva.toLocaleString('es-AR', {minimumFractionDigits: 2})}`;
+            valTotalEl.innerText = `$ ${totalConIva.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
         }
         
         // Observaciones del remito
@@ -4075,9 +4075,16 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             wrapper.classList.remove('remito-x');
         }
+        wrapper.querySelectorAll('.remito-x-col').forEach(el => {
+            el.style.display = isX ? '' : 'none';
+        });
+        const fechaAbsEl = document.getElementById('remito-cli-fecha-absoluta');
+        if (fechaAbsEl) {
+            fechaAbsEl.style.display = isX ? 'none' : 'block';
+        }
         
-        document.getElementById('remito-val-subtotal').innerText = `$ ${subtotalNeto.toLocaleString('es-AR', {minimumFractionDigits: 2})}`;
-        document.getElementById('remito-val-iva').innerText = `$ ${iva.toLocaleString('es-AR', {minimumFractionDigits: 2})}`;
+        document.getElementById('remito-val-subtotal').innerText = `$ ${subtotalNeto.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        document.getElementById('remito-val-iva').innerText = `$ ${iva.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
         // remito-val-total is already set above
         
         document.getElementById('modal-remito').style.display = 'flex';
@@ -4163,40 +4170,87 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    function descargarRemitoPdf(closeModalAfter = false) {
+        const element = document.getElementById('remito-printable-area');
+        if (!element) return;
+        
+        const numText = document.getElementById('remito-val-numero').innerText || 'R-00000000';
+        const numClean = numText.replace('Nro: ', '').trim();
+        const isX = element.classList.contains('remito-x');
+        
+        const opt = {
+            margin:       isX ? [15, 0, 15, 0] : [28, 0, 20, 0],
+            filename:     `remito-${numClean}.pdf`,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { 
+                scale: 1.5, 
+                useCORS: true, 
+                logging: false,
+                onclone: (doc) => {
+                    try {
+                        let cssText = '';
+                        Array.from(document.styleSheets).forEach(sheet => {
+                            try {
+                                Array.from(sheet.cssRules || []).forEach(rule => {
+                                    if (rule.type !== CSSRule.MEDIA_RULE || !String(rule.conditionText || '').includes('print')) {
+                                        cssText += rule.cssText + '\n';
+                                    }
+                                });
+                            } catch (e) {}
+                        });
+                        if (cssText && doc.head) {
+                            const styleEl = doc.createElement('style');
+                            styleEl.textContent = cssText;
+                            doc.head.appendChild(styleEl);
+                        }
+                    } catch (e) {}
+
+                    const modalClone = doc.getElementById('modal-remito');
+                    if (modalClone) {
+                        modalClone.style.display = 'flex';
+                    }
+
+                    doc.querySelectorAll('.remito-wrapper').forEach(wrapper => {
+                        wrapper.style.minHeight = 'auto';
+                        wrapper.style.boxShadow = 'none';
+                        wrapper.style.margin = '0';
+                        if (isX) {
+                            wrapper.classList.add('remito-x');
+                        } else {
+                            wrapper.classList.remove('remito-x');
+                        }
+                        wrapper.querySelectorAll('.remito-x-col').forEach(el => {
+                            el.style.display = isX ? '' : 'none';
+                        });
+                        const fechaAbs = wrapper.querySelector('#remito-cli-fecha-absoluta');
+                        if (fechaAbs) {
+                            fechaAbs.style.display = isX ? 'none' : 'block';
+                        }
+                    });
+                }
+            },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+        
+        return html2pdf().set(opt).from(element).save().then(() => {
+            if (closeModalAfter) {
+                document.getElementById('modal-remito').style.display = 'none';
+                currentOtParaRemito = null;
+            }
+        }).catch(err => {
+            console.error('Error al generar PDF:', err);
+            if (closeModalAfter) {
+                document.getElementById('modal-remito').style.display = 'none';
+                currentOtParaRemito = null;
+            }
+            alert('Ocurrió un error al generar el PDF. Por favor, utilice el botón Imprimir.');
+        });
+    }
+
     const btnRemitoPdf = document.getElementById('btn-remito-pdf');
     if (btnRemitoPdf) {
         btnRemitoPdf.addEventListener('click', () => {
-            const element = document.getElementById('remito-printable-area');
-            if (!element) return;
-            
-            const numText = document.getElementById('remito-val-numero').innerText || 'R-00000000';
-            const numClean = numText.replace('Nro: ', '').trim();
-            const isX = document.querySelector('.remito-wrapper').classList.contains('remito-x');
-            
-            const opt = {
-                margin:       isX ? [15, 0, 15, 0] : [28, 0, 20, 0],
-                filename:     `remito-${numClean}.pdf`,
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { 
-                    scale: 1.5, 
-                    useCORS: true, 
-                    logging: false,
-                    onclone: (doc) => {
-                        const wrapper = doc.querySelector('.remito-wrapper');
-                        if (wrapper) {
-                            wrapper.style.minHeight = 'auto';
-                            wrapper.style.boxShadow = 'none';
-                            wrapper.style.margin = '0';
-                        }
-                    }
-                },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
-            
-            html2pdf().set(opt).from(element).save().catch(err => {
-                console.error('Error al generar PDF:', err);
-                alert('Ocurrió un error al generar el PDF. Por favor, utilice el botón Imprimir.');
-            });
+            descargarRemitoPdf(false);
         });
     }
 
@@ -4728,12 +4782,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (btnPdfHistorial) {
             const num = parseInt(btnPdfHistorial.getAttribute('data-numero'));
             const tipo = btnPdfHistorial.getAttribute('data-tipo') || 'R';
-            // Programmatically open, download, and close
+            // Programmatically open, download, and close after generation
             abrirRemitoModal(num, true, tipo);
-            const btnPdf = document.getElementById('btn-remito-pdf');
-            if (btnPdf) btnPdf.click();
-            document.getElementById('modal-remito').style.display = 'none';
-            currentOtParaRemito = null;
+            descargarRemitoPdf(true);
             return;
         }
 

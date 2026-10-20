@@ -4,7 +4,175 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FlexoERP - Gestión de Etiquetas de Vino</title>
-    <link rel="stylesheet" href="styles.css?v=23">
+    <link rel="stylesheet" href="styles.css?v=24">
+    <style id="remito-inline-styles">
+        .remito-wrapper {
+            width: 210mm;
+            min-width: 210mm;
+            max-width: none;
+            min-height: 297mm;
+            box-sizing: border-box;
+            position: relative;
+            padding: 15mm 10mm;
+            margin: 20px auto;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            font-family: 'Outfit', 'Inter', Arial, sans-serif;
+            color: #1a1921;
+            background: #ffffff;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        .remito-wrapper p {
+            margin: 0 0 4px 0;
+        }
+        .remito-header-container {
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+        .remito-header {
+            display: grid;
+            grid-template-columns: 1.25fr 0.75fr;
+            border: 2px solid #1a1921;
+            border-radius: 8px;
+        }
+        .remito-header-left {
+            padding: 1rem;
+            border-right: 2px solid #1a1921;
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+        .remito-logo {
+            max-height: 75px;
+            width: auto;
+        }
+        .remito-company-info {
+            font-size: 11px;
+            color: #444;
+            line-height: 1.4;
+        }
+        .remito-header-right {
+            padding: 1rem;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .remito-type-badge {
+            position: absolute;
+            top: 0;
+            left: 62.5%;
+            transform: translate(-50%, -15px);
+            background: #ffffff;
+            border: 2px solid #1a1921;
+            border-radius: 4px;
+            font-weight: 900;
+            font-size: 26px;
+            width: 45px;
+            height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .remito-title {
+            font-size: 16px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: #000;
+        }
+        .remito-number {
+            font-size: 18px;
+            font-weight: 900;
+            font-family: monospace;
+            margin-top: 0.3rem;
+        }
+        .remito-date {
+            font-size: 13px;
+            margin-top: 0.3rem;
+            font-weight: 600;
+        }
+        .remito-validity-note {
+            font-size: 9px;
+            font-weight: bold;
+            text-transform: uppercase;
+            color: #777;
+            margin-top: 0.5rem;
+            border-top: 1px dashed #ccc;
+            padding-top: 0.3rem;
+        }
+        .remito-client-card {
+            border: 2px solid #1a1921;
+            border-radius: 8px;
+            padding: 1.2rem;
+            margin-bottom: 1.5rem;
+        }
+        .remito-grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.2rem;
+        }
+        .remito-grid-item strong {
+            color: #000;
+        }
+        .remito-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1.5rem;
+            border: 2px solid #1a1921;
+        }
+        .remito-table th, .remito-table td {
+            border: 1px solid #1a1921;
+            padding: 0.3rem 0.5rem;
+            text-align: left;
+        }
+        .remito-table th {
+            background: #f0f4f8;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 11px;
+            color: #000;
+        }
+        .remito-signature-box {
+            border: 2px solid #1a1921;
+            border-radius: 8px;
+            padding: 1.2rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            min-height: 100px;
+        }
+        .remito-carrier-card {
+            border: 2px solid #1a1921;
+            border-radius: 8px;
+            padding: 1.2rem;
+            margin-bottom: 1.5rem;
+        }
+        .remito-carrier-card h4 {
+            margin-top: 0;
+            margin-bottom: 0.8rem;
+            text-transform: uppercase;
+            font-size: 12px;
+            border-bottom: 1px solid #1a1921;
+            padding-bottom: 0.3rem;
+            color: #000;
+        }
+        .remito-absolute-date {
+            position: absolute;
+            top: 7mm;
+            right: 75mm;
+            font-size: 13px;
+            font-weight: 600;
+            color: #000;
+        }
+        .remito-wrapper:not(.remito-x) .remito-x-col {
+            display: none !important;
+        }
+        .remito-wrapper.remito-x .remito-absolute-date {
+            display: none !important;
+        }
+    </style>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css?v=2">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js?v=2"></script>
@@ -1591,6 +1759,6 @@
         </div>
     </div>
 
-    <script src="app2.js?v=28"></script>
+    <script src="app2.js?v=29"></script>
 </body>
 </html>
