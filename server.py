@@ -165,10 +165,10 @@ def realizar_backup_diario(data):
                     os.makedirs(b_dir, exist_ok=True)
                     backup_file = os.path.join(b_dir, f"database_backup_{today_str}.json")
                     
-                    if not os.path.exists(backup_file):
-                        with open(backup_file, 'w', encoding='utf-8') as f:
-                            json.dump(data, f, indent=4, ensure_ascii=False)
-                        print(f"[{dest['name']}] Backup permanente diario creado: {backup_file}")
+                    # Escribir o actualizar el respaldo permanente del día con los datos más recientes
+                    with open(backup_file, 'w', encoding='utf-8') as f:
+                        json.dump(data, f, indent=4, ensure_ascii=False)
+                    print(f"[{dest['name']}] Backup diario guardado: {backup_file}")
                     
                     # Rotacion de seguridad: mantener los ultimos 30 backups en cada carpeta
                     archivos = [os.path.join(b_dir, f) for f in os.listdir(b_dir) if f.startswith("database_backup_") and f.endswith(".json")]
@@ -440,6 +440,21 @@ def open_browser():
     except Exception:
         pass
 
+def iniciar_hilo_backup_automatico():
+    def loop_backup():
+        import time
+        while True:
+            # Esperar 1 hora (3600 segundos) y asegurar que el backup del día exista y esté actualizado
+            time.sleep(3600)
+            try:
+                data = load_db()
+                realizar_backup_diario(data)
+            except Exception as e:
+                print(f"Error en hilo de backup automático: {e}")
+
+    t = threading.Thread(target=loop_backup, daemon=True)
+    t.start()
+
 import traceback
 
 def main():
@@ -467,6 +482,9 @@ def main():
         print(f"FlexoERP local server started on http://localhost:{PORT}")
         print(f"Web folder: {web_dir}")
         print(f"Database path: {db_path}")
+        
+        # Iniciar hilo de verificación y respaldo diario automático periódico
+        iniciar_hilo_backup_automatico()
         
         # Start browser automatically
         threading.Timer(0.8, open_browser).start()
