@@ -719,11 +719,16 @@
                     </div>
 
                     <div id="subtab-prov-cuenta" class="sub-tab-content">
-                        <div class="card glass mt-2">
-                            <label style="display:block; margin-bottom:0.5rem; font-weight:600; color:var(--primary);">Seleccionar Proveedor</label>
-                            <select id="sel-cuenta-proveedor" class="form-control" style="max-width:400px;">
-                                <option value="">-- Seleccione --</option>
-                            </select>
+                        <div class="card glass mt-2" style="display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:1rem;">
+                            <div style="flex:1; min-width:260px;">
+                                <label style="display:block; margin-bottom:0.5rem; font-weight:600; color:var(--primary);">Seleccionar Proveedor</label>
+                                <select id="sel-cuenta-proveedor" class="form-control" style="max-width:400px;">
+                                    <option value="">-- Seleccione --</option>
+                                </select>
+                            </div>
+                            <button class="btn btn-secondary" id="btn-descargar-estado-cuenta-prov" style="display:none;">
+                                <i class="fa-solid fa-file-pdf" style="color:#ff4d6d; margin-right:6px;"></i> Descargar Estado de Cuenta (PDF)
+                            </button>
                         </div>
                         <div class="card glass mt-2" id="cuenta-prov-container" style="display:none;">
                             <h3>Movimientos <span id="cuenta-prov-saldo" style="float:right; color:#ff9f1c;"></span></h3>
@@ -1780,6 +1785,6 @@
         </div>
     </div>
 
-    <script src="app2.js?v=32"></script>
+    <script src="app2.js?v=33"></script>
 </body>
 </html>

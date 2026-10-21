@@ -1176,6 +1176,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <td>
                             <div style="display:flex; gap:0.4rem;">
                                 <button class="btn btn-icon btn-prov-cuenta" data-id="${p.id}" style="color:var(--primary);" title="Ver Cuenta Corriente"><i class="fa-solid fa-book"></i></button>
+                                <button class="btn btn-icon btn-prov-pdf" data-id="${p.id}" style="color:#ff4d6d;" title="Descargar Estado de Cuenta PDF"><i class="fa-solid fa-file-pdf"></i></button>
                                 <button class="btn btn-icon btn-prov-pagar" data-id="${p.id}" style="color:var(--success);" title="Registrar Pago"><i class="fa-solid fa-money-bill-wave"></i></button>
                                 <button class="btn btn-icon btn-prov-editar" data-id="${p.id}" style="color:var(--warning);" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>
                                 <button class="btn btn-icon btn-prov-eliminar" data-id="${p.id}" style="color:var(--danger);" title="Eliminar"><i class="fa-solid fa-trash-can"></i></button>
@@ -1226,9 +1227,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const cont = document.getElementById('cuenta-prov-container');
         const tbody = document.getElementById('tbody-cuenta-prov');
         const saldoEl = document.getElementById('cuenta-prov-saldo');
+        const btnPdfProv = document.getElementById('btn-descargar-estado-cuenta-prov');
         if (!cont || !tbody) return;
-        if (!provId) { cont.style.display = 'none'; return; }
+        if (!provId) {
+            cont.style.display = 'none';
+            if (btnPdfProv) btnPdfProv.style.display = 'none';
+            return;
+        }
         cont.style.display = 'block';
+        if (btnPdfProv) btnPdfProv.style.display = 'inline-block';
 
         const fmtARS = n => `$ ${n.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
         const movs = [
@@ -1258,6 +1265,109 @@ document.addEventListener('DOMContentLoaded', () => {
         if (saldoEl) saldoEl.innerText = `Saldo adeudado: ${fmtARS(saldo)}`;
     }
 
+    function generarEstadoCuentaProveedorPDF(provId) {
+        const prov = PROVEEDORES.find(p => p.id === provId);
+        if (!prov) return;
+
+        const fmtARS = n => `$ ${n.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        const movs = [
+            ...FACTURAS_PROVEEDORES.filter(f => f.proveedorId === provId).map(f => ({
+                fecha: fmtFechaIso(f.fecha),
+                rawFecha: f.fecha,
+                tipo: 'Factura',
+                detalle: [f.comprobante, f.concepto].filter(Boolean).join(' - ') || 'Compra / Factura',
+                cargo: parseFloat(f.importe) || 0,
+                abono: 0,
+                orden: 0
+            })),
+            ...PAGOS_PROVEEDORES.filter(x => x.proveedorId === provId).map(x => ({
+                fecha: fmtFechaIso(x.fecha),
+                rawFecha: x.fecha,
+                tipo: 'Pago',
+                detalle: [x.metodo, x.referencia].filter(Boolean).join(' - ') || 'Pago a Proveedor',
+                cargo: 0,
+                abono: parseFloat(x.importe) || 0,
+                orden: 1
+            }))
+        ].sort((a, b) => String(a.rawFecha).localeCompare(String(b.rawFecha)) || a.orden - b.orden);
+
+        let saldo = 0;
+        let totalCompras = 0;
+        let totalPagado = 0;
+        let filasHtml = '';
+
+        if (!movs.length) {
+            filasHtml = '<tr><td colspan="6" style="text-align:center;padding:12px;color:#64748b;">No se registran movimientos para este proveedor.</td></tr>';
+        } else {
+            movs.forEach(m => {
+                saldo += m.cargo - m.abono;
+                totalCompras += m.cargo;
+                totalPagado += m.abono;
+                filasHtml += '<tr style="border-bottom:1px solid #e2e8f0;">' +
+                    '<td style="padding:8px 5px;font-size:12px;">' + m.fecha + '</td>' +
+                    '<td style="padding:8px 5px;font-size:12px;font-weight:bold;color:' + (m.tipo === 'Pago' ? '#10b981' : '#d97706') + ';">' + m.tipo + '</td>' +
+                    '<td style="padding:8px 5px;font-size:12px;">' + m.detalle + '</td>' +
+                    '<td style="padding:8px 5px;font-size:12px;text-align:right;color:#e11d48;">' + (m.cargo > 0 ? fmtARS(m.cargo) : '-') + '</td>' +
+                    '<td style="padding:8px 5px;font-size:12px;text-align:right;color:#10b981;">' + (m.abono > 0 ? fmtARS(m.abono) : '-') + '</td>' +
+                    '<td style="padding:8px 5px;font-size:12px;text-align:right;font-weight:bold;">' + fmtARS(saldo) + '</td>' +
+                    '</tr>';
+            });
+        }
+
+        const div = document.createElement('div');
+        div.style.cssText = 'background:#fff;color:#000;padding:20px;font-family:Arial,sans-serif;';
+        div.innerHTML =
+            '<div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #9d4edd;padding-bottom:15px;margin-bottom:20px;">' +
+                '<div style="display:flex;align-items:center;gap:15px;">' +
+                    '<img src="mlf_logo.png" style="height:60px;" alt="Logo">' +
+                    '<div><h1 style="margin:0;font-size:22px;color:#9d4edd;">MLF Soluciones Gráficas</h1>' +
+                    '<p style="margin:0;font-size:12px;color:#666;">Tel: 261 5545 5247 | Salta 2455, Mendoza</p></div>' +
+                '</div>' +
+                '<div style="text-align:right;">' +
+                    '<h2 style="margin:0;font-size:19px;color:#111;">ESTADO DE CUENTA PROVEEDOR</h2>' +
+                    '<p style="margin:5px 0 0;font-size:13px;font-weight:bold;color:#64748b;">Fecha: ' + new Date().toLocaleDateString('es-AR') + '</p>' +
+                '</div>' +
+            '</div>' +
+            '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:15px;margin-bottom:20px;">' +
+                '<p style="margin:0 0 5px;font-size:11px;color:#64748b;text-transform:uppercase;font-weight:bold;">Proveedor / Razón Social</p>' +
+                '<h3 style="margin:0 0 6px;font-size:18px;color:#0f172a;">' + prov.nombre + '</h3>' +
+                '<p style="margin:0;font-size:12.5px;color:#334155;">Rubro: <strong>' + (prov.rubro || 'S/D') + '</strong> | CUIT: <strong>' + (prov.cuit || 'S/D') + '</strong> | Contacto: <strong>' + ([prov.contacto, prov.telefono, prov.email].filter(Boolean).join(' · ') || 'S/D') + '</strong></p>' +
+            '</div>' +
+            '<table style="width:100%;border-collapse:collapse;margin-bottom:20px;">' +
+                '<thead><tr style="background:#f1f5f9;">' +
+                    '<th style="padding:10px 5px;text-align:left;font-size:12px;color:#475569;border-bottom:2px solid #cbd5e1;">Fecha</th>' +
+                    '<th style="padding:10px 5px;text-align:left;font-size:12px;color:#475569;border-bottom:2px solid #cbd5e1;">Tipo</th>' +
+                    '<th style="padding:10px 5px;text-align:left;font-size:12px;color:#475569;border-bottom:2px solid #cbd5e1;">Comprobante / Detalle</th>' +
+                    '<th style="padding:10px 5px;text-align:right;font-size:12px;color:#475569;border-bottom:2px solid #cbd5e1;">Cargo (Compra)</th>' +
+                    '<th style="padding:10px 5px;text-align:right;font-size:12px;color:#475569;border-bottom:2px solid #cbd5e1;">Abono (Pago)</th>' +
+                    '<th style="padding:10px 5px;text-align:right;font-size:12px;color:#475569;border-bottom:2px solid #cbd5e1;">Saldo</th>' +
+                '</tr></thead>' +
+                '<tbody>' + filasHtml + '</tbody>' +
+            '</table>' +
+            '<div style="display:flex;justify-content:flex-end;gap:25px;margin-top:20px;border-top:2px solid #e2e8f0;padding-top:15px;">' +
+                '<div style="text-align:right;">' +
+                    '<span style="font-size:11px;color:#64748b;text-transform:uppercase;font-weight:bold;display:block;">Total Compras</span>' +
+                    '<strong style="font-size:16px;color:#334155;">' + fmtARS(totalCompras) + '</strong>' +
+                '</div>' +
+                '<div style="text-align:right;">' +
+                    '<span style="font-size:11px;color:#64748b;text-transform:uppercase;font-weight:bold;display:block;">Total Pagado</span>' +
+                    '<strong style="font-size:16px;color:#10b981;">' + fmtARS(totalPagado) + '</strong>' +
+                '</div>' +
+                '<div style="text-align:right;">' +
+                    '<span style="font-size:11px;color:#64748b;text-transform:uppercase;font-weight:bold;display:block;">Saldo Pendiente a Pagar</span>' +
+                    '<strong style="font-size:20px;color:' + (saldo > 0.01 ? '#e11d48' : '#10b981') + ';">' + fmtARS(saldo) + '</strong>' +
+                '</div>' +
+            '</div>';
+
+        html2pdf().set({
+            margin: 10,
+            filename: 'Estado_Cuenta_Proveedor_' + prov.nombre.replace(/\s+/g, '_') + '.pdf',
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        }).from(div).save();
+    }
+
     function mostrarSubtabProveedores(subtab) {
         document.querySelectorAll('#proveedores .sub-tab-btn').forEach(b => b.classList.toggle('active', b.getAttribute('data-subtab') === subtab));
         document.querySelectorAll('#proveedores .sub-tab-content').forEach(c => c.classList.toggle('active', c.id === `subtab-${subtab}`));
@@ -1269,6 +1379,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const selCuentaProv = document.getElementById('sel-cuenta-proveedor');
     if (selCuentaProv) selCuentaProv.addEventListener('change', () => renderCuentaProveedor(selCuentaProv.value));
+
+    const btnDescargarEstadoCuentaProv = document.getElementById('btn-descargar-estado-cuenta-prov');
+    if (btnDescargarEstadoCuentaProv) {
+        btnDescargarEstadoCuentaProv.addEventListener('click', () => {
+            if (selCuentaProv && selCuentaProv.value) {
+                generarEstadoCuentaProveedorPDF(selCuentaProv.value);
+            }
+        });
+    }
 
     // Modal proveedor (alta / edición)
     const modalProveedor = document.getElementById('modal-proveedor');
@@ -1404,6 +1523,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 abrirModalProveedor(PROVEEDORES.find(p => p.id === id));
             } else if (btn.classList.contains('btn-prov-pagar')) {
                 abrirModalPagoProv(id);
+            } else if (btn.classList.contains('btn-prov-pdf')) {
+                generarEstadoCuentaProveedorPDF(id);
             } else if (btn.classList.contains('btn-prov-cuenta')) {
                 mostrarSubtabProveedores('prov-cuenta');
                 if (selCuentaProv) selCuentaProv.value = id;
