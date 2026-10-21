@@ -825,7 +825,7 @@
                                 </div>
                                 <div class="form-group third" style="flex:1; margin-left: 10px;">
                                     <label>Costo del Polímero ($)</label>
-                                    <input type="number" class="large-input" id="new-pl-polimero" placeholder="Ej. 12000" min="0">
+                                    <input type="number" class="large-input" id="new-pl-polimero" placeholder="Ej. 12000" min="0" step="any">
                                 </div>
                                 <div class="form-group third" style="flex:1; margin-left: 10px;">
                                     <label>Tipo de Cálculo</label>
@@ -836,8 +836,28 @@
                                 </div>
                             </div>
 
-                            <div style="margin-top:1.5rem;padding:1.5rem;background:rgba(0,0,0,0.2);border-radius:8px;">
-                                <h4 style="margin-bottom:1rem;color:var(--secondary);">Escalas de Precios (por Millar)</h4>
+                            <!-- Herramienta de Ajuste Masivo por Porcentaje -->
+                            <div style="margin-top:1.2rem; padding:1rem 1.2rem; background:rgba(157,78,221,0.1); border:1px solid rgba(157,78,221,0.3); border-radius:8px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1rem;">
+                                <div style="display:flex; align-items:center; gap:0.8rem; flex-wrap:wrap;">
+                                    <span style="font-weight:600; color:#fff; font-size:13.5px;"><i class="fa-solid fa-percent" style="color:var(--primary); margin-right:6px;"></i>Ajuste Masivo (%):</span>
+                                    <div style="display:flex; align-items:center; gap:6px;">
+                                        <input type="number" class="large-input" id="input-pl-porcentaje" placeholder="Ej. 10" step="any" style="width:110px; padding:0.45rem 0.7rem; font-size:14px;">
+                                        <span style="font-weight:700; color:var(--secondary); font-size:15px;">%</span>
+                                    </div>
+                                    <button type="button" class="btn btn-success" id="btn-pl-aumentar-pct" style="padding:0.45rem 0.9rem; font-size:13px;"><i class="fa-solid fa-arrow-trend-up"></i> Aumentar %</button>
+                                    <button type="button" class="btn" id="btn-pl-descontar-pct" style="padding:0.45rem 0.9rem; font-size:13px; background:#f4a261; color:#111; border:none; font-weight:600; cursor:pointer; border-radius:8px;"><i class="fa-solid fa-arrow-trend-down"></i> Descontar %</button>
+                                </div>
+                                <label style="display:flex; align-items:center; gap:6px; font-size:12.5px; color:#ced4da; cursor:pointer; margin:0;">
+                                    <input type="checkbox" id="chk-pl-incluir-polimero" checked style="width:16px; height:16px; accent-color:var(--primary);">
+                                    Incluir también Costo del Polímero
+                                </label>
+                            </div>
+
+                            <div style="margin-top:1.2rem;padding:1.5rem;background:rgba(0,0,0,0.2);border-radius:8px;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
+                                    <h4 style="margin:0;color:var(--secondary);">Escalas de Precios (por Millar)</h4>
+                                    <small style="color:#adb5bd; font-size:12px;"><i class="fa-solid fa-pen"></i> Puedes aplicar un % arriba y también editar cualquier precio manualmente línea por línea</small>
+                                </div>
                                 <table class="data-table" id="tabla-new-pl-escalas">
                                     <thead>
                                         <tr>
@@ -855,8 +875,9 @@
                                 <button type="button" class="btn btn-secondary mt-1" id="btn-pl-agregar-escala"><i class="fa-solid fa-plus"></i> Agregar Escalón</button>
                             </div>
 
-                            <div class="action-buttons mt-2">
+                            <div class="action-buttons mt-2" style="display:flex; gap:0.8rem; flex-wrap:wrap;">
                                 <button class="btn btn-success" id="btn-guardar-lista-precios"><i class="fa-solid fa-save"></i> Guardar Lista</button>
+                                <button class="btn btn-primary" id="btn-guardar-copia-lista-precios" style="display:none;"><i class="fa-solid fa-copy"></i> Guardar como Nueva Copia</button>
                                 <button class="btn btn-danger" id="btn-cancelar-lista-precios">Cancelar</button>
                             </div>
                         </div>
@@ -1759,6 +1780,6 @@
         </div>
     </div>
 
-    <script src="app2.js?v=31"></script>
+    <script src="app2.js?v=32"></script>
 </body>
 </html>

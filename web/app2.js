@@ -636,9 +636,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnNuevaListaPrecios = document.getElementById('btn-nueva-lista-precios');
     const formNuevaListaPrecios = document.getElementById('form-nueva-lista-precios');
     const btnGuardarListaPrecios = document.getElementById('btn-guardar-lista-precios');
+    const btnGuardarCopiaListaPrecios = document.getElementById('btn-guardar-copia-lista-precios');
     const btnCancelarListaPrecios = document.getElementById('btn-cancelar-lista-precios');
     const btnPlAgregarEscala = document.getElementById('btn-pl-agregar-escala');
     const tbodyNewPlEscalas = document.getElementById('tbody-new-pl-escalas');
+    const inputPlPorcentaje = document.getElementById('input-pl-porcentaje');
+    const btnPlAumentarPct = document.getElementById('btn-pl-aumentar-pct');
+    const btnPlDescontarPct = document.getElementById('btn-pl-descontar-pct');
+    const chkPlIncluirPolimero = document.getElementById('chk-pl-incluir-polimero');
 
     if (btnNuevaListaPrecios) {
         btnNuevaListaPrecios.addEventListener('click', () => {
@@ -647,6 +652,8 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('new-pl-nombre').value = '';
             document.getElementById('new-pl-polimero').value = '';
             document.getElementById('new-pl-tipocalculo').value = 'por_millar';
+            if (inputPlPorcentaje) inputPlPorcentaje.value = '';
+            if (btnGuardarCopiaListaPrecios) btnGuardarCopiaListaPrecios.style.display = 'none';
             tbodyNewPlEscalas.innerHTML = '';
             formNuevaListaPrecios.style.display = 'block';
             agregarEscalaRow();
@@ -658,6 +665,55 @@ document.addEventListener('DOMContentLoaded', () => {
             formNuevaListaPrecios.style.display = 'none';
             priceListEdicionId = null;
         });
+    }
+
+    function aplicarPorcentajeEnFormularioLista(esDescuento = false) {
+        if (!inputPlPorcentaje) return;
+        const rawVal = String(inputPlPorcentaje.value || '').replace(',', '.').trim();
+        const pct = parseFloat(rawVal);
+        if (isNaN(pct) || pct === 0) {
+            alert('Ingrese un porcentaje válido distinto de 0 (por ejemplo: 10).');
+            inputPlPorcentaje.focus();
+            return;
+        }
+
+        // Si toca "Descontar %", siempre resta el valor absoluto; si toca "Aumentar %", respeta el signo (permite +10 o -10)
+        const signedPct = esDescuento ? -Math.abs(pct) : pct;
+        const factor = 1 + (signedPct / 100);
+        if (factor < 0) {
+            alert('El descuento no puede superar el 100%.');
+            return;
+        }
+
+        const rows = tbodyNewPlEscalas.querySelectorAll('tr');
+        rows.forEach(row => {
+            ['.scale-pasada1', '.scale-pasada2', '.scale-pasada3'].forEach(sel => {
+                const inp = row.querySelector(sel);
+                if (inp && inp.value !== '') {
+                    const current = parseFloat(String(inp.value).replace(',', '.'));
+                    if (!isNaN(current)) {
+                        inp.value = (Math.round(current * factor * 100) / 100).toFixed(2);
+                    }
+                }
+            });
+        });
+
+        if (chkPlIncluirPolimero && chkPlIncluirPolimero.checked) {
+            const inpPol = document.getElementById('new-pl-polimero');
+            if (inpPol && inpPol.value !== '') {
+                const currentPol = parseFloat(String(inpPol.value).replace(',', '.'));
+                if (!isNaN(currentPol)) {
+                    inpPol.value = (Math.round(currentPol * factor * 100) / 100).toFixed(2);
+                }
+            }
+        }
+    }
+
+    if (btnPlAumentarPct) {
+        btnPlAumentarPct.addEventListener('click', () => aplicarPorcentajeEnFormularioLista(false));
+    }
+    if (btnPlDescontarPct) {
+        btnPlDescontarPct.addEventListener('click', () => aplicarPorcentajeEnFormularioLista(true));
     }
 
     function agregarEscalaRow(cantidad = '', pasada1 = '', pasada2 = '', pasada3 = '') {
@@ -683,65 +739,101 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    if (btnGuardarListaPrecios) {
-        btnGuardarListaPrecios.addEventListener('click', () => {
-            const nombre = document.getElementById('new-pl-nombre').value.trim();
-            const polimero = parseFloat(document.getElementById('new-pl-polimero').value) || 0;
-            const tipoCalculo = document.getElementById('new-pl-tipocalculo').value || 'por_millar';
-            
-            if (!nombre) {
-                alert('Ingrese el nombre de la lista de precios.');
+    function guardarFormularioListaPrecios(comoCopia = false) {
+        let nombre = document.getElementById('new-pl-nombre').value.trim();
+        const polimero = parseFloat(document.getElementById('new-pl-polimero').value) || 0;
+        const tipoCalculo = document.getElementById('new-pl-tipocalculo').value || 'por_millar';
+        
+        if (!nombre) {
+            alert('Ingrese el nombre de la lista de precios.');
+            return;
+        }
+
+        const escalas = [];
+        const rows = tbodyNewPlEscalas.querySelectorAll('tr');
+        for (let row of rows) {
+            const cantVal = parseInt(row.querySelector('.scale-cantidad').value);
+            const p1 = parseFloat(row.querySelector('.scale-pasada1').value);
+            const p2 = parseFloat(row.querySelector('.scale-pasada2').value);
+            const p3 = parseFloat(row.querySelector('.scale-pasada3').value);
+
+            if (isNaN(cantVal) || isNaN(p1) || isNaN(p2) || isNaN(p3)) {
+                alert('Complete todos los campos de las escalas con valores válidos.');
                 return;
             }
+            
+            escalas.push({
+                cantidad: cantVal,
+                pasada1: p1,
+                pasada2: p2,
+                pasada3: p3
+            });
+        }
 
-            const escalas = [];
-            const rows = tbodyNewPlEscalas.querySelectorAll('tr');
-            for (let row of rows) {
-                const cantVal = parseInt(row.querySelector('.scale-cantidad').value);
-                const p1 = parseFloat(row.querySelector('.scale-pasada1').value);
-                const p2 = parseFloat(row.querySelector('.scale-pasada2').value);
-                const p3 = parseFloat(row.querySelector('.scale-pasada3').value);
+        escalas.sort((a, b) => a.cantidad - b.cantidad);
 
-                if (isNaN(cantVal) || isNaN(p1) || isNaN(p2) || isNaN(p3)) {
-                    alert('Complete todos los campos de las escalas con valores válidos.');
-                    return;
-                }
-                
-                escalas.push({
-                    cantidad: cantVal,
-                    pasada1: p1,
-                    pasada2: p2,
-                    pasada3: p3
-                });
+        if (!comoCopia && priceListEdicionId !== null) {
+            const pl = priceLists.find(x => x.id === priceListEdicionId);
+            if (pl) {
+                pl.nombre = nombre;
+                pl.polimero = polimero;
+                pl.tipoCalculo = tipoCalculo;
+                pl.escalas = escalas;
             }
-
-            escalas.sort((a, b) => a.cantidad - b.cantidad);
-
-            if (priceListEdicionId !== null) {
-                const pl = priceLists.find(x => x.id === priceListEdicionId);
-                if (pl) {
-                    pl.nombre = nombre;
-                    pl.polimero = polimero;
-                    pl.tipoCalculo = tipoCalculo;
-                    pl.escalas = escalas;
-                }
-                priceListEdicionId = null;
-            } else {
-                const newId = 'list-' + Date.now();
-                priceLists.push({
-                    id: newId,
-                    nombre: nombre,
-                    polimero: polimero,
-                    tipoCalculo: tipoCalculo,
-                    escalas: escalas
-                });
+            priceListEdicionId = null;
+        } else {
+            if (comoCopia && priceLists.some(x => x.nombre.toLowerCase() === nombre.toLowerCase())) {
+                nombre = `${nombre} (Copia)`;
             }
+            const newId = 'list-' + Date.now();
+            priceLists.push({
+                id: newId,
+                nombre: nombre,
+                polimero: polimero,
+                tipoCalculo: tipoCalculo,
+                escalas: escalas
+            });
+            priceListEdicionId = null;
+        }
 
-            saveToServer();
-            renderPriceLists();
-            populatePriceListsDropdown();
-            formNuevaListaPrecios.style.display = 'none';
+        saveToServer();
+        renderPriceLists();
+        populatePriceListsDropdown();
+        formNuevaListaPrecios.style.display = 'none';
+    }
+
+    if (btnGuardarListaPrecios) {
+        btnGuardarListaPrecios.addEventListener('click', () => guardarFormularioListaPrecios(false));
+    }
+    if (btnGuardarCopiaListaPrecios) {
+        btnGuardarCopiaListaPrecios.addEventListener('click', () => guardarFormularioListaPrecios(true));
+    }
+
+    function abrirEditorListaPrecios(pl, esCopiaRecienCreada = false) {
+        priceListEdicionId = pl.id;
+        formNuevaListaPrecios.style.display = 'block';
+        document.getElementById('form-price-list-title').textContent = esCopiaRecienCreada
+            ? `Editar Lista Duplicada: ${pl.nombre}`
+            : `Editar Lista de Precios: ${pl.nombre}`;
+        document.getElementById('new-pl-nombre').value = pl.nombre;
+        document.getElementById('new-pl-polimero').value = pl.polimero;
+        document.getElementById('new-pl-tipocalculo').value = pl.tipoCalculo || 'por_millar';
+        if (inputPlPorcentaje) inputPlPorcentaje.value = '';
+        if (btnGuardarCopiaListaPrecios) btnGuardarCopiaListaPrecios.style.display = 'inline-block';
+
+        tbodyNewPlEscalas.innerHTML = '';
+        pl.escalas.forEach(esc => {
+            agregarEscalaRow(esc.cantidad, esc.pasada1, esc.pasada2, esc.pasada3);
         });
+        
+        formNuevaListaPrecios.scrollIntoView({ behavior: 'smooth' });
+        if (esCopiaRecienCreada) {
+            const inpNombre = document.getElementById('new-pl-nombre');
+            if (inpNombre) {
+                inpNombre.focus();
+                inpNombre.select();
+            }
+        }
     }
 
     function renderPriceLists() {
@@ -762,12 +854,47 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td>${escalasText}</td>
                 <td>
                     <div style="display:flex; gap:0.5rem;">
+                        <button class="btn btn-icon btn-duplicar-pl" data-id="${pl.id}" style="color:var(--primary);" title="Duplicar / Copiar Lista"><i class="fa-solid fa-copy"></i></button>
                         <button class="btn btn-icon btn-editar-pl" data-id="${pl.id}" style="color:var(--secondary);" title="Editar Lista"><i class="fa-solid fa-pen-to-square"></i></button>
                         <button class="btn btn-icon btn-eliminar-pl" data-id="${pl.id}" style="color:var(--danger);" title="Eliminar Lista"><i class="fa-solid fa-trash-can"></i></button>
                     </div>
                 </td>
             `;
             tbody.appendChild(tr);
+        });
+
+        tbody.querySelectorAll('.btn-duplicar-pl').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = btn.getAttribute('data-id');
+                const pl = priceLists.find(x => x.id === id);
+                if (!pl) return;
+
+                let baseName = `${pl.nombre} (Copia)`;
+                let copyNum = 2;
+                while (priceLists.some(x => x.nombre.toLowerCase() === baseName.toLowerCase())) {
+                    baseName = `${pl.nombre} (Copia ${copyNum})`;
+                    copyNum++;
+                }
+
+                const nuevaLista = {
+                    id: 'list-' + Date.now(),
+                    nombre: baseName,
+                    polimero: pl.polimero,
+                    tipoCalculo: pl.tipoCalculo || 'por_millar',
+                    escalas: (pl.escalas || []).map(esc => ({
+                        cantidad: esc.cantidad,
+                        pasada1: esc.pasada1,
+                        pasada2: esc.pasada2,
+                        pasada3: esc.pasada3
+                    }))
+                };
+
+                priceLists.push(nuevaLista);
+                saveToServer();
+                renderPriceLists();
+                populatePriceListsDropdown();
+                abrirEditorListaPrecios(nuevaLista, true);
+            });
         });
 
         tbody.querySelectorAll('.btn-eliminar-pl').forEach(btn => {
@@ -796,20 +923,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const id = btn.getAttribute('data-id');
                 const pl = priceLists.find(x => x.id === id);
                 if (!pl) return;
-
-                priceListEdicionId = id;
-                formNuevaListaPrecios.style.display = 'block';
-                document.getElementById('form-price-list-title').textContent = `Editar Lista de Precios: ${pl.nombre}`;
-                document.getElementById('new-pl-nombre').value = pl.nombre;
-                document.getElementById('new-pl-polimero').value = pl.polimero;
-                document.getElementById('new-pl-tipocalculo').value = pl.tipoCalculo || 'por_millar';
-
-                tbodyNewPlEscalas.innerHTML = '';
-                pl.escalas.forEach(esc => {
-                    agregarEscalaRow(esc.cantidad, esc.pasada1, esc.pasada2, esc.pasada3);
-                });
-                
-                formNuevaListaPrecios.scrollIntoView({ behavior: 'smooth' });
+                abrirEditorListaPrecios(pl, false);
             });
         });
     }
