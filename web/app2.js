@@ -1219,15 +1219,144 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         poblarSelectsProveedores();
+        poblarAniosFiltroProveedores();
         const selCta = document.getElementById('sel-cuenta-proveedor');
         renderCuentaProveedor(selCta ? selCta.value : '');
+    }
+
+    const NOMBRES_MESES_ES = [
+        '', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    ];
+
+    function extraerAnioMesFecha(fechaStr) {
+        if (!fechaStr) return { year: 0, month: 0, ts: 0 };
+        const str = String(fechaStr).trim();
+        if (str.includes('-')) {
+            const p = str.split('-');
+            if (p.length === 3) {
+                const p0 = parseInt(p[0], 10);
+                const p1 = parseInt(p[1], 10);
+                const p2 = parseInt(p[2], 10);
+                if (p0 > 1900) {
+                    return { year: p0, month: p1, ts: new Date(p0, p1 - 1, p2, 12, 0, 0).getTime() };
+                } else {
+                    return { year: p2, month: p1, ts: new Date(p2, p1 - 1, p0, 12, 0, 0).getTime() };
+                }
+            }
+        }
+        if (str.includes('/')) {
+            const p = str.split('/');
+            if (p.length === 3) {
+                const d = parseInt(p[0], 10);
+                const m = parseInt(p[1], 10);
+                const y = parseInt(p[2], 10);
+                return { year: y, month: m, ts: new Date(y, m - 1, d, 12, 0, 0).getTime() };
+            }
+        }
+        return { year: 0, month: 0, ts: 0 };
+    }
+
+    function inicializarSelectoresPeriodo(prefix, fechasList) {
+        const selMes = document.getElementById(`sel-cuenta-${prefix}-mes`);
+        const selAnio = document.getElementById(`sel-cuenta-${prefix}-anio`);
+        const now = new Date();
+        const curYear = now.getFullYear();
+        const curMonth = now.getMonth() + 1;
+
+        if (selMes && !selMes.getAttribute('data-init')) {
+            selMes.value = String(curMonth);
+            selMes.setAttribute('data-init', '1');
+        }
+
+        if (selAnio) {
+            const prevAnio = selAnio.value;
+            const yearsSet = new Set([curYear, curYear - 1, curYear - 2]);
+            (fechasList || []).forEach(f => {
+                const { year } = extraerAnioMesFecha(f);
+                if (year >= 2000 && year <= 2100) yearsSet.add(year);
+            });
+            const sortedYears = Array.from(yearsSet).sort((a, b) => b - a);
+            selAnio.innerHTML = sortedYears.map(y => `<option value="${y}">${y}</option>`).join('');
+            if (prevAnio && sortedYears.includes(parseInt(prevAnio, 10))) {
+                selAnio.value = prevAnio;
+            } else {
+                selAnio.value = String(curYear);
+            }
+        }
+    }
+
+    function obtenerFiltroPeriodoCuenta(prefix) {
+        const selPeriodo = document.getElementById(`sel-cuenta-${prefix}-periodo`);
+        const selMes = document.getElementById(`sel-cuenta-${prefix}-mes`);
+        const selAnio = document.getElementById(`sel-cuenta-${prefix}-anio`);
+        const wrapMes = document.getElementById(`wrap-cuenta-${prefix}-mes`);
+        const wrapAnio = document.getElementById(`wrap-cuenta-${prefix}-anio`);
+
+        const now = new Date();
+        const modo = selPeriodo ? selPeriodo.value : 'historico';
+        const mes = selMes ? (parseInt(selMes.value, 10) || (now.getMonth() + 1)) : (now.getMonth() + 1);
+        const anio = selAnio ? (parseInt(selAnio.value, 10) || now.getFullYear()) : now.getFullYear();
+
+        if (wrapMes) wrapMes.style.display = modo === 'mensual' ? 'block' : 'none';
+        if (wrapAnio) wrapAnio.style.display = (modo === 'mensual' || modo === 'anual') ? 'block' : 'none';
+
+        let etiqueta = 'Histórico Completo';
+        let sufijoArchivo = 'Historico';
+        if (modo === 'anual') {
+            etiqueta = `Año ${anio}`;
+            sufijoArchivo = `Anual_${anio}`;
+        } else if (modo === 'mensual') {
+            const mesNombre = NOMBRES_MESES_ES[mes] || String(mes);
+            etiqueta = `${mesNombre} ${anio}`;
+            sufijoArchivo = `${mesNombre}_${anio}`;
+        }
+
+        const badgeEl = document.getElementById(`badge-periodo-${prefix}`);
+        if (badgeEl) badgeEl.textContent = `Período: ${etiqueta}`;
+
+        return { modo, mes, anio, etiqueta, sufijoArchivo };
+    }
+
+    function clasificarFechaEnPeriodo(fechaStr, filtro) {
+        if (!filtro || filtro.modo === 'historico') return 'en_periodo';
+        const { year, month } = extraerAnioMesFecha(fechaStr);
+        if (!year) return 'en_periodo';
+        if (filtro.modo === 'anual') {
+            if (year < filtro.anio) return 'anterior';
+            if (year === filtro.anio) return 'en_periodo';
+            return 'posterior';
+        }
+        if (filtro.modo === 'mensual') {
+            if (year < filtro.anio || (year === filtro.anio && month < filtro.mes)) return 'anterior';
+            if (year === filtro.anio && month === filtro.mes) return 'en_periodo';
+            return 'posterior';
+        }
+        return 'en_periodo';
+    }
+
+    function poblarAniosFiltroProveedores() {
+        const fechas = [
+            ...FACTURAS_PROVEEDORES.map(f => f.fecha),
+            ...PAGOS_PROVEEDORES.map(p => p.fecha)
+        ];
+        inicializarSelectoresPeriodo('prov', fechas);
     }
 
     function renderCuentaProveedor(provId) {
         const cont = document.getElementById('cuenta-prov-container');
         const tbody = document.getElementById('tbody-cuenta-prov');
         const saldoEl = document.getElementById('cuenta-prov-saldo');
+        const comprasEl = document.getElementById('cuenta-prov-total-compras');
+        const pagadoEl = document.getElementById('cuenta-prov-total-pagado');
+        const titComprasEl = document.getElementById('lbl-titulo-prov-compras');
+        const titPagadoEl = document.getElementById('lbl-titulo-prov-pagado');
+        const titSaldoEl = document.getElementById('lbl-titulo-prov-saldo');
         const btnPdfProv = document.getElementById('btn-descargar-estado-cuenta-prov');
+
+        poblarAniosFiltroProveedores();
+        const filtro = obtenerFiltroPeriodoCuenta('prov');
+
         if (!cont || !tbody) return;
         if (!provId) {
             cont.style.display = 'none';
@@ -1238,39 +1367,90 @@ document.addEventListener('DOMContentLoaded', () => {
         if (btnPdfProv) btnPdfProv.style.display = 'inline-block';
 
         const fmtARS = n => `$ ${n.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-        const movs = [
+        const todosMovs = [
             ...FACTURAS_PROVEEDORES.filter(f => f.proveedorId === provId).map(f => ({
                 fecha: f.fecha, tipo: 'Factura', detalle: [f.comprobante, f.concepto].filter(Boolean).join(' - ') || 'Compra',
-                cargo: parseFloat(f.importe) || 0, abono: 0, orden: 0
+                cargo: parseFloat(f.importe) || 0, abono: 0, orden: 0, ts: extraerAnioMesFecha(f.fecha).ts
             })),
             ...PAGOS_PROVEEDORES.filter(x => x.proveedorId === provId).map(x => ({
                 fecha: x.fecha, tipo: 'Pago', detalle: [x.metodo, x.referencia].filter(Boolean).join(' - ') || 'Pago',
-                cargo: 0, abono: parseFloat(x.importe) || 0, orden: 1
+                cargo: 0, abono: parseFloat(x.importe) || 0, orden: 1, ts: extraerAnioMesFecha(x.fecha).ts
             }))
-        ].sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)) || a.orden - b.orden);
+        ].sort((a, b) => (a.ts - b.ts) || String(a.fecha).localeCompare(String(b.fecha)) || (a.orden - b.orden));
 
-        let saldo = 0;
-        tbody.innerHTML = movs.length ? movs.map(m => {
-            saldo += m.cargo - m.abono;
-            return `<tr>
-                <td>${fmtFechaIso(m.fecha)}</td>
-                <td><span class="badge ${m.tipo === 'Pago' ? 'success' : 'warning'}">${m.tipo}</span></td>
-                <td>${m.detalle}</td>
-                <td style="font-family:monospace; color:#ff9f1c;">${m.cargo ? fmtARS(m.cargo) : ''}</td>
-                <td style="font-family:monospace; color:var(--success);">${m.abono ? fmtARS(m.abono) : ''}</td>
-                <td style="font-family:monospace; font-weight:700;">${fmtARS(saldo)}</td>
+        let saldoAnterior = 0;
+        const movsPeriodo = [];
+
+        todosMovs.forEach(m => {
+            const pos = clasificarFechaEnPeriodo(m.fecha, filtro);
+            if (pos === 'anterior') {
+                saldoAnterior += (m.cargo - m.abono);
+            } else if (pos === 'en_periodo') {
+                movsPeriodo.push(m);
+            }
+        });
+
+        let saldo = saldoAnterior;
+        let totalComprasPeriodo = 0;
+        let totalPagadoPeriodo = 0;
+        let rowsHtml = '';
+
+        if (filtro.modo !== 'historico' && Math.abs(saldoAnterior) > 0.009) {
+            rowsHtml += `<tr style="background:rgba(255,255,255,0.03);">
+                <td><small style="color:#adb5bd;">Inicio ${filtro.etiqueta}</small></td>
+                <td><span class="badge" style="background:rgba(148,163,184,0.2);color:#cbd5e1;">Saldo Anterior</span></td>
+                <td><em>Saldo arrastrado previo al período (${filtro.etiqueta})</em></td>
+                <td style="font-family:monospace;">-</td>
+                <td style="font-family:monospace;">-</td>
+                <td style="font-family:monospace; font-weight:700;">${fmtARS(saldoAnterior)}</td>
             </tr>`;
-        }).join('') : '<tr><td colspan="6" style="text-align:center;color:#adb5bd;padding:1.5rem;">Sin movimientos.</td></tr>';
+        }
 
-        if (saldoEl) saldoEl.innerText = `Saldo adeudado: ${fmtARS(saldo)}`;
+        if (movsPeriodo.length > 0) {
+            rowsHtml += movsPeriodo.map(m => {
+                saldo += m.cargo - m.abono;
+                totalComprasPeriodo += m.cargo;
+                totalPagadoPeriodo += m.abono;
+                return `<tr>
+                    <td>${fmtFechaIso(m.fecha)}</td>
+                    <td><span class="badge ${m.tipo === 'Pago' ? 'success' : 'warning'}">${m.tipo}</span></td>
+                    <td>${m.detalle}</td>
+                    <td style="font-family:monospace; color:#ff9f1c;">${m.cargo ? fmtARS(m.cargo) : '-'}</td>
+                    <td style="font-family:monospace; color:var(--success);">${m.abono ? fmtARS(m.abono) : '-'}</td>
+                    <td style="font-family:monospace; font-weight:700;">${fmtARS(saldo)}</td>
+                </tr>`;
+            }).join('');
+        } else {
+            rowsHtml += `<tr><td colspan="6" style="text-align:center;color:#adb5bd;padding:1.5rem;">No se registraron movimientos en ${filtro.etiqueta}.</td></tr>`;
+        }
+
+        tbody.innerHTML = rowsHtml;
+
+        if (titComprasEl) titComprasEl.innerText = filtro.modo === 'historico' ? 'Total Compras (Histórico)' : `Compras (${filtro.etiqueta})`;
+        if (titPagadoEl) titPagadoEl.innerText = filtro.modo === 'historico' ? 'Total Pagado (Histórico)' : `Pagado (${filtro.etiqueta})`;
+        if (titSaldoEl) titSaldoEl.innerText = filtro.modo === 'historico' ? 'Saldo Adeudado Actual' : `Saldo al Cierre (${filtro.etiqueta})`;
+
+        if (comprasEl) comprasEl.innerText = fmtARS(totalComprasPeriodo);
+        if (pagadoEl) pagadoEl.innerText = fmtARS(totalPagadoPeriodo);
+        if (saldoEl) {
+            if (filtro.modo === 'historico') {
+                saldoEl.innerHTML = fmtARS(saldo);
+            } else {
+                const netoPeriodo = totalComprasPeriodo - totalPagadoPeriodo;
+                saldoEl.innerHTML = `${fmtARS(saldo)}<div style="font-size:11px; color:#adb5bd; margin-top:4px; font-weight:normal;">Neto período: ${fmtARS(netoPeriodo)}</div>`;
+            }
+        }
     }
 
     function generarEstadoCuentaProveedorPDF(provId) {
         const prov = PROVEEDORES.find(p => p.id === provId);
         if (!prov) return;
 
+        poblarAniosFiltroProveedores();
+        const filtro = obtenerFiltroPeriodoCuenta('prov');
+
         const fmtARS = n => `$ ${n.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-        const movs = [
+        const todosMovs = [
             ...FACTURAS_PROVEEDORES.filter(f => f.proveedorId === provId).map(f => ({
                 fecha: fmtFechaIso(f.fecha),
                 rawFecha: f.fecha,
@@ -1278,7 +1458,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 detalle: [f.comprobante, f.concepto].filter(Boolean).join(' - ') || 'Compra / Factura',
                 cargo: parseFloat(f.importe) || 0,
                 abono: 0,
-                orden: 0
+                orden: 0,
+                ts: extraerAnioMesFecha(f.fecha).ts
             })),
             ...PAGOS_PROVEEDORES.filter(x => x.proveedorId === provId).map(x => ({
                 fecha: fmtFechaIso(x.fecha),
@@ -1287,17 +1468,40 @@ document.addEventListener('DOMContentLoaded', () => {
                 detalle: [x.metodo, x.referencia].filter(Boolean).join(' - ') || 'Pago a Proveedor',
                 cargo: 0,
                 abono: parseFloat(x.importe) || 0,
-                orden: 1
+                orden: 1,
+                ts: extraerAnioMesFecha(x.fecha).ts
             }))
-        ].sort((a, b) => String(a.rawFecha).localeCompare(String(b.rawFecha)) || a.orden - b.orden);
+        ].sort((a, b) => (a.ts - b.ts) || String(a.rawFecha).localeCompare(String(b.rawFecha)) || (a.orden - b.orden));
 
-        let saldo = 0;
+        let saldoAnterior = 0;
+        const movs = [];
+        todosMovs.forEach(m => {
+            const pos = clasificarFechaEnPeriodo(m.rawFecha, filtro);
+            if (pos === 'anterior') {
+                saldoAnterior += (m.cargo - m.abono);
+            } else if (pos === 'en_periodo') {
+                movs.push(m);
+            }
+        });
+
+        let saldo = saldoAnterior;
         let totalCompras = 0;
         let totalPagado = 0;
         let filasHtml = '';
 
+        if (filtro.modo !== 'historico' && Math.abs(saldoAnterior) > 0.009) {
+            filasHtml += '<tr style="border-bottom:1px solid #cbd5e1;background:#f8fafc;">' +
+                '<td style="padding:8px 5px;font-size:12px;color:#475569;">Inicio ' + filtro.etiqueta + '</td>' +
+                '<td style="padding:8px 5px;font-size:12px;font-weight:bold;color:#475569;">Saldo Ant.</td>' +
+                '<td style="padding:8px 5px;font-size:12px;font-style:italic;color:#475569;">Saldo arrastrado previo al período</td>' +
+                '<td style="padding:8px 5px;font-size:12px;text-align:right;">-</td>' +
+                '<td style="padding:8px 5px;font-size:12px;text-align:right;">-</td>' +
+                '<td style="padding:8px 5px;font-size:12px;text-align:right;font-weight:bold;">' + fmtARS(saldoAnterior) + '</td>' +
+                '</tr>';
+        }
+
         if (!movs.length) {
-            filasHtml = '<tr><td colspan="6" style="text-align:center;padding:12px;color:#64748b;">No se registran movimientos para este proveedor.</td></tr>';
+            filasHtml += '<tr><td colspan="6" style="text-align:center;padding:12px;color:#64748b;">No se registran movimientos en el período seleccionado (' + filtro.etiqueta + ').</td></tr>';
         } else {
             movs.forEach(m => {
                 saldo += m.cargo - m.abono;
@@ -1314,6 +1518,13 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
+        const bloqueSaldoAntHtml = (filtro.modo !== 'historico' && Math.abs(saldoAnterior) > 0.009)
+            ? '<div style="text-align:right;">' +
+                  '<span style="font-size:11px;color:#64748b;text-transform:uppercase;font-weight:bold;display:block;">Saldo Anterior</span>' +
+                  '<strong style="font-size:16px;color:#475569;">' + fmtARS(saldoAnterior) + '</strong>' +
+              '</div>'
+            : '';
+
         const div = document.createElement('div');
         div.style.cssText = 'background:#fff;color:#000;padding:20px;font-family:Arial,sans-serif;';
         div.innerHTML =
@@ -1325,7 +1536,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 '</div>' +
                 '<div style="text-align:right;">' +
                     '<h2 style="margin:0;font-size:19px;color:#111;">ESTADO DE CUENTA PROVEEDOR</h2>' +
-                    '<p style="margin:5px 0 0;font-size:13px;font-weight:bold;color:#64748b;">Fecha: ' + new Date().toLocaleDateString('es-AR') + '</p>' +
+                    '<p style="margin:4px 0 0;font-size:13px;font-weight:bold;color:#9d4edd;">Período: ' + filtro.etiqueta + '</p>' +
+                    '<p style="margin:3px 0 0;font-size:12px;color:#64748b;">Fecha de emisión: ' + new Date().toLocaleDateString('es-AR') + '</p>' +
                 '</div>' +
             '</div>' +
             '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:15px;margin-bottom:20px;">' +
@@ -1344,13 +1556,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 '</tr></thead>' +
                 '<tbody>' + filasHtml + '</tbody>' +
             '</table>' +
-            '<div style="display:flex;justify-content:flex-end;gap:25px;margin-top:20px;border-top:2px solid #e2e8f0;padding-top:15px;">' +
+            '<div style="display:flex;justify-content:flex-end;gap:25px;margin-top:20px;border-top:2px solid #e2e8f0;padding-top:15px;flex-wrap:wrap;">' +
+                bloqueSaldoAntHtml +
                 '<div style="text-align:right;">' +
-                    '<span style="font-size:11px;color:#64748b;text-transform:uppercase;font-weight:bold;display:block;">Total Compras</span>' +
+                    '<span style="font-size:11px;color:#64748b;text-transform:uppercase;font-weight:bold;display:block;">Compras (' + filtro.etiqueta + ')</span>' +
                     '<strong style="font-size:16px;color:#334155;">' + fmtARS(totalCompras) + '</strong>' +
                 '</div>' +
                 '<div style="text-align:right;">' +
-                    '<span style="font-size:11px;color:#64748b;text-transform:uppercase;font-weight:bold;display:block;">Total Pagado</span>' +
+                    '<span style="font-size:11px;color:#64748b;text-transform:uppercase;font-weight:bold;display:block;">Pagado (' + filtro.etiqueta + ')</span>' +
                     '<strong style="font-size:16px;color:#10b981;">' + fmtARS(totalPagado) + '</strong>' +
                 '</div>' +
                 '<div style="text-align:right;">' +
@@ -1361,7 +1574,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         html2pdf().set({
             margin: 10,
-            filename: 'Estado_Cuenta_Proveedor_' + prov.nombre.replace(/\s+/g, '_') + '.pdf',
+            filename: 'Estado_Cuenta_Proveedor_' + prov.nombre.replace(/\s+/g, '_') + '_' + filtro.sufijoArchivo + '.pdf',
             image: { type: 'jpeg', quality: 0.98 },
             html2canvas: { scale: 2, useCORS: true },
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
@@ -1379,6 +1592,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const selCuentaProv = document.getElementById('sel-cuenta-proveedor');
     if (selCuentaProv) selCuentaProv.addEventListener('change', () => renderCuentaProveedor(selCuentaProv.value));
+
+    ['sel-cuenta-prov-periodo', 'sel-cuenta-prov-mes', 'sel-cuenta-prov-anio'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('change', () => {
+                obtenerFiltroPeriodoCuenta('prov');
+                if (selCuentaProv && selCuentaProv.value) {
+                    renderCuentaProveedor(selCuentaProv.value);
+                }
+            });
+        }
+    });
 
     const btnDescargarEstadoCuentaProv = document.getElementById('btn-descargar-estado-cuenta-prov');
     if (btnDescargarEstadoCuentaProv) {
@@ -1578,8 +1803,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnRegistrarPago = document.getElementById('btn-registrar-pago');
     const btnDescargarEstadoCuenta = document.getElementById('btn-descargar-estado-cuenta');
 
+    function poblarAniosFiltroClientes() {
+        const fechas = [
+            ...REMITOS.map(r => r.fecha),
+            ...PAGOS.map(p => p.fecha)
+        ];
+        inicializarSelectoresPeriodo('cli', fechas);
+    }
+
     function populateCuentasDropdown() {
         if (!selCuentaCliente) return;
+        poblarAniosFiltroClientes();
+        obtenerFiltroPeriodoCuenta('cli');
         const prev = selCuentaCliente.value;
         selCuentaCliente.innerHTML = '<option value="">-- Seleccione un Cliente --</option>';
         CLIENTS.forEach(cli => {
@@ -1612,6 +1847,18 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    ['sel-cuenta-cli-periodo', 'sel-cuenta-cli-mes', 'sel-cuenta-cli-anio'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('change', () => {
+                obtenerFiltroPeriodoCuenta('cli');
+                if (selCuentaCliente && selCuentaCliente.value) {
+                    renderCuentasCorrientes(selCuentaCliente.value);
+                }
+            });
+        }
+    });
+
     function parseFechaArg(fechaStr) {
         if (!fechaStr) return 0;
         if (fechaStr.includes('-')) {
@@ -1637,8 +1884,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const lblTotalFacturado = document.getElementById('cuenta-total-facturado');
         const lblTotalPagado = document.getElementById('cuenta-total-pagado');
         const lblSaldoActual = document.getElementById('cuenta-saldo-actual');
+        const titFacturado = document.getElementById('lbl-titulo-cli-facturado');
+        const titPagado = document.getElementById('lbl-titulo-cli-pagado');
+        const titSaldo = document.getElementById('lbl-titulo-cli-saldo');
         if (!tbodyMov) return;
         tbodyMov.innerHTML = '';
+
+        poblarAniosFiltroClientes();
+        const filtro = obtenerFiltroPeriodoCuenta('cli');
 
         const vencimientos = obtenerVencimientosCliente(clienteNombre);
 
@@ -1684,12 +1937,45 @@ document.addEventListener('DOMContentLoaded', () => {
             sortDate: parseFechaArg(p.fecha)
         }));
 
-        const movimientos = [...remitosCli, ...pagosCli].sort((a, b) => a.sortDate - b.sortDate);
-        let saldo = 0, totalCargos = 0, totalAbonos = 0;
+        const todosMovimientos = [...remitosCli, ...pagosCli].sort((a, b) => a.sortDate - b.sortDate);
+        let saldoHistoricoTotal = 0;
+        let saldoAnterior = 0;
+        const movimientos = [];
+
+        todosMovimientos.forEach(m => {
+            const delta = m.tipo === 'Cargo' ? m.importe : -m.importe;
+            saldoHistoricoTotal += delta;
+            const pos = clasificarFechaEnPeriodo(m.fecha, filtro);
+            if (pos === 'anterior') {
+                saldoAnterior += delta;
+            } else if (pos === 'en_periodo') {
+                movimientos.push(m);
+            }
+        });
+
+        let saldo = saldoAnterior;
+        let totalCargos = 0, totalAbonos = 0;
         let totalNetoCargos = 0, totalIvaCargos = 0;
 
+        if (filtro.modo !== 'historico' && Math.abs(saldoAnterior) > 0.009) {
+            const trAnt = document.createElement('tr');
+            trAnt.style.background = 'rgba(255,255,255,0.03)';
+            trAnt.innerHTML = `
+                <td><small style="color:#adb5bd;">Inicio ${filtro.etiqueta}</small></td>
+                <td><span class="badge" style="background:rgba(148,163,184,0.2);color:#cbd5e1;">Saldo Anterior</span></td>
+                <td><em>Saldo arrastrado previo al período (${filtro.etiqueta})</em></td>
+                <td style="font-family:monospace;">-</td>
+                <td style="font-family:monospace;">-</td>
+                <td style="font-weight:bold;font-family:monospace;">$ ${saldoAnterior.toLocaleString('es-AR', {minimumFractionDigits:2})}</td>
+                <td></td>
+            `;
+            tbodyMov.appendChild(trAnt);
+        }
+
         if (movimientos.length === 0) {
-            tbodyMov.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#adb5bd;">No hay movimientos para este cliente.</td></tr>';
+            const trEmpty = document.createElement('tr');
+            trEmpty.innerHTML = `<td colspan="7" style="text-align:center;color:#adb5bd;padding:1.5rem;">No se registraron movimientos en ${filtro.etiqueta}.</td>`;
+            tbodyMov.appendChild(trEmpty);
         } else {
             movimientos.forEach(m => {
                 if (m.tipo === 'Cargo') {
@@ -1720,6 +2006,10 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
+        if (titFacturado) titFacturado.innerText = filtro.modo === 'historico' ? 'Total Facturado (Histórico)' : `Facturado (${filtro.etiqueta})`;
+        if (titPagado) titPagado.innerText = filtro.modo === 'historico' ? 'Total Pagado (Histórico)' : `Pagado (${filtro.etiqueta})`;
+        if (titSaldo) titSaldo.innerText = filtro.modo === 'historico' ? 'Saldo Deudor Actual' : `Saldo al Cierre (${filtro.etiqueta})`;
+
         if (lblTotalFacturado) {
             lblTotalFacturado.innerHTML = `
                 $ ${totalCargos.toLocaleString('es-AR', {minimumFractionDigits:2})}
@@ -1730,10 +2020,17 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
         }
         if (lblTotalPagado) lblTotalPagado.innerText = '$ ' + totalAbonos.toLocaleString('es-AR', {minimumFractionDigits:2});
-        if (lblSaldoActual) lblSaldoActual.innerText = '$ ' + saldo.toLocaleString('es-AR', {minimumFractionDigits:2});
+        if (lblSaldoActual) {
+            if (filtro.modo === 'historico') {
+                lblSaldoActual.innerHTML = '$ ' + saldo.toLocaleString('es-AR', {minimumFractionDigits:2});
+            } else {
+                const netoPeriodo = totalCargos - totalAbonos;
+                lblSaldoActual.innerHTML = `$ ${saldo.toLocaleString('es-AR', {minimumFractionDigits:2})}<div style="font-size:11px; color:#adb5bd; margin-top:4px; font-weight:normal;">Neto período: $ ${netoPeriodo.toLocaleString('es-AR', {minimumFractionDigits:2})}</div>`;
+            }
+        }
 
         const cliObj = CLIENTS.find(c => c.nombre === clienteNombre);
-        if (cliObj) cliObj.saldo = saldo;
+        if (cliObj) cliObj.saldo = saldoHistoricoTotal;
     }
 
     // Modal Pago
@@ -1824,6 +2121,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function generarEstadoCuentaPDF(clienteNombre) {
         const cliObj = CLIENTS.find(c => c.nombre === clienteNombre) || {};
+        poblarAniosFiltroClientes();
+        const filtro = obtenerFiltroPeriodoCuenta('cli');
+        const fmtARS = n => `$ ${n.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+
         const remitosCli = REMITOS.filter(r => r.cliente === clienteNombre).map(r => {
             const prefixStr = r.tipoRemito === 'X' ? 'X-0000-' : 'R-0002-';
             const numStr = `${prefixStr}${String(r.numero).padStart(8, '0')}`;
@@ -1833,26 +2134,66 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         });
         const pagosCli = PAGOS.filter(p => p.cliente === clienteNombre).map(p => ({
-            fecha: p.fecha, tipo: 'Abono', detalle: p.notas ? 'Pago (' + p.notas + ')' : 'Pago',
+            fecha: p.fecha, tipo: 'Abono', detalle: p.notas ? 'Pago (' + p.notas + ')' : (p.notes ? 'Pago (' + p.notes + ')' : 'Pago'),
             importe: parseFloat(p.importe) || 0, sortDate: parseFechaArg(p.fecha)
         }));
-        const movimientos = [...remitosCli, ...pagosCli].sort((a, b) => a.sortDate - b.sortDate);
-        let saldo = 0;
+        const todosMovimientos = [...remitosCli, ...pagosCli].sort((a, b) => a.sortDate - b.sortDate);
+
+        let saldoAnterior = 0;
+        const movimientos = [];
+        todosMovimientos.forEach(m => {
+            const delta = m.tipo === 'Cargo' ? m.importe : -m.importe;
+            const pos = clasificarFechaEnPeriodo(m.fecha, filtro);
+            if (pos === 'anterior') {
+                saldoAnterior += delta;
+            } else if (pos === 'en_periodo') {
+                movimientos.push(m);
+            }
+        });
+
+        let saldo = saldoAnterior;
+        let totalCargos = 0;
+        let totalAbonos = 0;
         let filasHtml = '';
+
+        if (filtro.modo !== 'historico' && Math.abs(saldoAnterior) > 0.009) {
+            filasHtml += '<tr style="border-bottom:1px solid #cbd5e1;background:#f8fafc;">' +
+                '<td style="padding:8px 5px;font-size:12px;color:#475569;">Inicio ' + filtro.etiqueta + '</td>' +
+                '<td style="padding:8px 5px;font-size:12px;font-style:italic;color:#475569;">Saldo Anterior arrastrado al período</td>' +
+                '<td style="padding:8px 5px;font-size:12px;text-align:right;">-</td>' +
+                '<td style="padding:8px 5px;font-size:12px;text-align:right;">-</td>' +
+                '<td style="padding:8px 5px;font-size:12px;text-align:right;font-weight:bold;">' + fmtARS(saldoAnterior) + '</td>' +
+                '</tr>';
+        }
+
         if (movimientos.length === 0) {
-            filasHtml = '<tr><td colspan="5" style="text-align:center;padding:10px;">No hay movimientos</td></tr>';
+            filasHtml += '<tr><td colspan="5" style="text-align:center;padding:12px;color:#64748b;">No se registran movimientos en el período seleccionado (' + filtro.etiqueta + ').</td></tr>';
         } else {
             movimientos.forEach(m => {
-                if (m.tipo === 'Cargo') saldo += m.importe; else saldo -= m.importe;
+                if (m.tipo === 'Cargo') {
+                    saldo += m.importe;
+                    totalCargos += m.importe;
+                } else {
+                    saldo -= m.importe;
+                    totalAbonos += m.importe;
+                }
                 filasHtml += '<tr style="border-bottom:1px solid #e2e8f0;">' +
                     '<td style="padding:8px 5px;font-size:12px;">' + m.fecha + '</td>' +
                     '<td style="padding:8px 5px;font-size:12px;">' + m.detalle + '</td>' +
-                    '<td style="padding:8px 5px;font-size:12px;text-align:right;color:#e11d48;">' + (m.tipo === 'Cargo' ? '$' + m.importe.toLocaleString('es-AR', {minimumFractionDigits:2}) : '') + '</td>' +
-                    '<td style="padding:8px 5px;font-size:12px;text-align:right;color:#10b981;">' + (m.tipo === 'Abono' ? '$' + m.importe.toLocaleString('es-AR', {minimumFractionDigits:2}) : '') + '</td>' +
-                    '<td style="padding:8px 5px;font-size:12px;text-align:right;font-weight:bold;">$' + saldo.toLocaleString('es-AR', {minimumFractionDigits:2}) + '</td>' +
+                    '<td style="padding:8px 5px;font-size:12px;text-align:right;color:#e11d48;">' + (m.tipo === 'Cargo' ? fmtARS(m.importe) : '-') + '</td>' +
+                    '<td style="padding:8px 5px;font-size:12px;text-align:right;color:#10b981;">' + (m.tipo === 'Abono' ? fmtARS(m.importe) : '-') + '</td>' +
+                    '<td style="padding:8px 5px;font-size:12px;text-align:right;font-weight:bold;">' + fmtARS(saldo) + '</td>' +
                     '</tr>';
             });
         }
+
+        const bloqueSaldoAntHtml = (filtro.modo !== 'historico' && Math.abs(saldoAnterior) > 0.009)
+            ? '<div style="text-align:right;">' +
+                  '<span style="font-size:11px;color:#64748b;text-transform:uppercase;font-weight:bold;display:block;">Saldo Anterior</span>' +
+                  '<strong style="font-size:16px;color:#475569;">' + fmtARS(saldoAnterior) + '</strong>' +
+              '</div>'
+            : '';
+
         const div = document.createElement('div');
         div.style.cssText = 'background:#fff;color:#000;padding:20px;font-family:Arial,sans-serif;';
         div.innerHTML =
@@ -1864,7 +2205,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 '</div>' +
                 '<div style="text-align:right;">' +
                     '<h2 style="margin:0;font-size:20px;color:#111;">ESTADO DE CUENTA</h2>' +
-                    '<p style="margin:5px 0 0;font-size:14px;font-weight:bold;color:#64748b;">Fecha: ' + new Date().toLocaleDateString('es-AR') + '</p>' +
+                    '<p style="margin:4px 0 0;font-size:13px;font-weight:bold;color:#9d4edd;">Período: ' + filtro.etiqueta + '</p>' +
+                    '<p style="margin:3px 0 0;font-size:12px;color:#64748b;">Fecha de emisión: ' + new Date().toLocaleDateString('es-AR') + '</p>' +
                 '</div>' +
             '</div>' +
             '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:15px;margin-bottom:20px;">' +
@@ -1882,13 +2224,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 '</tr></thead>' +
                 '<tbody>' + filasHtml + '</tbody>' +
             '</table>' +
-            '<div style="text-align:right;margin-top:20px;">' +
-                '<h3 style="margin:0;font-size:14px;color:#64748b;text-transform:uppercase;">Saldo Deudor Final</h3>' +
-                '<h2 style="margin:5px 0 0;font-size:24px;color:' + (saldo > 0 ? '#e11d48' : '#10b981') + ';">$' + saldo.toLocaleString('es-AR', {minimumFractionDigits:2}) + '</h2>' +
+            '<div style="display:flex;justify-content:flex-end;gap:25px;margin-top:20px;border-top:2px solid #e2e8f0;padding-top:15px;flex-wrap:wrap;">' +
+                bloqueSaldoAntHtml +
+                '<div style="text-align:right;">' +
+                    '<span style="font-size:11px;color:#64748b;text-transform:uppercase;font-weight:bold;display:block;">Facturado (' + filtro.etiqueta + ')</span>' +
+                    '<strong style="font-size:16px;color:#334155;">' + fmtARS(totalCargos) + '</strong>' +
+                '</div>' +
+                '<div style="text-align:right;">' +
+                    '<span style="font-size:11px;color:#64748b;text-transform:uppercase;font-weight:bold;display:block;">Pagado (' + filtro.etiqueta + ')</span>' +
+                    '<strong style="font-size:16px;color:#10b981;">' + fmtARS(totalAbonos) + '</strong>' +
+                '</div>' +
+                '<div style="text-align:right;">' +
+                    '<span style="font-size:11px;color:#64748b;text-transform:uppercase;font-weight:bold;display:block;">Saldo Deudor Final</span>' +
+                    '<strong style="font-size:20px;color:' + (saldo > 0.01 ? '#e11d48' : '#10b981') + ';">' + fmtARS(saldo) + '</strong>' +
+                '</div>' +
             '</div>';
         html2pdf().set({
             margin: 10,
-            filename: 'Estado_Cuenta_' + clienteNombre.replace(/\s+/g, '_') + '.pdf',
+            filename: 'Estado_Cuenta_' + clienteNombre.replace(/\s+/g, '_') + '_' + filtro.sufijoArchivo + '.pdf',
             image: { type: 'jpeg', quality: 0.98 },
             html2canvas: { scale: 2, useCORS: true },
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }

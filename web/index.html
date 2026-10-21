@@ -462,37 +462,71 @@
                     </div>
 
                     <div id="fin-cuentas" class="fin-tab-content" style="display:none;">
-                        <div class="card glass" style="margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
-                            <div style="flex: 1; min-width: 250px;">
-                                <label style="display:block; margin-bottom: 0.5rem; font-weight:600; color:var(--primary);">Seleccionar Cliente</label>
-                                <select id="sel-cuenta-cliente" class="form-control">
-                                    <option value="">-- Seleccione --</option>
-                                </select>
+                        <div class="card glass" style="margin-bottom: 1rem; display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
+                            <div style="display: flex; gap: 0.8rem; align-items: flex-end; flex-wrap: wrap; flex: 1;">
+                                <div style="min-width: 240px; flex: 1;">
+                                    <label style="display:block; margin-bottom: 0.4rem; font-weight:600; color:var(--primary); font-size:13px;">Seleccionar Cliente</label>
+                                    <select id="sel-cuenta-cliente" class="form-control">
+                                        <option value="">-- Seleccione --</option>
+                                    </select>
+                                </div>
+                                <div style="min-width: 150px;">
+                                    <label style="display:block; margin-bottom: 0.4rem; font-weight:600; color:#adb5bd; font-size:13px;"><i class="fa-solid fa-filter"></i> Período</label>
+                                    <select id="sel-cuenta-cli-periodo" class="form-control">
+                                        <option value="historico">Histórico (Todo)</option>
+                                        <option value="mensual">Mensual</option>
+                                        <option value="anual">Anual</option>
+                                    </select>
+                                </div>
+                                <div id="wrap-cuenta-cli-mes" style="min-width: 140px; display:none;">
+                                    <label style="display:block; margin-bottom: 0.4rem; font-weight:600; color:#adb5bd; font-size:13px;">Mes</label>
+                                    <select id="sel-cuenta-cli-mes" class="form-control">
+                                        <option value="1">Enero</option>
+                                        <option value="2">Febrero</option>
+                                        <option value="3">Marzo</option>
+                                        <option value="4">Abril</option>
+                                        <option value="5">Mayo</option>
+                                        <option value="6">Junio</option>
+                                        <option value="7">Julio</option>
+                                        <option value="8">Agosto</option>
+                                        <option value="9">Septiembre</option>
+                                        <option value="10">Octubre</option>
+                                        <option value="11">Noviembre</option>
+                                        <option value="12">Diciembre</option>
+                                    </select>
+                                </div>
+                                <div id="wrap-cuenta-cli-anio" style="min-width: 110px; display:none;">
+                                    <label style="display:block; margin-bottom: 0.4rem; font-weight:600; color:#adb5bd; font-size:13px;">Año</label>
+                                    <select id="sel-cuenta-cli-anio" class="form-control"></select>
+                                </div>
                             </div>
-                            <div style="display:flex; gap: 1rem; align-items: flex-end;">
+                            <div style="display:flex; gap: 0.8rem; align-items: flex-end;">
                                 <button class="btn btn-primary" id="btn-registrar-pago" style="display:none;"><i class="fa-solid fa-hand-holding-dollar"></i> Registrar Pago</button>
-                                <button class="btn btn-secondary" id="btn-descargar-estado-cuenta" style="display:none;"><i class="fa-solid fa-file-pdf"></i> Estado de Cuenta PDF</button>
+                                <button class="btn btn-secondary" id="btn-descargar-estado-cuenta" style="display:none;"><i class="fa-solid fa-file-pdf" style="color:#ff4d6d; margin-right:5px;"></i> Estado de Cuenta PDF</button>
                             </div>
                         </div>
 
                         <div id="cuenta-detalle-container" style="display:none;">
                             <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 1rem;">
                                 <div class="stat-card glass" style="padding: 1rem;">
-                                    <h3 style="font-size: 12px; margin:0 0 5px; color:#adb5bd;">Total Facturado</h3>
+                                    <h3 id="lbl-titulo-cli-facturado" style="font-size: 12px; margin:0 0 5px; color:#adb5bd;">Total Facturado</h3>
                                     <h2 id="cuenta-total-facturado" style="font-size: 20px; margin:0; color:var(--primary);">$ 0</h2>
                                 </div>
                                 <div class="stat-card glass" style="padding: 1rem;">
-                                    <h3 style="font-size: 12px; margin:0 0 5px; color:#adb5bd;">Total Pagado</h3>
+                                    <h3 id="lbl-titulo-cli-pagado" style="font-size: 12px; margin:0 0 5px; color:#adb5bd;">Total Pagado</h3>
                                     <h2 id="cuenta-total-pagado" style="font-size: 20px; margin:0; color:var(--success);">$ 0</h2>
                                 </div>
                                 <div class="stat-card glass" style="padding: 1rem;">
-                                    <h3 style="font-size: 12px; margin:0 0 5px; color:#adb5bd;">Saldo Deudor</h3>
+                                    <h3 id="lbl-titulo-cli-saldo" style="font-size: 12px; margin:0 0 5px; color:#adb5bd;">Saldo Deudor</h3>
                                     <h2 id="cuenta-saldo-actual" style="font-size: 24px; margin:0; color:var(--danger);">$ 0</h2>
                                 </div>
                             </div>
 
                             <div class="card glass">
-                                <h3>Historial de Movimientos</h3>
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.8rem; flex-wrap:wrap; gap:0.5rem;">
+                                    <h3 style="margin:0;">Historial de Movimientos</h3>
+                                    <span id="badge-periodo-cli" class="badge" style="background:rgba(157,78,221,0.2); color:#e0aaff; border:1px solid rgba(157,78,221,0.4); font-size:12px; padding:4px 10px;">Período: Histórico Completo</span>
+                                </div>
                                 <table class="data-table" id="tabla-movimientos-cuenta">
                                     <thead><tr><th>Fecha</th><th>Tipo</th><th>Detalle</th><th>Cargo</th><th>Abono</th><th>Saldo</th><th>Acciones</th></tr></thead>
                                     <tbody id="tbody-movimientos-cuenta">
@@ -720,22 +754,72 @@
 
                     <div id="subtab-prov-cuenta" class="sub-tab-content">
                         <div class="card glass mt-2" style="display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:1rem;">
-                            <div style="flex:1; min-width:260px;">
-                                <label style="display:block; margin-bottom:0.5rem; font-weight:600; color:var(--primary);">Seleccionar Proveedor</label>
-                                <select id="sel-cuenta-proveedor" class="form-control" style="max-width:400px;">
-                                    <option value="">-- Seleccione --</option>
-                                </select>
+                            <div style="display:flex; gap:0.8rem; align-items:flex-end; flex-wrap:wrap; flex:1;">
+                                <div style="min-width:240px; flex:1; max-width:380px;">
+                                    <label style="display:block; margin-bottom:0.4rem; font-weight:600; color:var(--primary); font-size:13px;">Seleccionar Proveedor</label>
+                                    <select id="sel-cuenta-proveedor" class="form-control">
+                                        <option value="">-- Seleccione --</option>
+                                    </select>
+                                </div>
+                                <div style="min-width:150px;">
+                                    <label style="display:block; margin-bottom:0.4rem; font-weight:600; color:#adb5bd; font-size:13px;"><i class="fa-solid fa-filter"></i> Período</label>
+                                    <select id="sel-cuenta-prov-periodo" class="form-control">
+                                        <option value="historico">Histórico (Todo)</option>
+                                        <option value="mensual">Mensual</option>
+                                        <option value="anual">Anual</option>
+                                    </select>
+                                </div>
+                                <div id="wrap-cuenta-prov-mes" style="min-width:140px; display:none;">
+                                    <label style="display:block; margin-bottom:0.4rem; font-weight:600; color:#adb5bd; font-size:13px;">Mes</label>
+                                    <select id="sel-cuenta-prov-mes" class="form-control">
+                                        <option value="1">Enero</option>
+                                        <option value="2">Febrero</option>
+                                        <option value="3">Marzo</option>
+                                        <option value="4">Abril</option>
+                                        <option value="5">Mayo</option>
+                                        <option value="6">Junio</option>
+                                        <option value="7">Julio</option>
+                                        <option value="8">Agosto</option>
+                                        <option value="9">Septiembre</option>
+                                        <option value="10">Octubre</option>
+                                        <option value="11">Noviembre</option>
+                                        <option value="12">Diciembre</option>
+                                    </select>
+                                </div>
+                                <div id="wrap-cuenta-prov-anio" style="min-width:110px; display:none;">
+                                    <label style="display:block; margin-bottom:0.4rem; font-weight:600; color:#adb5bd; font-size:13px;">Año</label>
+                                    <select id="sel-cuenta-prov-anio" class="form-control"></select>
+                                </div>
                             </div>
                             <button class="btn btn-secondary" id="btn-descargar-estado-cuenta-prov" style="display:none;">
                                 <i class="fa-solid fa-file-pdf" style="color:#ff4d6d; margin-right:6px;"></i> Descargar Estado de Cuenta (PDF)
                             </button>
                         </div>
-                        <div class="card glass mt-2" id="cuenta-prov-container" style="display:none;">
-                            <h3>Movimientos <span id="cuenta-prov-saldo" style="float:right; color:#ff9f1c;"></span></h3>
-                            <table class="data-table">
-                                <thead><tr><th>Fecha</th><th>Tipo</th><th>Detalle</th><th>Cargo</th><th>Abono</th><th>Saldo</th></tr></thead>
-                                <tbody id="tbody-cuenta-prov"></tbody>
-                            </table>
+                        <div id="cuenta-prov-container" style="display:none; margin-top:1rem;">
+                            <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 1rem;">
+                                <div class="stat-card glass" style="padding: 1rem;">
+                                    <h3 id="lbl-titulo-prov-compras" style="font-size: 12px; margin:0 0 5px; color:#adb5bd;">Total Compras</h3>
+                                    <h2 id="cuenta-prov-total-compras" style="font-size: 20px; margin:0; color:#ff9f1c;">$ 0</h2>
+                                </div>
+                                <div class="stat-card glass" style="padding: 1rem;">
+                                    <h3 id="lbl-titulo-prov-pagado" style="font-size: 12px; margin:0 0 5px; color:#adb5bd;">Total Pagado</h3>
+                                    <h2 id="cuenta-prov-total-pagado" style="font-size: 20px; margin:0; color:var(--success);">$ 0</h2>
+                                </div>
+                                <div class="stat-card glass" style="padding: 1rem;">
+                                    <h3 id="lbl-titulo-prov-saldo" style="font-size: 12px; margin:0 0 5px; color:#adb5bd;">Saldo Adeudado</h3>
+                                    <h2 id="cuenta-prov-saldo" style="font-size: 24px; margin:0; color:#ff9f1c;">$ 0</h2>
+                                </div>
+                            </div>
+                            <div class="card glass">
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.8rem; flex-wrap:wrap; gap:0.5rem;">
+                                    <h3 style="margin:0;">Movimientos del Proveedor</h3>
+                                    <span id="badge-periodo-prov" class="badge" style="background:rgba(255,159,28,0.18); color:#ffbf69; border:1px solid rgba(255,159,28,0.4); font-size:12px; padding:4px 10px;">Período: Histórico Completo</span>
+                                </div>
+                                <table class="data-table">
+                                    <thead><tr><th>Fecha</th><th>Tipo</th><th>Detalle</th><th>Cargo</th><th>Abono</th><th>Saldo</th></tr></thead>
+                                    <tbody id="tbody-cuenta-prov"></tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </section>
@@ -1785,6 +1869,6 @@
         </div>
     </div>
 
-    <script src="app2.js?v=33"></script>
+    <script src="app2.js?v=34"></script>
 </body>
 </html>
