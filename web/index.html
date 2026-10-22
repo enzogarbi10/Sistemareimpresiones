@@ -1122,20 +1122,32 @@
                     </div>
 
                     <!-- TARJETAS PRINCIPALES (KPIs) -->
-                    <div class="stats-grid mt-2" style="grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap:1rem;">
-                        <!-- KPI 1: Cantidad Predominante -->
+                    <div class="stats-grid mt-2" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:1rem;">
+                        <!-- KPI 1: Promedio Exacto por Pedido / Tirada -->
+                        <div class="stat-card glass" style="border-left: 4px solid #00f5d4;">
+                            <div class="stat-icon" style="background: rgba(0, 245, 212, 0.15); color: #00f5d4;">
+                                <i class="fa-solid fa-bullseye"></i>
+                            </div>
+                            <div class="stat-data">
+                                <h3>Promedio Exacto / Tirada</h3>
+                                <h2 id="kpi-promedio-tirada" style="font-size:20px; color:#00f5d4;">0 u</h2>
+                                <small id="kpi-promedio-ot" style="color:#adb5bd; font-size:11px; font-weight:600;">Prom. por OT: 0 u</small>
+                            </div>
+                        </div>
+
+                        <!-- KPI 2: Escala Predominante cada 100 etiquetas -->
                         <div class="stat-card glass" style="border-left: 4px solid var(--primary);">
                             <div class="stat-icon" style="background: rgba(157, 78, 221, 0.15); color: var(--primary);">
                                 <i class="fa-solid fa-cubes-stacked"></i>
                             </div>
                             <div class="stat-data">
-                                <h3>Tirada Predominante</h3>
-                                <h2 id="kpi-cantidad-predominante" style="font-size:20px;">0 u</h2>
-                                <small id="kpi-rango-predominante" style="color:var(--secondary); font-weight:600;">Moda en pedidos</small>
+                                <h3>Escala Predominante (c/100u)</h3>
+                                <h2 id="kpi-cantidad-predominante" style="font-size:18px;">0 u</h2>
+                                <small id="kpi-rango-predominante" style="color:var(--secondary); font-weight:600; font-size:11px;">Escala cada 100 etiquetas</small>
                             </div>
                         </div>
 
-                        <!-- KPI 2: Pasadas Predominantes -->
+                        <!-- KPI 3: Pasadas Predominantes -->
                         <div class="stat-card glass" style="border-left: 4px solid var(--secondary);">
                             <div class="stat-icon" style="background: rgba(0, 245, 212, 0.15); color: var(--secondary);">
                                 <i class="fa-solid fa-layer-group"></i>
@@ -1147,7 +1159,7 @@
                             </div>
                         </div>
 
-                        <!-- KPI 3: Precio Promedio x Millar -->
+                        <!-- KPI 4: Precio Promedio x Millar -->
                         <div class="stat-card glass" style="border-left: 4px solid #f4a261;">
                             <div class="stat-icon" style="background: rgba(244, 162, 97, 0.15); color: #f4a261;">
                                 <i class="fa-solid fa-tags"></i>
@@ -1159,7 +1171,7 @@
                             </div>
                         </div>
 
-                        <!-- KPI 4: Volumen Total de Etiquetas -->
+                        <!-- KPI 5: Volumen Total de Etiquetas -->
                         <div class="stat-card glass" style="border-left: 4px solid #06d6a0;">
                             <div class="stat-icon" style="background: rgba(6, 214, 160, 0.15); color: #06d6a0;">
                                 <i class="fa-solid fa-boxes-stacked"></i>
@@ -1171,14 +1183,14 @@
                             </div>
                         </div>
 
-                        <!-- KPI 5: Total Órdenes & Ticket Promedio -->
+                        <!-- KPI 6: Total Órdenes & Ticket Promedio -->
                         <div class="stat-card glass" style="border-left: 4px solid #118ab2;">
                             <div class="stat-icon" style="background: rgba(17, 138, 178, 0.15); color: #118ab2;">
                                 <i class="fa-solid fa-file-invoice-dollar"></i>
                             </div>
                             <div class="stat-data">
                                 <h3>Total Trabajos</h3>
-                                <h2 id="kpi-total-pedidos" style="font-size:20px;">0 OTs</h2>
+                                <h2 id="kpi-total-pedidos" style="font-size:19px;">0 OTs</h2>
                                 <small id="kpi-ticket-promedio" style="color:#adb5bd; font-size:11px;">Prom. OT: $ 0</small>
                             </div>
                         </div>
@@ -1237,15 +1249,23 @@
                         </div>
                     </div>
 
-                    <!-- FILA DE GRÁFICOS 1: TIRADAS Y PASADAS -->
-                    <div style="display:grid; grid-template-columns: 1.4fr 1fr; gap:1.2rem; margin-top:1.5rem;" class="stats-charts-row">
-                        <!-- Gráfico de Escalas de Tirada -->
+                    <!-- FILA DE GRÁFICOS 1: DISTRIBUCIÓN CADA 100 ETIQUETAS Y PASADAS -->
+                    <div style="display:grid; grid-template-columns: 1.5fr 1fr; gap:1.2rem; margin-top:1.5rem;" class="stats-charts-row">
+                        <!-- Gráfico de Escalas de Tirada (Cada 100 Etiquetas) -->
                         <div class="card glass" style="padding:1.4rem;">
-                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-                                <h3 style="margin:0; font-size:15px; color:#fff;"><i class="fa-solid fa-chart-simple" style="color:var(--secondary); margin-right:6px;"></i> Distribución de Cantidades por Pedido (Escalas)</h3>
-                                <small style="color:#adb5bd; font-size:11px;">Frecuencia de pedidos</small>
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
+                                <div>
+                                    <h3 style="margin:0; font-size:15px; color:#fff;"><i class="fa-solid fa-chart-simple" style="color:var(--secondary); margin-right:6px;"></i> Distribución de Cantidades por Pedido (Escala c/100 Etiquetas)</h3>
+                                    <small style="color:#adb5bd; font-size:11px;">Cantidad de tiradas agrupadas en tramos de 100 etiquetas</small>
+                                </div>
+                                <select id="stats-escala-paso" class="medium-input" style="font-size:12px; padding:4px 8px; max-width:255px;">
+                                    <option value="100_freq">Cada 100 etiquetas (Más frecuentes)</option>
+                                    <option value="100_seq">Cada 100 etiquetas (Orden secuencial)</option>
+                                    <option value="500">Cada 500 etiquetas</option>
+                                    <option value="1000">Cada 1.000 etiquetas</option>
+                                </select>
                             </div>
-                            <div style="position:relative; height:260px;">
+                            <div style="position:relative; height:290px;">
                                 <canvas id="chart-cantidades-tiradas"></canvas>
                             </div>
                         </div>
@@ -1256,9 +1276,27 @@
                                 <h3 style="margin:0; font-size:15px; color:#fff;"><i class="fa-solid fa-chart-pie" style="color:var(--primary); margin-right:6px;"></i> Proporción de Pasadas</h3>
                                 <small style="color:#adb5bd; font-size:11px;">% de trabajos</small>
                             </div>
-                            <div style="position:relative; height:260px;">
+                            <div style="position:relative; height:290px;">
                                 <canvas id="chart-pasadas-distribucion"></canvas>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- NUEVO GRÁFICO: PROMEDIO EXACTO DE CADA PEDIDO POR CLIENTE -->
+                    <div class="card glass mt-2" style="padding:1.4rem;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
+                            <div>
+                                <h3 style="margin:0; font-size:15px; color:#fff;"><i class="fa-solid fa-bullseye" style="color:#00f5d4; margin-right:6px;"></i> Promedio Exacto de Etiquetas por Pedido según Cliente (Bodega)</h3>
+                                <small style="color:#adb5bd; font-size:11px;">Comparativa exacta de cuántas etiquetas pide en promedio cada cliente por tirada/diseño y por OT completa</small>
+                            </div>
+                            <select id="stats-tipo-promedio-cli" class="medium-input" style="font-size:12px; padding:4px 10px; max-width:290px;">
+                                <option value="both">Comparar: Prom. por Tirada (Ítem) vs Prom. por OT</option>
+                                <option value="item">Solo Promedio Exacto por Tirada / Diseño (Ítem)</option>
+                                <option value="ot">Solo Promedio Exacto por Pedido Completo (OT)</option>
+                            </select>
+                        </div>
+                        <div style="position:relative; height:300px;">
+                            <canvas id="chart-promedio-clientes"></canvas>
                         </div>
                     </div>
 
@@ -1301,7 +1339,10 @@
                     <!-- TABLA DETALLADA POR CLIENTE -->
                     <div class="card glass mt-2" style="padding:1.4rem;">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
-                            <h3 style="margin:0; font-size:15px; color:var(--primary);"><i class="fa-solid fa-table-list" style="margin-right:6px;"></i> Desglose Detallado por Bodega / Cliente</h3>
+                            <div>
+                                <h3 style="margin:0; font-size:15px; color:var(--primary);"><i class="fa-solid fa-table-list" style="margin-right:6px;"></i> Desglose Detallado y Promedio Exacto por Bodega / Cliente</h3>
+                                <small style="color:#adb5bd; font-size:11.5px;">Incluye promedio exacto de etiquetas por tirada (ítem), promedio por orden (OT), rango mín/máx y escala cada 100 etiquetas más frecuente de cada cliente.</small>
+                            </div>
                             <input type="text" id="input-busqueda-stats-tabla" class="medium-input" placeholder="Buscar bodega..." style="max-width:220px; font-size:12px;">
                         </div>
                         <div style="overflow-x:auto;">
@@ -1309,10 +1350,12 @@
                                 <thead>
                                     <tr>
                                         <th>Bodega / Cliente</th>
-                                        <th style="text-align:right;">Pedidos</th>
-                                        <th style="text-align:right;">1 Pasada</th>
-                                        <th style="text-align:right;">2 Pasadas</th>
-                                        <th style="text-align:right;">3+ Pasadas</th>
+                                        <th style="text-align:right;">OTs</th>
+                                        <th style="text-align:right;">Tiradas (Ítems)</th>
+                                        <th style="text-align:right; color:#00f5d4;">Prom. Exacto / Tirada</th>
+                                        <th style="text-align:right; color:#e0aaff;">Prom. Exacto / OT</th>
+                                        <th style="text-align:left;">Escala Frecuente (c/100u) &amp; Rango</th>
+                                        <th style="text-align:right;">1P / 2P / 3+P</th>
                                         <th style="text-align:right;">Total Etiquetas</th>
                                         <th style="text-align:right;">Precio Prom. / M</th>
                                         <th style="text-align:right;">Total Estimado</th>
@@ -1869,6 +1912,6 @@
         </div>
     </div>
 
-    <script src="app2.js?v=34"></script>
+    <script src="app2.js?v=35"></script>
 </body>
 </html>

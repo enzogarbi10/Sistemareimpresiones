@@ -2253,6 +2253,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // =========================================================================
     let chartCantidades = null;
     let chartPasadas = null;
+    let chartPromedioClientes = null;
     let chartTopClientes = null;
     let chartTopVarietales = null;
     let chartEvolucion = null;
@@ -2261,7 +2262,29 @@ document.addEventListener('DOMContentLoaded', () => {
     let statsFilterHasta = '';
     let statsFilterCliente = 'ALL';
     let statsSearchTabla = '';
+    let statsEscalaPaso = '100_freq';
+    let statsTipoPromedioCli = 'both';
     let statsEventsInitialized = false;
+
+    function obtenerTramoEscala(qty, step = 100) {
+        const q = Math.max(1, Math.round(Number(qty) || 0));
+        const idx = Math.floor((q - 1) / step);
+        const min = idx * step + 1;
+        const max = (idx + 1) * step;
+        return {
+            idx,
+            min,
+            max,
+            label: `${min.toLocaleString('es-AR')} - ${max.toLocaleString('es-AR')} u`
+        };
+    }
+
+    function calcularMediana(arr) {
+        if (!arr || !arr.length) return 0;
+        const s = arr.slice().sort((a, b) => a - b);
+        const mid = Math.floor(s.length / 2);
+        return s.length % 2 !== 0 ? s[mid] : Math.round((s[mid - 1] + s[mid]) / 2);
+    }
 
     function parseDateFlexible(dateStr) {
         if (!dateStr) return null;
@@ -2335,21 +2358,15 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         let totalUnidadesGlobal = 0;
+        let totalItemsGlobal = 0;
         let totalRevenueItems = 0;
         let totalRevenueOtsConHerr = 0;
         let totalPedidosCount = filteredOts.length;
 
-        // Frecuencia exacta de tiradas (para moda)
-        const exactQtyFreq = {};
-
-        // Escalas de tirada
-        const escalasTirada = {
-            micro: { label: '< 5.000 u', pedidos: 0, unidades: 0 },
-            chica: { label: '5k - 15k u', pedidos: 0, unidades: 0 },
-            mediana: { label: '15k - 30k u', pedidos: 0, unidades: 0 },
-            grande: { label: '30k - 60k u', pedidos: 0, unidades: 0 },
-            masiva: { label: '> 60.000 u', pedidos: 0, unidades: 0 }
-        };
+        const allItemQtysGlobal = [];
+        const bins100Global = {};
+        const bins500Global = {};
+        const bins1000Global = {};
 
         // Pasadas (1 pasada, 2 pasadas, 3+ pasadas)
         const pasadasStats = {
@@ -2369,9 +2386,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
         filteredOts.forEach(ot => {
             let otRevenue = 0;
+            let otUnits = 0;
             const cliName = (ot.cliente || 'Desconocido').trim();
             if (!clientAgg[cliName]) {
-                clientAgg[cliName] = { pedidos: 0, p1Units: 0, p2Units: 0, p3Units: 0, totalUnits: 0, revenue: 0 };
+                clientAgg[cliName] = {
+                    pedidos: 0,
+                    itemsCount: 0,
+                    itemQtys: [],
+                    otQtys: [],
+                    bins100: {},
+                    p1Units: 0,
+                    p2Units: 0,
+                    p3Units: 0,
+                    p1Count: 0,
+                    p2Count: 0,
+                    p3Count: 0,
+                    totalUnits: 0,
+                    revenue: 0
+                };
             }
             clientAgg[cliName].pedidos++;
 
@@ -2390,28 +2422,37 @@ document.addEventListener('DOMContentLoaded', () => {
                 totalUnidadesGlobal += qty;
                 totalRevenueItems += itemSubtotal;
                 otRevenue += itemSubtotal;
+                otUnits += qty;
 
-                // Frecuencia exacta para moda
                 if (qty > 0) {
-                    exactQtyFreq[qty] = (exactQtyFreq[qty] || 0) + 1;
-                }
+                    totalItemsGlobal++;
+                    allItemQtysGlobal.push(qty);
+                    clientAgg[cliName].itemsCount++;
+                    clientAgg[cliName].itemQtys.push(qty);
 
-                // Escalas de tirada
-                if (qty < 5000) {
-                    escalasTirada.micro.pedidos++;
-                    escalasTirada.micro.unidades += qty;
-                } else if (qty <= 15000) {
-                    escalasTirada.chica.pedidos++;
-                    escalasTirada.chica.unidades += qty;
-                } else if (qty <= 30000) {
-                    escalasTirada.mediana.pedidos++;
-                    escalasTirada.mediana.unidades += qty;
-                } else if (qty <= 60000) {
-                    escalasTirada.grande.pedidos++;
-                    escalasTirada.grande.unidades += qty;
-                } else {
-                    escalasTirada.masiva.pedidos++;
-                    escalasTirada.masiva.unidades += qty;
+                    // Escala cada 100 etiquetas
+                    const b100 = obtenerTramoEscala(qty, 100);
+                    if (!bins100Global[b100.idx]) bins100Global[b100.idx] = { ...b100, pedidos: 0, unidades: 0 };
+                    bins100Global[b100.idx].pedidos++;
+                    bins100Global[b100.idx].unidades += qty;
+
+                    if (!clientAgg[cliName].bins100[b100.idx]) {
+                        clientAgg[cliName].bins100[b100.idx] = { ...b100, pedidos: 0, unidades: 0 };
+                    }
+                    clientAgg[cliName].bins100[b100.idx].pedidos++;
+                    clientAgg[cliName].bins100[b100.idx].unidades += qty;
+
+                    // Escala cada 500 etiquetas
+                    const b500 = obtenerTramoEscala(qty, 500);
+                    if (!bins500Global[b500.idx]) bins500Global[b500.idx] = { ...b500, pedidos: 0, unidades: 0 };
+                    bins500Global[b500.idx].pedidos++;
+                    bins500Global[b500.idx].unidades += qty;
+
+                    // Escala cada 1.000 etiquetas
+                    const b1000 = obtenerTramoEscala(qty, 1000);
+                    if (!bins1000Global[b1000.idx]) bins1000Global[b1000.idx] = { ...b1000, pedidos: 0, unidades: 0 };
+                    bins1000Global[b1000.idx].pedidos++;
+                    bins1000Global[b1000.idx].unidades += qty;
                 }
 
                 // Pasadas / Colores
@@ -2421,16 +2462,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     pasadasStats.p1.unidades += qty;
                     pasadasStats.p1.revenue += itemSubtotal;
                     clientAgg[cliName].p1Units += qty;
+                    clientAgg[cliName].p1Count++;
                 } else if (col === 2) {
                     pasadasStats.p2.pedidos++;
                     pasadasStats.p2.unidades += qty;
                     pasadasStats.p2.revenue += itemSubtotal;
                     clientAgg[cliName].p2Units += qty;
+                    clientAgg[cliName].p2Count++;
                 } else {
                     pasadasStats.p3.pedidos++;
                     pasadasStats.p3.unidades += qty;
                     pasadasStats.p3.revenue += itemSubtotal;
                     clientAgg[cliName].p3Units += qty;
+                    clientAgg[cliName].p3Count++;
                 }
 
                 // Varietales
@@ -2446,6 +2490,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 monthlyAgg[ymKey].units += qty;
             });
 
+            if (otUnits > 0) {
+                clientAgg[cliName].otQtys.push(otUnits);
+            }
+
             // Herramentales de la OT
             if (ot.herramentales && ot.herramentales.tipo !== 'NO') {
                 const herrCant = parseInt(ot.herramentales.cantidad) || 1;
@@ -2457,22 +2505,15 @@ document.addEventListener('DOMContentLoaded', () => {
             totalRevenueOtsConHerr += otRevenue;
         });
 
-        // 1. Moda y rango predominante
-        let modaQty = 0;
-        let modaMaxCount = 0;
-        for (const [qStr, count] of Object.entries(exactQtyFreq)) {
-            if (count > modaMaxCount) {
-                modaMaxCount = count;
-                modaQty = parseInt(qStr, 10);
-            }
-        }
+        // 1. Promedios exactos y Escala cada 100 etiquetas predominante
+        const promExactoPorTirada = totalItemsGlobal > 0 ? (totalUnidadesGlobal / totalItemsGlobal) : 0;
+        const promExactoPorOt = totalPedidosCount > 0 ? (totalUnidadesGlobal / totalPedidosCount) : 0;
+        const medianaGlobal = calcularMediana(allItemQtysGlobal);
 
-        let rangoPredominante = '-';
-        let maxEscalaPedidos = -1;
-        for (const [key, data] of Object.entries(escalasTirada)) {
-            if (data.pedidos > maxEscalaPedidos) {
-                maxEscalaPedidos = data.pedidos;
-                rangoPredominante = data.label + ' (' + data.pedidos + ' ped.)';
+        let topBin100 = null;
+        for (const b of Object.values(bins100Global)) {
+            if (!topBin100 || b.pedidos > topBin100.pedidos || (b.pedidos === topBin100.pedidos && b.unidades > topBin100.unidades)) {
+                topBin100 = b;
             }
         }
 
@@ -2496,10 +2537,28 @@ document.addEventListener('DOMContentLoaded', () => {
         const ticketPromedioOt = totalPedidosCount > 0 ? totalRevenueOtsConHerr / totalPedidosCount : 0;
 
         // Actualizar elementos KPI en DOM
+        const elKpiPromTirada = document.getElementById('kpi-promedio-tirada');
+        if (elKpiPromTirada) {
+            elKpiPromTirada.textContent = promExactoPorTirada > 0
+                ? `${promExactoPorTirada.toLocaleString('es-AR', {minimumFractionDigits: 0, maximumFractionDigits: 1})} u`
+                : 'Sin datos';
+        }
+        const elKpiPromOt = document.getElementById('kpi-promedio-ot');
+        if (elKpiPromOt) {
+            const itemsPorOt = totalPedidosCount > 0 ? (totalItemsGlobal / totalPedidosCount).toFixed(1) : '0';
+            elKpiPromOt.textContent = promExactoPorOt > 0
+                ? `Prom./OT: ${Math.round(promExactoPorOt).toLocaleString('es-AR')} u (${itemsPorOt} tiradas/OT)`
+                : 'Prom. por OT: 0 u';
+        }
+
         const elKpiCant = document.getElementById('kpi-cantidad-predominante');
-        if (elKpiCant) elKpiCant.textContent = modaQty > 0 ? `${modaQty.toLocaleString('es-AR')} u` : 'Sin datos';
+        if (elKpiCant) elKpiCant.textContent = topBin100 ? topBin100.label : 'Sin datos';
         const elKpiRango = document.getElementById('kpi-rango-predominante');
-        if (elKpiRango) elKpiRango.textContent = maxEscalaPedidos > 0 ? `Rango: ${rangoPredominante}` : 'Moda en pedidos';
+        if (elKpiRango) {
+            elKpiRango.textContent = topBin100
+                ? `${topBin100.pedidos} tiradas en esta escala | Mediana: ${medianaGlobal.toLocaleString('es-AR')} u`
+                : 'Escala cada 100 etiquetas';
+        }
 
         const elKpiPasada = document.getElementById('kpi-pasada-predominante');
         if (elKpiPasada) elKpiPasada.textContent = pasadaPredom;
@@ -2515,7 +2574,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (elKpiMillares) elKpiMillares.textContent = `${(totalUnidadesGlobal / 1000).toLocaleString('es-AR', {minimumFractionDigits: 1, maximumFractionDigits: 1})} millares`;
 
         const elKpiOts = document.getElementById('kpi-total-pedidos');
-        if (elKpiOts) elKpiOts.textContent = `${totalPedidosCount} OTs`;
+        if (elKpiOts) elKpiOts.textContent = `${totalPedidosCount} OTs (${totalItemsGlobal} ítems)`;
         const elKpiTicket = document.getElementById('kpi-ticket-promedio');
         if (elKpiTicket) elKpiTicket.textContent = `Prom. OT: $ ${ticketPromedioOt.toLocaleString('es-AR', {maximumFractionDigits: 0})}`;
 
@@ -2523,21 +2582,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const elP1Pedidos = document.getElementById('card-pasada1-pedidos');
         const elP1Precio = document.getElementById('card-pasada1-precio');
         const elP1Volumen = document.getElementById('card-pasada1-volumen');
-        if (elP1Pedidos) elP1Pedidos.textContent = `${pasadasStats.p1.pedidos} pedidos`;
+        if (elP1Pedidos) elP1Pedidos.textContent = `${pasadasStats.p1.pedidos} tiradas`;
         if (elP1Precio) elP1Precio.textContent = `$ ${precioProm1p.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
         if (elP1Volumen) elP1Volumen.textContent = `${pasadasStats.p1.unidades.toLocaleString('es-AR')} u`;
 
         const elP2Pedidos = document.getElementById('card-pasada2-pedidos');
         const elP2Precio = document.getElementById('card-pasada2-precio');
         const elP2Volumen = document.getElementById('card-pasada2-volumen');
-        if (elP2Pedidos) elP2Pedidos.textContent = `${pasadasStats.p2.pedidos} pedidos`;
+        if (elP2Pedidos) elP2Pedidos.textContent = `${pasadasStats.p2.pedidos} tiradas`;
         if (elP2Precio) elP2Precio.textContent = `$ ${precioProm2p.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
         if (elP2Volumen) elP2Volumen.textContent = `${pasadasStats.p2.unidades.toLocaleString('es-AR')} u`;
 
         const elP3Pedidos = document.getElementById('card-pasada3-pedidos');
         const elP3Precio = document.getElementById('card-pasada3-precio');
         const elP3Volumen = document.getElementById('card-pasada3-volumen');
-        if (elP3Pedidos) elP3Pedidos.textContent = `${pasadasStats.p3.pedidos} pedidos`;
+        if (elP3Pedidos) elP3Pedidos.textContent = `${pasadasStats.p3.pedidos} tiradas`;
         if (elP3Precio) elP3Precio.textContent = `$ ${precioProm3p.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
         if (elP3Volumen) elP3Volumen.textContent = `${pasadasStats.p3.unidades.toLocaleString('es-AR')} u`;
 
@@ -2545,36 +2604,51 @@ document.addEventListener('DOMContentLoaded', () => {
         renderTablaDetalleEstadisticas(clientAgg);
 
         // Renderizar Gráficos Chart.js
-        renderChartsEstadisticas(escalasTirada, pasadasStats, clientAgg, varietalAgg, monthlyAgg);
+        renderChartsEstadisticas({ bins100Global, bins500Global, bins1000Global, totalItemsGlobal }, pasadasStats, clientAgg, varietalAgg, monthlyAgg);
     }
 
-    function renderChartsEstadisticas(escalas, pasadas, clients, varietals, monthly) {
+    function renderChartsEstadisticas(escalaData, pasadas, clients, varietals, monthly) {
         if (!window.Chart) return;
 
         const gridColor = 'rgba(255, 255, 255, 0.06)';
         const tickColor = '#adb5bd';
 
-        // 1. Gráfico de Escalas de Tirada (Bar Chart)
+        // 1. Gráfico de Distribución por Escalas (Cada 100 etiquetas, 500 o 1000)
         const ctxCantidades = document.getElementById('chart-cantidades-tiradas');
         if (ctxCantidades) {
             if (chartCantidades) chartCantidades.destroy();
+
+            let binsList = [];
+            if (statsEscalaPaso === '100_freq') {
+                // Top 18 escalas de 100 etiquetas más frecuentes, ordenadas de mayor a menor frecuencia
+                binsList = Object.values(escalaData.bins100Global)
+                    .sort((a, b) => (b.pedidos - a.pedidos) || (a.idx - b.idx))
+                    .slice(0, 18);
+            } else if (statsEscalaPaso === '100_seq') {
+                // Todas las escalas de 100 etiquetas con pedidos ordenadas secuencialmente por cantidad
+                binsList = Object.values(escalaData.bins100Global)
+                    .sort((a, b) => a.idx - b.idx);
+            } else if (statsEscalaPaso === '500') {
+                binsList = Object.values(escalaData.bins500Global)
+                    .sort((a, b) => a.idx - b.idx);
+            } else {
+                binsList = Object.values(escalaData.bins1000Global)
+                    .sort((a, b) => a.idx - b.idx);
+            }
+
+            const totalTiradas = escalaData.totalItemsGlobal || 1;
+
             chartCantidades = new Chart(ctxCantidades, {
                 type: 'bar',
                 data: {
-                    labels: ['< 5.000 u', '5k - 15k u', '15k - 30k u', '30k - 60k u', '> 60.000 u'],
+                    labels: binsList.map(b => b.label),
                     datasets: [{
-                        label: 'Cantidad de Pedidos',
-                        data: [
-                            escalas.micro.pedidos,
-                            escalas.chica.pedidos,
-                            escalas.mediana.pedidos,
-                            escalas.grande.pedidos,
-                            escalas.masiva.pedidos
-                        ],
-                        backgroundColor: 'rgba(157, 78, 221, 0.75)',
+                        label: 'Cantidad de Tiradas (Ítems)',
+                        data: binsList.map(b => b.pedidos),
+                        backgroundColor: 'rgba(157, 78, 221, 0.78)',
                         borderColor: '#9d4edd',
                         borderWidth: 1.5,
-                        borderRadius: 6
+                        borderRadius: 5
                     }]
                 },
                 options: {
@@ -2584,17 +2658,148 @@ document.addEventListener('DOMContentLoaded', () => {
                         legend: { display: false },
                         tooltip: {
                             callbacks: {
+                                label: function(ctx) {
+                                    const b = binsList[ctx.dataIndex];
+                                    if (!b) return '';
+                                    const pct = ((b.pedidos / totalTiradas) * 100).toFixed(1);
+                                    return ` ${b.pedidos} tiradas (${pct}% del total)`;
+                                },
                                 afterLabel: function(ctx) {
-                                    const keys = ['micro', 'chica', 'mediana', 'grande', 'masiva'];
-                                    const key = keys[ctx.dataIndex];
-                                    return 'Volumen: ' + (escalas[key].unidades || 0).toLocaleString('es-AR') + ' u';
+                                    const b = binsList[ctx.dataIndex];
+                                    if (!b) return '';
+                                    const promTramo = b.pedidos > 0 ? Math.round(b.unidades / b.pedidos) : 0;
+                                    return [
+                                        `Volumen acumulado: ${b.unidades.toLocaleString('es-AR')} u`,
+                                        `Promedio exacto en este tramo: ${promTramo.toLocaleString('es-AR')} u`
+                                    ];
                                 }
                             }
                         }
                     },
                     scales: {
-                        x: { grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 11 } } },
-                        y: { grid: { color: gridColor }, ticks: { color: tickColor, stepSize: 1, precision: 0 }, beginAtZero: true }
+                        x: {
+                            grid: { color: gridColor },
+                            ticks: { color: tickColor, font: { size: 10 }, maxRotation: 45, minRotation: 25 }
+                        },
+                        y: {
+                            grid: { color: gridColor },
+                            ticks: { color: tickColor, precision: 0 },
+                            beginAtZero: true,
+                            title: { display: true, text: 'N° de Tiradas / Diseños', color: tickColor, font: { size: 11 } }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 1B. NUEVO GRÁFICO: Promedio Exacto de Etiquetas por Pedido según Cliente
+        const ctxPromCli = document.getElementById('chart-promedio-clientes');
+        if (ctxPromCli) {
+            if (chartPromedioClientes) chartPromedioClientes.destroy();
+
+            const cliStatsList = Object.entries(clients)
+                .map(([name, d]) => {
+                    const avgItem = d.itemsCount > 0 ? (d.totalUnits / d.itemsCount) : 0;
+                    const avgOt = d.pedidos > 0 ? (d.totalUnits / d.pedidos) : 0;
+                    const minQ = d.itemQtys.length ? Math.min(...d.itemQtys) : 0;
+                    const maxQ = d.itemQtys.length ? Math.max(...d.itemQtys) : 0;
+                    let topB = null;
+                    for (const b of Object.values(d.bins100 || {})) {
+                        if (!topB || b.pedidos > topB.pedidos || (b.pedidos === topB.pedidos && b.unidades > topB.unidades)) {
+                            topB = b;
+                        }
+                    }
+                    return {
+                        name,
+                        pedidos: d.pedidos,
+                        itemsCount: d.itemsCount,
+                        totalUnits: d.totalUnits,
+                        avgItem,
+                        avgOt,
+                        minQ,
+                        maxQ,
+                        escalaPromItem: avgItem > 0 ? obtenerTramoEscala(avgItem, 100).label : '-',
+                        escalaMasFrecuente: topB ? `${topB.label} (${topB.pedidos} tir.)` : '-'
+                    };
+                })
+                .filter(c => c.totalUnits > 0)
+                .sort((a, b) => statsTipoPromedioCli === 'ot' ? (b.avgOt - a.avgOt) : (b.avgItem - a.avgItem));
+
+            const datasets = [];
+            if (statsTipoPromedioCli === 'both' || statsTipoPromedioCli === 'item') {
+                datasets.push({
+                    label: 'Promedio Exacto por Tirada / Diseño (Ítem)',
+                    data: cliStatsList.map(c => Math.round(c.avgItem * 10) / 10),
+                    backgroundColor: 'rgba(0, 245, 212, 0.78)',
+                    borderColor: '#00f5d4',
+                    borderWidth: 1.5,
+                    borderRadius: 5
+                });
+            }
+            if (statsTipoPromedioCli === 'both' || statsTipoPromedioCli === 'ot') {
+                datasets.push({
+                    label: 'Promedio Exacto por Orden de Trabajo (OT Completa)',
+                    data: cliStatsList.map(c => Math.round(c.avgOt * 10) / 10),
+                    backgroundColor: 'rgba(157, 78, 221, 0.75)',
+                    borderColor: '#9d4edd',
+                    borderWidth: 1.5,
+                    borderRadius: 5
+                });
+            }
+
+            chartPromedioClientes = new Chart(ctxPromCli, {
+                type: 'bar',
+                data: {
+                    labels: cliStatsList.map(c => c.name),
+                    datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: { color: tickColor, font: { size: 12 } }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(ctx) {
+                                    const val = ctx.raw || 0;
+                                    const tramo100 = val > 0 ? obtenerTramoEscala(val, 100).label : '-';
+                                    return ` ${ctx.dataset.label}: ${val.toLocaleString('es-AR', {minimumFractionDigits: 0, maximumFractionDigits: 1})} u (Escala c/100: ${tramo100})`;
+                                },
+                                afterBody: function(items) {
+                                    if (!items || !items.length) return [];
+                                    const c = cliStatsList[items[0].dataIndex];
+                                    if (!c) return [];
+                                    return [
+                                        `──────────────────────────────`,
+                                        `Escala c/100u más pedida: ${c.escalaMasFrecuente}`,
+                                        `Rango Mín / Máx por tirada: ${c.minQ.toLocaleString('es-AR')} u — ${c.maxQ.toLocaleString('es-AR')} u`,
+                                        `Total acumulado: ${c.totalUnits.toLocaleString('es-AR')} u en ${c.pedidos} OTs (${c.itemsCount} tiradas)`
+                                    ];
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: gridColor },
+                            ticks: { color: tickColor, font: { size: 11 } }
+                        },
+                        y: {
+                            grid: { color: gridColor },
+                            ticks: {
+                                color: tickColor,
+                                stepSize: 500,
+                                callback: function(value) {
+                                    return value.toLocaleString('es-AR') + ' u';
+                                }
+                            },
+                            beginAtZero: true,
+                            title: { display: true, text: 'Promedio de Etiquetas (unidades)', color: '#00f5d4', font: { size: 11 } }
+                        }
                     }
                 }
             });
@@ -2629,7 +2834,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     const val = ctx.raw || 0;
                                     const total = (pasadas.p1.pedidos + pasadas.p2.pedidos + pasadas.p3.pedidos) || 1;
                                     const pct = ((val / total) * 100).toFixed(1);
-                                    return ` ${ctx.label}: ${val} pedidos (${pct}%)`;
+                                    return ` ${ctx.label}: ${val} tiradas (${pct}%)`;
                                 }
                             }
                         }
@@ -2792,16 +2997,40 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!tbody) return;
         tbody.innerHTML = '';
 
-        let list = Object.entries(clientAgg).map(([name, d]) => ({
-            name,
-            pedidos: d.pedidos,
-            p1Units: d.p1Units,
-            p2Units: d.p2Units,
-            p3Units: d.p3Units,
-            totalUnits: d.totalUnits,
-            revenue: d.revenue,
-            avgPrice: d.totalUnits > 0 ? (d.revenue / d.totalUnits) * 1000 : 0
-        }));
+        let list = Object.entries(clientAgg).map(([name, d]) => {
+            const avgPerItem = d.itemsCount > 0 ? (d.totalUnits / d.itemsCount) : 0;
+            const avgPerOt = d.pedidos > 0 ? (d.totalUnits / d.pedidos) : 0;
+            const minQty = d.itemQtys.length ? Math.min(...d.itemQtys) : 0;
+            const maxQty = d.itemQtys.length ? Math.max(...d.itemQtys) : 0;
+            const medianaQty = calcularMediana(d.itemQtys);
+
+            let topBin100 = null;
+            for (const b of Object.values(d.bins100 || {})) {
+                if (!topBin100 || b.pedidos > topBin100.pedidos || (b.pedidos === topBin100.pedidos && b.unidades > topBin100.unidades)) {
+                    topBin100 = b;
+                }
+            }
+
+            return {
+                name,
+                pedidos: d.pedidos,
+                itemsCount: d.itemsCount,
+                avgPerItem,
+                avgPerOt,
+                escalaPromItem: avgPerItem > 0 ? obtenerTramoEscala(avgPerItem, 100).label : '-',
+                escalaPromOt: avgPerOt > 0 ? obtenerTramoEscala(avgPerOt, 100).label : '-',
+                topBin100,
+                minQty,
+                maxQty,
+                medianaQty,
+                p1Units: d.p1Units,
+                p2Units: d.p2Units,
+                p3Units: d.p3Units,
+                totalUnits: d.totalUnits,
+                revenue: d.revenue,
+                avgPrice: d.totalUnits > 0 ? (d.revenue / d.totalUnits) * 1000 : 0
+            };
+        });
 
         if (statsSearchTabla) {
             const q = statsSearchTabla.toLowerCase();
@@ -2811,24 +3040,78 @@ document.addEventListener('DOMContentLoaded', () => {
         list.sort((a, b) => b.totalUnits - a.totalUnits);
 
         if (list.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:#adb5bd; padding:2rem;">No se encontraron registros con los filtros seleccionados.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; color:#adb5bd; padding:2rem;">No se encontraron registros con los filtros seleccionados.</td></tr>`;
             return;
         }
 
+        let sumOts = 0;
+        let sumItems = 0;
+        let sumUnits = 0;
+        let sumRev = 0;
+
         list.forEach(c => {
+            sumOts += c.pedidos;
+            sumItems += c.itemsCount;
+            sumUnits += c.totalUnits;
+            sumRev += c.revenue;
+
+            const itemsPorOt = c.pedidos > 0 ? (c.itemsCount / c.pedidos).toFixed(1) : '0';
+            const topEscalaHtml = c.topBin100
+                ? `<span class="badge" style="background:rgba(157,78,221,0.2);color:#e0aaff;border:1px solid rgba(157,78,221,0.35);font-size:11px;">${c.topBin100.label} (${c.topBin100.pedidos})</span>
+                   <div style="font-size:10.5px;color:#adb5bd;margin-top:3px;">Mín: ${c.minQty.toLocaleString('es-AR')} u · Máx: ${c.maxQty.toLocaleString('es-AR')} u · Mediana: ${c.medianaQty.toLocaleString('es-AR')} u</div>`
+                : '-';
+
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td><strong>${c.name}</strong></td>
-                <td style="text-align:right;">${c.pedidos}</td>
-                <td style="text-align:right; color:var(--secondary);">${c.p1Units.toLocaleString('es-AR')} u</td>
-                <td style="text-align:right; color:var(--primary);">${c.p2Units.toLocaleString('es-AR')} u</td>
-                <td style="text-align:right; color:#f4a261;">${c.p3Units.toLocaleString('es-AR')} u</td>
-                <td style="text-align:right; font-weight:700;">${c.totalUnits.toLocaleString('es-AR')} u</td>
+                <td style="text-align:right; font-weight:600;">${c.pedidos}</td>
+                <td style="text-align:right; color:#ced4da;">${c.itemsCount}</td>
+                <td style="text-align:right;">
+                    <strong style="color:#00f5d4; font-family:monospace; font-size:14px;">${c.avgPerItem.toLocaleString('es-AR', {minimumFractionDigits: 0, maximumFractionDigits: 1})} u</strong>
+                    <div style="font-size:10.5px; color:#adb5bd;">Escala: ${c.escalaPromItem}</div>
+                </td>
+                <td style="text-align:right;">
+                    <strong style="color:#e0aaff; font-family:monospace; font-size:14px;">${c.avgPerOt.toLocaleString('es-AR', {minimumFractionDigits: 0, maximumFractionDigits: 1})} u</strong>
+                    <div style="font-size:10.5px; color:#adb5bd;">${itemsPorOt} tiradas / OT</div>
+                </td>
+                <td>${topEscalaHtml}</td>
+                <td style="text-align:right; font-size:11.5px;">
+                    <span style="color:var(--secondary);" title="1 Pasada">${c.p1Units.toLocaleString('es-AR')}</span> /
+                    <span style="color:var(--primary);" title="2 Pasadas">${c.p2Units.toLocaleString('es-AR')}</span> /
+                    <span style="color:#f4a261;" title="3+ Pasadas">${c.p3Units.toLocaleString('es-AR')}</span>
+                </td>
+                <td style="text-align:right; font-weight:700; font-family:monospace;">${c.totalUnits.toLocaleString('es-AR')} u</td>
                 <td style="text-align:right; font-family:monospace; color:#00f5d4;">$ ${c.avgPrice.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                 <td style="text-align:right; font-family:monospace; font-weight:700;">$ ${c.revenue.toLocaleString('es-AR', {minimumFractionDigits: 0, maximumFractionDigits: 0})}</td>
             `;
             tbody.appendChild(tr);
         });
+
+        // Fila resumen general al pie
+        const avgGlobalItem = sumItems > 0 ? (sumUnits / sumItems) : 0;
+        const avgGlobalOt = sumOts > 0 ? (sumUnits / sumOts) : 0;
+        const avgGlobalPrice = sumUnits > 0 ? (sumRev / sumUnits) * 1000 : 0;
+        const trTotal = document.createElement('tr');
+        trTotal.style.cssText = 'background:rgba(0,245,212,0.07); border-top:2px solid rgba(0,245,212,0.3); font-weight:700;';
+        trTotal.innerHTML = `
+            <td><strong style="color:#00f5d4;">PROMEDIO / TOTAL GENERAL (${list.length} clientes)</strong></td>
+            <td style="text-align:right;">${sumOts}</td>
+            <td style="text-align:right;">${sumItems}</td>
+            <td style="text-align:right; color:#00f5d4; font-family:monospace;">
+                ${avgGlobalItem.toLocaleString('es-AR', {minimumFractionDigits: 0, maximumFractionDigits: 1})} u
+                <div style="font-size:10px; color:#adb5bd; font-weight:normal;">Escala: ${avgGlobalItem > 0 ? obtenerTramoEscala(avgGlobalItem, 100).label : '-'}</div>
+            </td>
+            <td style="text-align:right; color:#e0aaff; font-family:monospace;">
+                ${avgGlobalOt.toLocaleString('es-AR', {minimumFractionDigits: 0, maximumFractionDigits: 1})} u
+                <div style="font-size:10px; color:#adb5bd; font-weight:normal;">${sumOts > 0 ? (sumItems / sumOts).toFixed(1) : '0'} tiradas/OT</div>
+            </td>
+            <td style="font-size:11px; color:#adb5bd;">Promedio ponderado global</td>
+            <td style="text-align:right; color:#adb5bd;">-</td>
+            <td style="text-align:right; font-family:monospace; color:#06d6a0;">${sumUnits.toLocaleString('es-AR')} u</td>
+            <td style="text-align:right; font-family:monospace; color:#00f5d4;">$ ${avgGlobalPrice.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+            <td style="text-align:right; font-family:monospace;">$ ${sumRev.toLocaleString('es-AR', {minimumFractionDigits: 0, maximumFractionDigits: 0})}</td>
+        `;
+        tbody.appendChild(trTotal);
     }
 
     function initEstadisticasEvents() {
@@ -2838,10 +3121,25 @@ document.addEventListener('DOMContentLoaded', () => {
         const inputDesde = document.getElementById('stats-fecha-desde');
         const inputHasta = document.getElementById('stats-fecha-hasta');
         const selectCliente = document.getElementById('stats-filtro-cliente');
+        const selectEscalaPaso = document.getElementById('stats-escala-paso');
+        const selectTipoPromCli = document.getElementById('stats-tipo-promedio-cli');
         const btnReset = document.getElementById('btn-limpiar-filtros-stats');
         const btnPrint = document.getElementById('btn-imprimir-estadisticas');
         const inputSearch = document.getElementById('input-busqueda-stats-tabla');
         const presetBtns = document.querySelectorAll('.btn-stats-preset');
+
+        if (selectEscalaPaso) {
+            selectEscalaPaso.addEventListener('change', () => {
+                statsEscalaPaso = selectEscalaPaso.value || '100_freq';
+                renderEstadisticas();
+            });
+        }
+        if (selectTipoPromCli) {
+            selectTipoPromCli.addEventListener('change', () => {
+                statsTipoPromedioCli = selectTipoPromCli.value || 'both';
+                renderEstadisticas();
+            });
+        }
 
         if (inputDesde) {
             inputDesde.addEventListener('change', () => {
