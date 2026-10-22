@@ -2128,14 +2128,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const remitosCli = REMITOS.filter(r => r.cliente === clienteNombre).map(r => {
             const prefixStr = r.tipoRemito === 'X' ? 'X-0000-' : 'R-0002-';
             const numStr = `${prefixStr}${String(r.numero).padStart(8, '0')}`;
+            const sub = r.subtotal !== undefined ? (parseFloat(r.subtotal) || 0) : (parseFloat(r.total) || 0);
+            const iva = r.iva !== undefined ? (parseFloat(r.iva) || 0) : 0;
+            const ivaNota = iva > 0
+                ? `<div style="font-size:10.5px;color:#64748b;margin-top:2px;">Neto: ${fmtARS(sub)} + IVA (21%): ${fmtARS(iva)}</div>`
+                : '';
             return {
-                fecha: r.fecha, tipo: 'Cargo', detalle: 'Remito ' + numStr,
-                importe: parseFloat(r.total) || 0, sortDate: parseFechaArg(r.fecha)
+                fecha: r.fecha, tipo: 'Cargo', detalle: '<strong>Remito ' + numStr + '</strong>' + ivaNota,
+                importe: parseFloat(r.total) || 0, subtotal: sub, iva: iva, sortDate: parseFechaArg(r.fecha)
             };
         });
         const pagosCli = PAGOS.filter(p => p.cliente === clienteNombre).map(p => ({
             fecha: p.fecha, tipo: 'Abono', detalle: p.notas ? 'Pago (' + p.notas + ')' : (p.notes ? 'Pago (' + p.notes + ')' : 'Pago'),
-            importe: parseFloat(p.importe) || 0, sortDate: parseFechaArg(p.fecha)
+            importe: parseFloat(p.importe) || 0, subtotal: 0, iva: 0, sortDate: parseFechaArg(p.fecha)
         }));
         const todosMovimientos = [...remitosCli, ...pagosCli].sort((a, b) => a.sortDate - b.sortDate);
 
@@ -2153,6 +2158,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let saldo = saldoAnterior;
         let totalCargos = 0;
+        let totalNeto = 0;
+        let totalIva = 0;
         let totalAbonos = 0;
         let filasHtml = '';
 
@@ -2173,6 +2180,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (m.tipo === 'Cargo') {
                     saldo += m.importe;
                     totalCargos += m.importe;
+                    totalNeto += m.subtotal || m.importe;
+                    totalIva += m.iva || 0;
                 } else {
                     saldo -= m.importe;
                     totalAbonos += m.importe;
@@ -2192,6 +2201,10 @@ document.addEventListener('DOMContentLoaded', () => {
                   '<span style="font-size:11px;color:#64748b;text-transform:uppercase;font-weight:bold;display:block;">Saldo Anterior</span>' +
                   '<strong style="font-size:16px;color:#475569;">' + fmtARS(saldoAnterior) + '</strong>' +
               '</div>'
+            : '';
+
+        const desgloseIvaFooterHtml = totalIva > 0
+            ? '<div style="font-size:11px;color:#64748b;margin-top:2px;">Neto: ' + fmtARS(totalNeto) + ' + IVA 21%: ' + fmtARS(totalIva) + '</div>'
             : '';
 
         const div = document.createElement('div');
@@ -2229,6 +2242,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 '<div style="text-align:right;">' +
                     '<span style="font-size:11px;color:#64748b;text-transform:uppercase;font-weight:bold;display:block;">Facturado (' + filtro.etiqueta + ')</span>' +
                     '<strong style="font-size:16px;color:#334155;">' + fmtARS(totalCargos) + '</strong>' +
+                    desgloseIvaFooterHtml +
                 '</div>' +
                 '<div style="text-align:right;">' +
                     '<span style="font-size:11px;color:#64748b;text-transform:uppercase;font-weight:bold;display:block;">Pagado (' + filtro.etiqueta + ')</span>' +
